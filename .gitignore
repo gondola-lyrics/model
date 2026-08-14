@@ -1,0 +1,98 @@
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Local environment secrets
+.env
+.env.*
+!.env.example
+
+# Editor state
+.vs
+
+# Scratch and backup files
+*.tmp
+*.bak
+*.swp
+
+# Tool caches
+.cache/
+.npm
+.eslintcache
+
+# C++ compiler intermediates
+*.d
+*.gch
+*.pch
+*.ilk
+*.pdb
+*.dwo
+*.slo
+*.lo
+*.o
+*.obj
+
+# Compiled libraries
+*.lai
+*.la
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Compiled executables
+*.exe
+*.out
+*.app
+
+# Build output directories
+build/
+Build/
+build-*/
+out/
+dist/
+node/gen/
+
+# CMake configure output
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+
+# CMake dependencies fetched locally
+vcpkg_installed/
+
+# CTest run output
+Testing/
+
+# Installed node packages
+node_modules/
+
+# TypeScript incremental build state
+*.tsbuildinfo
+
+# Packed npm tarballs
+*.tgz
+
+# Vite config rebuild artifacts
+vite.config.*.timestamp-*
+
+# Test coverage reports
+coverage/
+
+# Compiled Go generator
+script/proto-gen/proto-gen
+
+# Gradle state and local SDK paths
+.gradle/
+.kotlin/
+local.properties
