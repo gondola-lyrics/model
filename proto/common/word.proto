@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package lyric.common;
+
+import "common/time.proto";
+
+// Kind of a word token.
+enum WordType {
+  // The field was not set; treat it as missing rather than as a resolved kind.
+  WORD_TYPE_UNSPECIFIED = 0;
+
+  // A sung word, carrying non-empty content that never includes the separators around it.
+  WORD_TYPE_NORMAL = 1;
+
+  // Whitespace between two words, carrying the separator as its content and nothing else.
+  WORD_TYPE_SPACE = 2;
+}
+
+// One timed piece of a ruby or roman annotation.
+message WordAnnotationToken {
+  // Time range of the token; unset means it follows the time of the item it belongs to.
+  Time time = 1;
+
+  // Text content of the token.
+  string content = 2;
+}
+
+// Translation of a single word into another language.
+message WordAnnotationTranslation {
+  // Target language of this translation, as a BCP 47 tag.
+  // Set it when multiple languages coexist, to tell them apart.
+  optional string language = 1;
+
+  // Translated text for the whole word.
+  string content = 2;
+}
+
+// Romanized transliteration of a single word.
+message WordAnnotationRoman {
+  // Time range of the item; unset means it follows the time of the annotated word.
+  Time time = 1;
+
+  // Language (BCP 47 tag) or transliteration scheme of this item.
+  // Set it when multiple languages coexist, to tell them apart.
+  optional string language = 2;
+
+  // Tokens composing the item in order.
+  repeated WordAnnotationToken tokens = 3;
+}
+
+// Ruby annotation of a single word, such as furigana.
+message WordAnnotationRuby {
+  // Time range of the item; unset means it follows the time of the annotated word.
+  Time time = 1;
+
+  // Language (BCP 47 tag) or transliteration scheme of this item.
+  // Set it when multiple languages coexist, to tell them apart.
+  optional string language = 2;
+
+  // Tokens composing the item in order.
+  repeated WordAnnotationToken tokens = 3;
+}
+
+// Annotations attached to a single word.
+// Each list holds one entry per language.
+message WordAnnotation {
+  // Ruby annotations such as furigana.
+  repeated WordAnnotationRuby rubies = 1;
+
+  // Romanized transliterations.
+  repeated WordAnnotationRoman romans = 2;
+
+  // Translations into another language.
+  repeated WordAnnotationTranslation translations = 3;
+}
+
+// A word token.
+// A kind a consumer does not recognize should be read for its content and time, or skipped.
+message Word {
+  // Kind of this token.
+  WordType type = 1;
+
+  // Time range of the word; unset when the token is not sung.
+  Time time = 2;
+
+  // Text content, exactly as the source wrote it.
+  string content = 3;
+
+  // Language of this word, as a BCP 47 tag; unset means undetermined.
+  optional string language = 4;
+
+  // Annotations attached to this word.
+  WordAnnotation annotation = 5;
+
+  // Whether the word is stressed; unset means the source carries no stress information.
+  optional bool stress = 6;
+}

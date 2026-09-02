@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package lyric.common;
+
+import "common/text.proto";
+import "common/unknown.proto";
+
+// Role someone is credited for.
+enum CreditRole {
+  // The field was not set; treat it as missing rather than as a resolved role.
+  CREDIT_ROLE_UNSPECIFIED = 0;
+
+  // A role this enum does not cover; the source's own word is kept in `MetaCredit.raw`.
+  // A value a consumer does not recognize falls here too, with no raw to go with it.
+  CREDIT_ROLE_OTHER = 1;
+
+  // Wrote the lyrics.
+  CREDIT_ROLE_LYRICIST = 2;
+
+  // Wrote the music.
+  CREDIT_ROLE_COMPOSER = 3;
+
+  // Arranged the music.
+  CREDIT_ROLE_ARRANGER = 4;
+
+  // Produced the recording.
+  CREDIT_ROLE_PRODUCER = 5;
+
+  // Performed the song.
+  CREDIT_ROLE_PERFORMER = 6;
+
+  // Mixed the recording.
+  CREDIT_ROLE_MIXER = 7;
+
+  // Mastered the recording.
+  CREDIT_ROLE_MASTERING = 8;
+}
+
+// A credit for the song itself.
+message MetaCredit {
+  // Role of the credit.
+  CreditRole role = 1;
+
+  // The source's own word for this role; unset means the role was inferred rather than stated.
+  optional string raw = 2;
+
+  // Everyone credited for this role, one entry per person.
+  repeated Text names = 3;
+}
+
+// Identifiers this song carries on one external platform.
+message MetaReference {
+  // Platform name in lower case.
+  string platform = 1;
+
+  // Identifiers on that platform, exactly as the platform writes them.
+  repeated string ids = 2;
+}
+
+// Metadata describing the song and the lyric file.
+message Meta {
+  // Unrecognized meta preserved by their original key.
+  repeated Unknown unknowns = 1;
+
+  // Timeline offset in milliseconds, added to the playback clock before it is compared against a stored time.
+  // A positive value therefore makes the lyric appear earlier.
+  sint32 offset = 2;
+
+  // Song duration in milliseconds; unset means unknown.
+  // Values above 2^31-1 are invalid.
+  optional uint32 duration = 3;
+
+  // Song titles, one entry per language.
+  repeated Text titles = 4;
+
+  // Song artists, one entry per artist.
+  repeated Text artists = 5;
+
+  // Song albums, one entry per language.
+  repeated Text albums = 6;
+
+  // Authors or transcribers of the lyric file rather than of the song, one entry per author.
+  repeated Text authors = 7;
+
+  // International Standard Recording Codes, in upper case and without separators.
+  repeated string isrcs = 8;
+
+  // Song credits such as lyricist or composer.
+  repeated MetaCredit credits = 9;
+
+  // Cross-platform references, one entry per platform.
+  repeated MetaReference references = 10;
+}

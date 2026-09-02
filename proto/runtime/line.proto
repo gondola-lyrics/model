@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package lyric.runtime;
+
+import "common/line.proto";
+import "common/part.proto";
+import "common/time.proto";
+import "common/word.proto";
+
+// Background vocal line attached to a normal line.
+// It belongs to the same part as its parent line.
+// It is not wire compatible with storage.LineBackground despite the matching field names.
+message LineBackground {
+  // Time range of this background line.
+  // The parent line's end covers it, while its start may precede the parent's.
+  lyric.common.Time time = 1;
+
+  // Identifiers of the performing agents, the lead first.
+  // Multiple ids mean known agents performing together; a named ensemble should be a single GROUP agent instead.
+  repeated string agents = 2;
+
+  // BCP 47 language tags of this line, in the order they first appear among its words.
+  // Consumers may fall back to the languages of its words when this is empty.
+  repeated string languages = 3;
+
+  // Words composing the line in order.
+  repeated lyric.common.Word words = 4;
+
+  // Annotations explicitly applied to the whole line.
+  lyric.common.LineAnnotation annotation = 5;
+}
+
+// A line of the lyric.
+// A kind a consumer does not recognize should be read for its words and time, or skipped.
+// It is not wire compatible with storage.Line despite the matching field names.
+message Line {
+  // Kind of this line.
+  lyric.common.LineType type = 1;
+
+  // Time range of the line.
+  lyric.common.Time time = 2;
+
+  // Structural section this line belongs to; unset means no part information.
+  lyric.common.Part part = 3;
+
+  // Identifiers of the performing agents, the lead first.
+  // Multiple ids mean known agents performing together; a named ensemble should be a single GROUP agent instead.
+  repeated string agents = 4;
+
+  // BCP 47 language tags of this line, in the order they first appear among its words.
+  // Consumers may fall back to the languages of its words when this is empty.
+  repeated string languages = 5;
+
+  // Words composing the line in order.
+  repeated lyric.common.Word words = 6;
+
+  // Annotations explicitly applied to the whole line.
+  lyric.common.LineAnnotation annotation = 7;
+
+  // Background lines attached to this line, ordered by Time.start ascending.
+  repeated LineBackground backgrounds = 8;
+}

@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package lyric.common;
+
+// Declared timing precision for a lyric.
+// Producers should fill Time fields to match; consumers may treat mismatches as best-effort.
+enum Timing {
+  // The field was not set; treat it as missing rather than as a resolved precision.
+  TIMING_UNSPECIFIED = 0;
+
+  // Untimed; line and word Time fields must be unset.
+  TIMING_NONE = 1;
+
+  // Timed at line level; each normal or background line should carry a valid Time, and word-level Time is optional.
+  TIMING_LINE = 2;
+
+  // Timed per word token, where syllable-level sources also land.
+  // Each sung word should carry a valid Time, and line Time should cover its words.
+  TIMING_WORD = 3;
+}

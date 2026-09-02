@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package lyric.common;
+
+// Structural type of a part.
+enum PartType {
+  // The field was not set; treat it as missing rather than as a resolved type.
+  PART_TYPE_UNSPECIFIED = 0;
+
+  // A type this enum does not cover; the source's own word is kept in `Part.raw`.
+  // A value a consumer does not recognize falls here too, with no raw to go with it.
+  PART_TYPE_OTHER = 1;
+
+  // Introductory section.
+  PART_TYPE_INTRO = 2;
+
+  // Verse.
+  PART_TYPE_VERSE = 3;
+
+  // Section leading into the chorus.
+  PART_TYPE_PRE_CHORUS = 4;
+
+  // Chorus.
+  PART_TYPE_CHORUS = 5;
+
+  // Section following the chorus.
+  PART_TYPE_POST_CHORUS = 6;
+
+  // Bridge.
+  PART_TYPE_BRIDGE = 7;
+
+  // Refrain.
+  PART_TYPE_REFRAIN = 8;
+
+  // Instrumental section, carried by the INSTRUMENTAL lines that cover it.
+  PART_TYPE_INSTRUMENTAL = 9;
+
+  // Closing section.
+  PART_TYPE_OUTRO = 10;
+}
+
+// The structural section a line belongs to.
+// A section is the run of adjacent lines carrying the same value, so two adjacent sections of the same type read as one.
+// Every line of one section carries the same raw.
+message Part {
+  // Structural type of the section.
+  PartType type = 1;
+
+  // The source's own word for this type; unset means the type was inferred rather than stated.
+  optional string raw = 2;
+}

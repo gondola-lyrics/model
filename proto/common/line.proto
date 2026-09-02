@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package lyric.common;
+
+// Kind of a lyric line.
+enum LineType {
+  // The field was not set; treat it as missing rather than as a resolved kind.
+  LINE_TYPE_UNSPECIFIED = 0;
+
+  // A sung line, carrying at least one word.
+  LINE_TYPE_NORMAL = 1;
+
+  // A stretch with no singing, carrying only its time range and optionally a part.
+  // `part` tells whether the source stated it or it was derived from a gap in the timeline.
+  LINE_TYPE_INSTRUMENTAL = 2;
+}
+
+// Romanized transliteration of a whole line.
+message LineAnnotationRoman {
+  // Language (BCP 47 tag) or transliteration scheme of this item.
+  optional string language = 1;
+
+  // Romanized text.
+  string content = 2;
+}
+
+// Translation of a whole line into another language.
+message LineAnnotationTranslation {
+  // Target language of this translation, as a BCP 47 tag.
+  // Set it when multiple languages coexist, to tell them apart.
+  optional string language = 1;
+
+  // Translated text.
+  string content = 2;
+}
+
+// Line-level annotations explicitly present in the source.
+// Aggregations of word annotations are never stored here.
+// Each list holds one entry per language.
+message LineAnnotation {
+  // Romanized transliteration.
+  repeated LineAnnotationRoman romans = 1;
+
+  // Translation into another language.
+  repeated LineAnnotationTranslation translations = 2;
+}

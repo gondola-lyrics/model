@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package lyric.storage;
+
+import "common/agent.proto";
+import "common/meta.proto";
+import "common/timing.proto";
+import "storage/line.proto";
+
+// A lyric as persisted, carrying only what a source file actually stated.
+// An empty submessage means the same as an unset one, so producers leave it unset and equal lyrics encode to equal bytes.
+// A repeated field likewise never holds an entry that is all default, and preserves source order unless its own comment says otherwise.
+// Every agent id a line references must exist in `agents`.
+message Lyric {
+  // Schema version of this data model, always set and formatted as a semantic version.
+  // Consumers sharing the same major version can read each other's output.
+  string version = 1;
+
+  // Format this lyric was parsed from, named by the parser and in lower case; empty means unknown.
+  string format = 2;
+
+  // Declared timing precision.
+  lyric.common.Timing timing = 3;
+
+  // Metadata of the lyric.
+  lyric.common.Meta meta = 4;
+
+  // Format-specific data with no typed field, looked up by key.
+  // Unlike `Meta.unknowns`, a consumer may act on these.
+  // Map entries carry no wire order, so byte comparison requires deterministic serialization.
+  map<string, string> extra = 5;
+
+  // Performing agents referenced by lines.
+  repeated lyric.common.Agent agents = 6;
+
+  // Lyric lines, ordered by Time.start ascending.
+  repeated Line lines = 7;
+}

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package lyric.common;
+
+// A half-open time range in milliseconds: a time t falls inside when start <= t < end.
+// Times exclude Meta.offset, which consumers apply themselves.
+// Values above 2^31-1 are invalid.
+message Time {
+  // Start time in milliseconds.
+  // Writing zero explicitly and leaving it unset mean the same thing, unlike end.
+  uint32 start = 1;
+
+  // End time in milliseconds; unset leaves the range open above, which is not the same as zero.
+  // An end below start is invalid.
+  optional uint32 end = 2;
+}

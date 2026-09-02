@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package lyric.runtime;
+
+import "common/agent.proto";
+import "common/meta.proto";
+import "common/timing.proto";
+import "runtime/language.proto";
+import "runtime/line.proto";
+
+// Parse validity of a lyric.
+enum LyricStatus {
+  // The field was not set; treat it as missing rather than as a resolved state.
+  LYRIC_STATUS_UNSPECIFIED = 0;
+
+  // Parsing the lyric failed; why is not carried here.
+  LYRIC_STATUS_INVALID = 1;
+
+  // Parsed successfully; emptiness is derived from `lines`.
+  LYRIC_STATUS_VALID = 2;
+}
+
+// A lyric prepared for playback, carrying derived values a source file need not have stated.
+// An empty submessage means the same as an unset one, so producers leave it unset and equal lyrics encode to equal bytes.
+// A repeated field likewise never holds an entry that is all default, and preserves source order unless its own comment says otherwise.
+// Every agent id a line references must exist in `agents`.
+message Lyric {
+  // Schema version of this data model, always set and formatted as a semantic version.
+  // Consumers sharing the same major version can read each other's output.
+  string version = 1;
+
+  // Format this lyric was parsed from, named by the parser and in lower case; empty means unknown.
+  string format = 2;
+
+  // Parse validity of the lyric.
+  // When INVALID, only `version` and `status` are guaranteed; all other fields are best-effort and may be empty.
+  LyricStatus status = 3;
+
+  // Declared timing precision.
+  lyric.common.Timing timing = 4;
+
+  // Metadata of the lyric.
+  lyric.common.Meta meta = 5;
+
+  // Format-specific data with no typed field, looked up by key.
+  // Unlike `Meta.unknowns`, a consumer may act on these.
+  // Map entries carry no wire order, so byte comparison requires deterministic serialization.
+  map<string, string> extra = 6;
+
+  // Languages used across the lyric, ordered by descending count and then by ascending tag.
+  // Counted over the words of normal lines only, so spaces, annotations and background lines never contribute.
+  repeated LanguageUsage languages = 7;
+
+  // Performing agents referenced by lines.
+  repeated lyric.common.Agent agents = 8;
+
+  // Lyric lines, ordered by Time.start ascending.
+  repeated Line lines = 9;
+}

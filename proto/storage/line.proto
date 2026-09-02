@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package lyric.storage;
+
+import "common/line.proto";
+import "common/part.proto";
+import "common/time.proto";
+import "common/word.proto";
+
+// Background vocal line attached to a normal line.
+// It belongs to the same part as its parent line.
+// It is not wire compatible with runtime.LineBackground despite the matching field names.
+message LineBackground {
+  // Time range of this background line.
+  // The parent line's end covers it, while its start may precede the parent's.
+  lyric.common.Time time = 1;
+
+  // Identifiers of the performing agents, the lead first.
+  // Multiple ids mean known agents performing together; a named ensemble should be a single GROUP agent instead.
+  repeated string agents = 2;
+
+  // Words composing the line in order.
+  repeated lyric.common.Word words = 3;
+
+  // Annotations applied to the whole line.
+  lyric.common.LineAnnotation annotation = 4;
+}
+
+// A line of the lyric.
+// A kind a consumer does not recognize should be read for its words and time, or skipped.
+// It is not wire compatible with runtime.Line despite the matching field names.
+message Line {
+  // Kind of this line.
+  lyric.common.LineType type = 1;
+
+  // Time range of the line.
+  lyric.common.Time time = 2;
+
+  // Structural section this line belongs to; unset means no part information.
+  lyric.common.Part part = 3;
+
+  // Identifiers of the performing agents, the lead first.
+  // Multiple ids mean known agents performing together; a named ensemble should be a single GROUP agent instead.
+  repeated string agents = 4;
+
+  // Words composing the line in order.
+  repeated lyric.common.Word words = 5;
+
+  // Annotations applied to the whole line.
+  lyric.common.LineAnnotation annotation = 6;
+
+  // Background lines attached to this line, ordered by Time.start ascending.
+  repeated LineBackground backgrounds = 7;
+}

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package lyric.runtime;
+
+// How much of the lyric is in one language.
+message LanguageUsage {
+  // BCP 47 language tag, unique within the list when compared case-insensitively.
+  // The tag `und` collects words carrying no language, so the counts always cover the whole lyric.
+  string tag = 1;
+
+  // Weighted amount of text in this language, exact and never normalized; a share is this count over the sum of all counts.
+  // Text written in han, kana or hangul counts one per character, and everything else counts one per word.
+  // Text that yields neither, such as digits or punctuation, counts as nothing.
+  uint32 count = 2;
+}

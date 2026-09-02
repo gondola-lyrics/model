@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package lyric.common;
+
+// A value the model has no typed field for, kept so that a round trip loses nothing.
+// Order is significant and one key may appear more than once.
+message Unknown {
+  // Key, exactly as the source wrote it.
+  string key = 1;
+
+  // Value, exactly as the source wrote it.
+  string value = 2;
+}
