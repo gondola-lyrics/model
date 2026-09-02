@@ -1,0 +1,27 @@
+# Installed packages
+node_modules/
+
+# Build output
+dist/
+
+# Generated protobuf bindings
+src/gen/
+
+# Copied from the repository root
+LICENSE
+
+# npm logs and caches
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+.npm
+.eslintcache
+
+# TypeScript incremental build state
+*.tsbuildinfo
+
+# Packed npm tarballs
+*.tgz
+
+# Vite config rebuild artifacts
+vite.config.*.timestamp-*

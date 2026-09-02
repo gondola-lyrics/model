@@ -1,0 +1,76 @@
+{
+  "name": "@gondola-lyrics/model",
+  "version": "0.0.0",
+  "description": "Gondola lyrics data model",
+  "keywords": [
+    "lyrics",
+    "lyric",
+    "karaoke",
+    "protobuf",
+    "schema",
+    "gondola"
+  ],
+  "license": "MIT",
+  "author": "folltoshe",
+  "homepage": "https://github.com/gondola-lyrics/model#readme",
+  "bugs": {
+    "url": "https://github.com/gondola-lyrics/model/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gondola-lyrics/model.git",
+    "directory": "node"
+  },
+  "type": "module",
+  "scripts": {
+    "generate": "npm run generate:proto && npm run generate:version",
+    "generate:proto": "buf generate",
+    "generate:version": "tsx script/version.ts",
+    "build": "vite build",
+    "format": "prettier --write .",
+    "prepack": "node -e \"require('node:fs').copyFileSync('../LICENSE','LICENSE')\""
+  },
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./common": {
+      "types": "./dist/common/index.d.ts",
+      "import": "./dist/common/index.js",
+      "require": "./dist/common/index.cjs"
+    },
+    "./runtime": {
+      "types": "./dist/runtime/index.d.ts",
+      "import": "./dist/runtime/index.js",
+      "require": "./dist/runtime/index.cjs"
+    },
+    "./storage": {
+      "types": "./dist/storage/index.d.ts",
+      "import": "./dist/storage/index.js",
+      "require": "./dist/storage/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "2.14.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.4.1",
+    "prettier": "3.9.6",
+    "tsx": "4.23.13",
+    "typescript": "5.9.3",
+    "vite": "8.2.2",
+    "vite-plugin-dts": "5.1.0"
+  }
+}
