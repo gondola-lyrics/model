@@ -1,5 +1,5 @@
-export * as common from './common/index.js'
-export * as runtime from './runtime/index.js'
-export * as storage from './storage/index.js'
+export * as common from './common/index'
+export * as runtime from './runtime/index'
+export * as storage from './storage/index'
 
-export * from './version.js'
+export * from './version'

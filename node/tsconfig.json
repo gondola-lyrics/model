@@ -13,8 +13,9 @@
     "declaration": true,
     "removeComments": false,
     "paths": {
-      "@root/*": ["./src/*"]
+      "@root/*": ["./src/*"],
+      "@gen/*": ["./gen/*"]
     }
   },
-  "include": ["src", "script", "vite.config.ts"]
+  "include": ["src", "gen", "script", "vite.config.ts"]
 }

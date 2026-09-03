@@ -12,17 +12,28 @@ const entry = {
   'storage/index': resolve(root, 'src/storage/index.ts'),
 }
 
+/**
+ * Rewrites specifiers reaching the generated tree, which sits one level shallower in `dist` than in the source.
+ * `entryRoot` flattens `src` away while `gen` keeps its own prefix.
+ */
+const rebaseGenSpecifier = (content: string): string => content.replaceAll('../../gen/', '../gen/')
+
 export default defineConfig({
   resolve: {
     alias: {
       '@root': resolve(root, 'src'),
+      '@gen': resolve(root, 'gen'),
     },
   },
   plugins: [
     dts({
       tsconfigPath: resolve(root, 'tsconfig.json'),
       entryRoot: resolve(root, 'src'),
-      include: ['src'],
+      include: ['src', 'gen'],
+      beforeWriteFile: (filePath, content) => ({
+        filePath,
+        content: rebaseGenSpecifier(content),
+      }),
     }),
   ],
   build: {

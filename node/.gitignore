@@ -5,7 +5,7 @@ node_modules/
 dist/
 
 # Generated protobuf bindings
-src/gen/
+/gen
 
 # Copied from the repository root
 LICENSE
