@@ -39,21 +39,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    },
-    "./common": {
-      "types": "./dist/common/index.d.ts",
-      "import": "./dist/common/index.js",
-      "require": "./dist/common/index.cjs"
-    },
-    "./runtime": {
-      "types": "./dist/runtime/index.d.ts",
-      "import": "./dist/runtime/index.js",
-      "require": "./dist/runtime/index.cjs"
-    },
-    "./storage": {
-      "types": "./dist/storage/index.d.ts",
-      "import": "./dist/storage/index.js",
-      "require": "./dist/storage/index.cjs"
     }
   },
   "files": [
