@@ -4,35 +4,24 @@ import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 
 const root = import.meta.dirname
+const src = resolve(root, 'src')
+const gen = resolve(root, 'gen')
 
-const entry = {
-  index: resolve(root, 'src/index.ts'),
-  'runtime/index': resolve(root, 'src/runtime/index.ts'),
-  'storage/index': resolve(root, 'src/storage/index.ts'),
-}
-
-/**
- * Rewrites specifiers reaching the generated tree, which sits one level shallower in `dist` than in the source.
- * `entryRoot` flattens `src` away, so each layer's `.d.ts` lands one level above the source and needs `gen` rebased.
- */
-const rebaseGenSpecifier = (content: string): string => content.replaceAll('../../gen/', '../gen/')
+const runtimeSrc = resolve(src, 'runtime')
+const storageSrc = resolve(src, 'storage')
 
 export default defineConfig({
   resolve: {
     alias: {
-      '@root': resolve(root, 'src'),
-      '@gen': resolve(root, 'gen'),
+      '@root': src,
+      '@gen': gen,
     },
   },
   plugins: [
     dts({
       tsconfigPath: resolve(root, 'tsconfig.json'),
-      entryRoot: resolve(root, 'src'),
       include: ['src', 'gen'],
-      beforeWriteFile: (filePath, content) => ({
-        filePath,
-        content: rebaseGenSpecifier(content),
-      }),
+      bundleTypes: true,
     }),
   ],
   build: {
@@ -40,15 +29,35 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     minify: false,
-    sourcemap: true,
+    sourcemap: false,
     reportCompressedSize: false,
     lib: {
-      entry,
+      entry: {
+        index: resolve(src, 'index.ts'),
+        common: resolve(src, 'common/index.ts'),
+        runtime: resolve(runtimeSrc, 'index.ts'),
+        storage: resolve(storageSrc, 'index.ts'),
+      },
       formats: ['es', 'cjs'],
-      fileName: (format, name) => `${name}.${format === 'es' ? 'js' : 'cjs'}`,
     },
     rollupOptions: {
-      external: [/^@bufbuild\/protobuf/],
+      external: [/^@bufbuild\/protobuf/, './runtime', './storage'],
+      // Lets an entry chunk absorb the modules it shares, so no hashed chunk is emitted beside it.
+      preserveEntrySignatures: 'allow-extension',
+      output: [
+        {
+          format: 'es',
+          entryFileNames: '[name].mjs',
+          chunkFileNames: '[name].mjs',
+          paths: { [runtimeSrc]: './runtime.mjs', [storageSrc]: './storage.mjs' },
+        },
+        {
+          format: 'cjs',
+          entryFileNames: '[name].cjs',
+          chunkFileNames: '[name].cjs',
+          paths: { [runtimeSrc]: './runtime.cjs', [storageSrc]: './storage.cjs' },
+        },
+      ],
     },
   },
 })

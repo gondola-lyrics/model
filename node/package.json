@@ -31,23 +31,23 @@
   },
   "sideEffects": false,
   "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
+      "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
     "./runtime": {
-      "types": "./dist/runtime/index.d.ts",
-      "import": "./dist/runtime/index.js",
-      "require": "./dist/runtime/index.cjs"
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.mjs",
+      "require": "./dist/runtime.cjs"
     },
     "./storage": {
-      "types": "./dist/storage/index.d.ts",
-      "import": "./dist/storage/index.js",
-      "require": "./dist/storage/index.cjs"
+      "types": "./dist/storage.d.ts",
+      "import": "./dist/storage.mjs",
+      "require": "./dist/storage.cjs"
     }
   },
   "files": [
@@ -60,6 +60,7 @@
     "@bufbuild/protobuf": "2.14.1"
   },
   "devDependencies": {
+    "@microsoft/api-extractor": "^7.59.0",
     "@types/node": "26.4.1",
     "prettier": "3.9.6",
     "tsx": "4.23.13",
