@@ -1,2 +1,6 @@
+export * from '@root/common'
+
 export * from './proto'
-export * from '../common'
+
+export * from './lyric'
+export * from './line'

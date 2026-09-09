@@ -1,1 +1,10 @@
 export * from './proto'
+
+export * from './agent'
+export * from './line'
+export * from './meta'
+export * from './part'
+export * from './text'
+export * from './time'
+export * from './word'
+export * from './unknown'
