@@ -1,5 +1,6 @@
 import type { MakeInit } from '@root/utils'
 import type { Word, WordAnnotation, WordAnnotationRoman, WordAnnotationRuby, WordAnnotationToken, WordAnnotationTranslation } from './proto'
+import type { Diagnostic } from './diagnostic'
 
 import {
   WordAnnotationRomanSchema,
@@ -10,6 +11,10 @@ import {
   WordSchema,
   WordType,
 } from './proto'
+import { DiagnosticCode } from './diagnostic'
+
+import { childPath } from '@root/utils'
+import { validateTime } from './time'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -60,4 +65,18 @@ export const makeWordAnnotationRuby = (init?: MakeInit<typeof WordAnnotationRuby
  */
 export const makeWordAnnotation = (init?: MakeInit<typeof WordAnnotationSchema>): WordAnnotation => {
   return create(WordAnnotationSchema, init)
+}
+
+/**
+ * Validates a Word: a NORMAL word must carry non-empty content, and its Time, when set, must be valid.
+ */
+export const validateWord = (word: Word, path = ''): Diagnostic[] => {
+  const diagnostics: Diagnostic[] = []
+  if (word.type === WordType.NORMAL && word.content === '') {
+    diagnostics.push({ path, code: DiagnosticCode.WordContentEmpty })
+  }
+  if (word.time) {
+    diagnostics.push(...validateTime(word.time, childPath(path, 'time')))
+  }
+  return diagnostics
 }

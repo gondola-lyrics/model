@@ -1,7 +1,9 @@
 import type { MakeInit } from '@root/utils'
 import type { Meta, MetaCredit, MetaReference } from './proto'
+import type { Diagnostic } from './diagnostic'
 
-import { MetaCreditSchema, MetaReferenceSchema, MetaSchema } from './proto'
+import { CreditRole, MetaCreditSchema, MetaReferenceSchema, MetaSchema } from './proto'
+import { DiagnosticCode } from './diagnostic'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -24,4 +26,15 @@ export const makeMetaCredit = (init?: MakeInit<typeof MetaCreditSchema>): MetaCr
  */
 export const makeMetaReference = (init?: MakeInit<typeof MetaReferenceSchema>): MetaReference => {
   return create(MetaReferenceSchema, init)
+}
+
+/**
+ * Validates a MetaCredit: an OTHER role must carry the source's own word in `raw`.
+ */
+export const validateMetaCredit = (credit: MetaCredit, path = ''): Diagnostic[] => {
+  const diagnostics: Diagnostic[] = []
+  if (credit.role === CreditRole.OTHER && credit.raw === undefined) {
+    diagnostics.push({ path, code: DiagnosticCode.MetaCreditRawMissing })
+  }
+  return diagnostics
 }
