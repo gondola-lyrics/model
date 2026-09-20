@@ -2,15 +2,15 @@ import type { MakeInit } from '@root/utils'
 import type { Diagnostic } from '@root/common'
 import type { Lyric } from './proto'
 
-import { Timing } from '@root/common/proto'
+import { AgentSchema, MetaSchema, Timing } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'
-import { LyricSchema, LyricStatus } from './proto'
+import { LanguageUsageSchema, LineSchema, LyricSchema, LyricStatus } from './proto'
 import { SCHEMA_VERSION } from '@root/version'
 
-import { SEMVER_PATTERN, byTime, childPath } from '@root/utils'
-import { validateAgent, validateMetaCredit } from '@root/common'
-import { orderLanguageUsages } from './language'
-import { orderLine, validateLine } from './line'
+import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath } from '@root/utils'
+import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMetaCredit } from '@root/common'
+import { canonicalizeLanguageUsage, orderLanguageUsages } from './language'
+import { canonicalizeLine, orderLine, validateLine } from './line'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -81,5 +81,19 @@ export const orderLyric = (lyric: Lyric): Lyric => {
     ...lyric,
     languages: orderLanguageUsages(lyric.languages),
     lines: [...lyric.lines].sort(byTime((line) => line.time)).map(orderLine),
+  }
+}
+
+/**
+ * Returns a canonical copy of the runtime lyric: format lowercased, meta/agents/lines canonicalized, languages canonicalized then ordered, lines ordered.
+ */
+export const canonicalizeLyric = (lyric: Lyric): Lyric => {
+  return {
+    ...lyric,
+    format: lyric.format.toLowerCase(),
+    meta: canonicalizeField(MetaSchema, lyric.meta, canonicalizeMeta),
+    languages: orderLanguageUsages(canonicalizeList(LanguageUsageSchema, lyric.languages, canonicalizeLanguageUsage)),
+    agents: canonicalizeList(AgentSchema, lyric.agents, canonicalizeAgent),
+    lines: canonicalizeList(LineSchema, lyric.lines, canonicalizeLine).sort(byTime((line) => line.time)),
   }
 }

@@ -2,12 +2,12 @@ import type { MakeInit } from '@root/utils'
 import type { Diagnostic } from '@root/common'
 import type { Line, LineBackground } from './proto'
 
-import { LineType } from '@root/common/proto'
+import { LineAnnotationSchema, LineType, PartSchema, TimeSchema, WordSchema } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'
 import { LineBackgroundSchema, LineSchema } from './proto'
 
-import { byTime, childPath } from '@root/utils'
-import { validatePart, validateTime, validateWord } from '@root/common'
+import { byTime, canonicalizeField, canonicalizeList, childPath, dropDefault } from '@root/utils'
+import { canonicalizeLineAnnotation, canonicalizeWord, validatePart, validateTime, validateWord } from '@root/common'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -56,4 +56,30 @@ export const validateLine = (line: Line, path = ''): Diagnostic[] => {
  */
 export const orderLine = (line: Line): Line => {
   return { ...line, backgrounds: [...line.backgrounds].sort(byTime((background) => background.time)) }
+}
+
+/**
+ * Returns a canonical copy of the background line: time and annotation dropped when all-default, words canonicalized.
+ */
+export const canonicalizeLineBackground = (background: LineBackground): LineBackground => {
+  return {
+    ...background,
+    time: dropDefault(TimeSchema, background.time),
+    words: canonicalizeList(WordSchema, background.words, canonicalizeWord),
+    annotation: canonicalizeField(LineAnnotationSchema, background.annotation, canonicalizeLineAnnotation),
+  }
+}
+
+/**
+ * Returns a canonical copy of the line: time/part/annotation dropped when all-default, words canonicalized, backgrounds canonicalized then ordered.
+ */
+export const canonicalizeLine = (line: Line): Line => {
+  return {
+    ...line,
+    time: dropDefault(TimeSchema, line.time),
+    part: dropDefault(PartSchema, line.part),
+    words: canonicalizeList(WordSchema, line.words, canonicalizeWord),
+    annotation: canonicalizeField(LineAnnotationSchema, line.annotation, canonicalizeLineAnnotation),
+    backgrounds: canonicalizeList(LineBackgroundSchema, line.backgrounds, canonicalizeLineBackground).sort(byTime((background) => background.time)),
+  }
 }

@@ -2,8 +2,11 @@ import type { MakeInit } from '@root/utils'
 import type { Agent } from './proto'
 import type { Diagnostic } from './diagnostic'
 
-import { AgentSchema, AgentType } from './proto'
+import { AgentSchema, AgentType, TextSchema } from './proto'
 import { DiagnosticCode } from './diagnostic'
+
+import { canonicalizeList } from '@root/utils'
+import { canonicalizeText } from './text'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -23,4 +26,11 @@ export const validateAgent = (agent: Agent, path = ''): Diagnostic[] => {
     diagnostics.push({ path, code: DiagnosticCode.AgentRawMissing })
   }
   return diagnostics
+}
+
+/**
+ * Returns a copy of the Agent with its names canonicalized and all-default entries dropped.
+ */
+export const canonicalizeAgent = (agent: Agent): Agent => {
+  return { ...agent, names: canonicalizeList(TextSchema, agent.names, canonicalizeText) }
 }

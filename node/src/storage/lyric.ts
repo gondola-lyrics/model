@@ -2,14 +2,14 @@ import type { MakeInit } from '@root/utils'
 import type { Diagnostic } from '@root/common'
 import type { Lyric } from './proto'
 
-import { Timing } from '@root/common/proto'
+import { AgentSchema, MetaSchema, Timing } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'
-import { LyricSchema } from './proto'
+import { LineSchema, LyricSchema } from './proto'
 import { SCHEMA_VERSION } from '@root/version'
 
-import { SEMVER_PATTERN, byTime, childPath } from '@root/utils'
-import { validateAgent, validateMetaCredit } from '@root/common'
-import { orderLine, validateLine } from './line'
+import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath } from '@root/utils'
+import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMetaCredit } from '@root/common'
+import { canonicalizeLine, orderLine, validateLine } from './line'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -74,5 +74,18 @@ export const orderLyric = (lyric: Lyric): Lyric => {
   return {
     ...lyric,
     lines: [...lyric.lines].sort(byTime((line) => line.time)).map(orderLine),
+  }
+}
+
+/**
+ * Returns a canonical copy of the storage lyric: format lowercased, meta/agents/lines canonicalized, lines ordered.
+ */
+export const canonicalizeLyric = (lyric: Lyric): Lyric => {
+  return {
+    ...lyric,
+    format: lyric.format.toLowerCase(),
+    meta: canonicalizeField(MetaSchema, lyric.meta, canonicalizeMeta),
+    agents: canonicalizeList(AgentSchema, lyric.agents, canonicalizeAgent),
+    lines: canonicalizeList(LineSchema, lyric.lines, canonicalizeLine).sort(byTime((line) => line.time)),
   }
 }

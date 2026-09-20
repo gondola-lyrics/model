@@ -2,8 +2,11 @@ import type { MakeInit } from '@root/utils'
 import type { Meta, MetaCredit, MetaReference } from './proto'
 import type { Diagnostic } from './diagnostic'
 
-import { CreditRole, MetaCreditSchema, MetaReferenceSchema, MetaSchema } from './proto'
+import { CreditRole, MetaCreditSchema, MetaReferenceSchema, MetaSchema, TextSchema } from './proto'
 import { DiagnosticCode } from './diagnostic'
+
+import { canonicalizeList } from '@root/utils'
+import { canonicalizeText } from './text'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -37,4 +40,34 @@ export const validateMetaCredit = (credit: MetaCredit, path = ''): Diagnostic[] 
     diagnostics.push({ path, code: DiagnosticCode.MetaCreditRawMissing })
   }
   return diagnostics
+}
+
+/**
+ * Returns a copy of the credit with its names canonicalized and all-default entries dropped.
+ */
+export const canonicalizeMetaCredit = (credit: MetaCredit): MetaCredit => {
+  return { ...credit, names: canonicalizeList(TextSchema, credit.names, canonicalizeText) }
+}
+
+/**
+ * Returns a copy of the reference with its platform lowercased.
+ */
+export const canonicalizeMetaReference = (reference: MetaReference): MetaReference => {
+  return { ...reference, platform: reference.platform.toLowerCase() }
+}
+
+/**
+ * Returns a copy of the Meta with its text lists, credits and references canonicalized and its ISRCs upper-cased without separators.
+ */
+export const canonicalizeMeta = (meta: Meta): Meta => {
+  return {
+    ...meta,
+    titles: canonicalizeList(TextSchema, meta.titles, canonicalizeText),
+    artists: canonicalizeList(TextSchema, meta.artists, canonicalizeText),
+    albums: canonicalizeList(TextSchema, meta.albums, canonicalizeText),
+    authors: canonicalizeList(TextSchema, meta.authors, canonicalizeText),
+    isrcs: meta.isrcs.map((isrc) => isrc.replace(/[^0-9a-zA-Z]/g, '').toUpperCase()).filter((isrc) => isrc !== ''),
+    credits: canonicalizeList(MetaCreditSchema, meta.credits, canonicalizeMetaCredit),
+    references: canonicalizeList(MetaReferenceSchema, meta.references, canonicalizeMetaReference),
+  }
 }
