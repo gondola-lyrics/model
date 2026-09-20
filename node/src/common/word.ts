@@ -1,5 +1,5 @@
 import type { MakeInit } from '@root/utils'
-import type { Word, WordAnnotation, WordAnnotationRoman, WordAnnotationRuby, WordAnnotationToken, WordAnnotationTranslation } from './proto'
+import type { Time, Word, WordAnnotation, WordAnnotationRoman, WordAnnotationRuby, WordAnnotationToken, WordAnnotationTranslation } from './proto'
 import type { Diagnostic } from './diagnostic'
 
 import {
@@ -142,4 +142,22 @@ export const canonicalizeWord = (word: Word): Word => {
     time: dropDefault(TimeSchema, word.time),
     annotation: canonicalizeField(WordAnnotationSchema, word.annotation, canonicalizeWordAnnotation),
   }
+}
+
+/**
+ * Resolves an annotation item's effective time, following the inheritance chain: its own time, else the annotated word's.
+ */
+export const resolveAnnotationItemTime = (item: WordAnnotationRoman | WordAnnotationRuby, word: Word): Time | undefined => {
+  return item.time ?? word.time
+}
+
+/**
+ * Resolves an annotation token's effective time, following the inheritance chain: its own time, else its item's, else the annotated word's.
+ */
+export const resolveAnnotationTokenTime = (
+  token: WordAnnotationToken,
+  item: WordAnnotationRoman | WordAnnotationRuby,
+  word: Word,
+): Time | undefined => {
+  return token.time ?? resolveAnnotationItemTime(item, word)
 }
