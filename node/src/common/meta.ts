@@ -71,3 +71,21 @@ export const canonicalizeMeta = (meta: Meta): Meta => {
     references: canonicalizeList(MetaReferenceSchema, meta.references, canonicalizeMetaReference),
   }
 }
+
+/**
+ * Applies a timeline offset to a playback clock, yielding the value to compare against stored times.
+ * A positive offset makes the lyric appear earlier.
+ * Compute in signed 64-bit, since a uint32 clock plus a sint32 offset overflows unsigned arithmetic.
+ */
+export const applyOffset = (clock: number, offset: number): number => {
+  return clock + offset
+}
+
+/**
+ * Removes a timeline offset from a stored time, yielding the playback clock at which it is reached.
+ * This inverts applyOffset.
+ * The result may be negative, meaning before playback starts.
+ */
+export const removeOffset = (time: number, offset: number): number => {
+  return time - offset
+}
