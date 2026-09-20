@@ -7,9 +7,10 @@ import { DiagnosticCode } from '@root/common'
 import { LyricSchema, LyricStatus } from './proto'
 import { SCHEMA_VERSION } from '@root/version'
 
-import { SEMVER_PATTERN, childPath } from '@root/utils'
+import { SEMVER_PATTERN, byTime, childPath } from '@root/utils'
 import { validateAgent, validateMetaCredit } from '@root/common'
-import { validateLine } from './line'
+import { orderLanguageUsages } from './language'
+import { orderLine, validateLine } from './line'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -70,4 +71,15 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   })
 
   return diagnostics
+}
+
+/**
+ * Returns a copy of the lyric in canonical order: lines and their backgrounds by start time, languages by usage.
+ */
+export const orderLyric = (lyric: Lyric): Lyric => {
+  return {
+    ...lyric,
+    languages: orderLanguageUsages(lyric.languages),
+    lines: [...lyric.lines].sort(byTime((line) => line.time)).map(orderLine),
+  }
 }

@@ -6,7 +6,7 @@ import { LineType } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'
 import { LineBackgroundSchema, LineSchema } from './proto'
 
-import { childPath } from '@root/utils'
+import { byTime, childPath } from '@root/utils'
 import { validatePart, validateTime, validateWord } from '@root/common'
 
 import { create } from '@bufbuild/protobuf'
@@ -49,4 +49,11 @@ export const validateLine = (line: Line, path = ''): Diagnostic[] => {
   }
   line.words.forEach((word, i) => diagnostics.push(...validateWord(word, childPath(path, `words[${i}]`))))
   return diagnostics
+}
+
+/**
+ * Returns a copy of the line with its background lines ordered by start time ascending.
+ */
+export const orderLine = (line: Line): Line => {
+  return { ...line, backgrounds: [...line.backgrounds].sort(byTime((background) => background.time)) }
 }
