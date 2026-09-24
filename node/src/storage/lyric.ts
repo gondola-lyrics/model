@@ -11,7 +11,7 @@ import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath 
 import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMetaCredit } from '@root/common'
 import { canonicalizeLine, orderLine, validateLine } from './line'
 
-import { create } from '@bufbuild/protobuf'
+import { create, fromBinary, toBinary } from '@bufbuild/protobuf'
 
 /**
  * Creates a storage Lyric, stamping the current schema version over any version in init.
@@ -88,4 +88,19 @@ export const canonicalizeLyric = (lyric: Lyric): Lyric => {
     agents: canonicalizeList(AgentSchema, lyric.agents, canonicalizeAgent),
     lines: canonicalizeList(LineSchema, lyric.lines, canonicalizeLine).sort(byTime((line) => line.time)),
   }
+}
+
+/**
+ * Encodes a storage Lyric to bytes.
+ */
+export const encode = (lyric: Lyric): Uint8Array => {
+  return toBinary(LyricSchema, lyric)
+}
+
+/**
+ * Decodes a storage Lyric from bytes, keeping unknown fields so a round trip loses nothing.
+ * It throws on malformed bytes and leaves the schema's rules to validateLyric.
+ */
+export const decode = (bytes: Uint8Array): Lyric => {
+  return fromBinary(LyricSchema, bytes)
 }

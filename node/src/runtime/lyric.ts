@@ -12,7 +12,7 @@ import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMetaCredit 
 import { canonicalizeLanguageUsage, orderLanguageUsages } from './language'
 import { canonicalizeLine, orderLine, validateLine } from './line'
 
-import { create } from '@bufbuild/protobuf'
+import { create, fromBinary, toBinary } from '@bufbuild/protobuf'
 
 /**
  * Creates a runtime Lyric, stamping the current schema version over any version in init.
@@ -96,4 +96,19 @@ export const canonicalizeLyric = (lyric: Lyric): Lyric => {
     agents: canonicalizeList(AgentSchema, lyric.agents, canonicalizeAgent),
     lines: canonicalizeList(LineSchema, lyric.lines, canonicalizeLine).sort(byTime((line) => line.time)),
   }
+}
+
+/**
+ * Encodes a runtime Lyric to bytes.
+ */
+export const encode = (lyric: Lyric): Uint8Array => {
+  return toBinary(LyricSchema, lyric)
+}
+
+/**
+ * Decodes a runtime Lyric from bytes, keeping unknown fields so a round trip loses nothing.
+ * It throws on malformed bytes and leaves the schema's rules to validateLyric.
+ */
+export const decode = (bytes: Uint8Array): Lyric => {
+  return fromBinary(LyricSchema, bytes)
 }
