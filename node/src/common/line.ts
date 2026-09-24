@@ -1,9 +1,10 @@
 import type { MakeInit } from '@root/utils'
-import type { LineAnnotation, LineAnnotationRoman, LineAnnotationTranslation } from './proto'
+import type { LineAnnotation, LineAnnotationRoman, LineAnnotationTranslation, Word } from './proto'
 
-import { LineAnnotationRomanSchema, LineAnnotationSchema, LineAnnotationTranslationSchema } from './proto'
+import { LineAnnotationRomanSchema, LineAnnotationSchema, LineAnnotationTranslationSchema, WordType } from './proto'
 
 import { canonicalizeList, lowerTag } from '@root/utils'
+import { getAnnotationItemText } from './word'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -51,4 +52,33 @@ export const canonicalizeLineAnnotation = (annotation: LineAnnotation): LineAnno
     romans: canonicalizeList(LineAnnotationRomanSchema, annotation.romans, canonicalizeLineAnnotationRoman),
     translations: canonicalizeList(LineAnnotationTranslationSchema, annotation.translations, canonicalizeLineAnnotationTranslation),
   }
+}
+
+/**
+ * Derives line-level romans from the words' own, one per language in order of first appearance; the result is for display and must never be stored on the line.
+ * Words lacking a roman in that language are skipped, and any spaces between two romanized words collapse to a single U+0020.
+ */
+export const deriveLineRomans = (words: Word[]): LineAnnotationRoman[] => {
+  const languages = new Set(words.flatMap((word) => word.annotation?.romans.map((roman) => lowerTag(roman.language)) ?? []))
+  const romans: LineAnnotationRoman[] = []
+  for (const language of languages) {
+    let content = ''
+    let spaced = false
+    for (const word of words) {
+      if (word.type === WordType.SPACE) {
+        spaced = true
+        continue
+      }
+      const roman = word.annotation?.romans.find((item) => lowerTag(item.language) === language)
+      const text = roman ? getAnnotationItemText(roman) : ''
+      if (text !== '') {
+        content += content !== '' && spaced ? ` ${text}` : text
+        spaced = false
+      }
+    }
+    if (content !== '') {
+      romans.push(makeLineAnnotationRoman({ language, content }))
+    }
+  }
+  return romans
 }
