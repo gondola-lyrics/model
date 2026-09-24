@@ -33,3 +33,28 @@ export const validateTime = (time: Time, path = ''): Diagnostic[] => {
   }
   return diagnostics
 }
+
+/**
+ * Returns the length of a Time in milliseconds, or undefined when it is unset.
+ * Compute it signed, so an invalid end below start yields a negative length instead of wrapping around.
+ */
+export const getTimeDuration = (time: Time | undefined): number | undefined => {
+  return time ? time.end - time.start : undefined
+}
+
+/**
+ * Returns how far `at` has progressed through a Time: 0 before its start, 1 from its end on, or undefined when the Time is unset.
+ * A zero-length range therefore jumps from 0 to 1 at its start.
+ */
+export const getTimeProgress = (time: Time | undefined, at: number): number | undefined => {
+  if (!time) {
+    return undefined
+  }
+  if (at < time.start) {
+    return 0
+  }
+  if (at >= time.end) {
+    return 1
+  }
+  return (at - time.start) / (time.end - time.start)
+}

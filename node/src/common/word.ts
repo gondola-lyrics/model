@@ -161,3 +161,24 @@ export const resolveAnnotationTokenTime = (
 ): Time | undefined => {
   return token.time ?? resolveAnnotationItemTime(item, word)
 }
+
+/**
+ * Joins the content of words in order, which restores the source text since separators are words of their own.
+ */
+export const getWordsText = (words: Word[]): string => {
+  return words.map((word) => word.content).join('')
+}
+
+/**
+ * Collects the distinct lowercased language tags of words, in order of first appearance.
+ */
+export const getWordsLanguages = (words: Word[]): string[] => {
+  return [...new Set(words.map((word) => lowerTag(word.language)).filter((tag) => tag !== undefined))]
+}
+
+/**
+ * Joins the content of an annotation item's tokens with nothing in between, as they compose the item in order.
+ */
+export const getAnnotationItemText = (item: WordAnnotationRoman | WordAnnotationRuby): string => {
+  return item.tokens.map((token) => token.content).join('')
+}

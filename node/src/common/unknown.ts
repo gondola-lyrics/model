@@ -11,3 +11,11 @@ import { create } from '@bufbuild/protobuf'
 export const makeUnknown = (init?: MakeInit<typeof UnknownSchema>): Unknown => {
   return create(UnknownSchema, init)
 }
+
+/**
+ * Collects the values of every unknown carrying the key, in order, since one key may appear more than once.
+ * Keys compare exactly, as the source wrote them.
+ */
+export const getUnknownValues = (unknowns: Unknown[], key: string): string[] => {
+  return unknowns.filter((unknown) => unknown.key === key).map((unknown) => unknown.value)
+}
