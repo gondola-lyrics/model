@@ -29,6 +29,23 @@ export const lowerTag = (tag: string | undefined): string | undefined => {
 }
 
 /**
+ * Scores a lowercased tag against a lowercased range as the length they share when either extends the other on a subtag boundary, so `ja` never matches `jav`.
+ * An exact match scores one more, outranking a tag that only extends the range, and anything else scores 0.
+ */
+export const scoreTag = (tag: string, range: string): number => {
+  if (tag === range) {
+    return range.length + 1
+  }
+  if (tag.startsWith(`${range}-`)) {
+    return range.length
+  }
+  if (range.startsWith(`${tag}-`)) {
+    return tag.length
+  }
+  return 0
+}
+
+/**
  * Builds a comparator ordering items by start ascending then end ascending, reading each item's bounds through a callback.
  */
 export const byTime = <T>(bounds: (item: T) => { start: number; end: number } | undefined) => {

@@ -1,6 +1,7 @@
 export * from './proto'
 
 export * from './agent'
+export * from './language'
 export * from './line'
 export * from './meta'
 export * from './part'
