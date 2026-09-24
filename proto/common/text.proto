@@ -3,9 +3,9 @@ syntax = "proto3";
 package lyric.common;
 
 // Text carrying an optional language tag.
-// A wanted language is matched by RFC 4647 lookup, falling back to entries carrying no language.
+// A wanted language matches a tag when either extends the other on a subtag boundary, the longest shared prefix winning, and entries carrying no language are the fallback.
 message Text {
-  // BCP 47 language tag, in canonical form and compared case-insensitively; unset means unspecified or default.
+  // BCP 47 language tag, in lower case and compared case-insensitively; unset means unspecified or default.
   optional string language = 1;
 
   // Text content.

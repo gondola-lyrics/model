@@ -11,6 +11,7 @@ import "storage/line.proto";
 // An empty submessage means the same as an unset one, so producers leave it unset and equal lyrics encode to equal bytes.
 // A repeated field likewise never holds an entry that is all default, and preserves source order unless its own comment says otherwise.
 // Every agent id a line references must exist in `agents`.
+// Every BCP 47 language tag is stored in lower case.
 message Lyric {
   // Schema version of this data model, always set and formatted as a semantic version.
   // Consumers sharing the same major version can read each other's output.
