@@ -58,3 +58,11 @@ export const getTimeProgress = (time: Time | undefined, at: number): number | un
   }
   return (at - time.start) / (time.end - time.start)
 }
+
+/**
+ * Reports whether `at` falls inside a Time, which includes its start but not its end, so a zero-length range never does.
+ * An unset Time is never active.
+ */
+export const isTimeActive = (time: Time | undefined, at: number): boolean => {
+  return time !== undefined && time.start <= at && at < time.end
+}
