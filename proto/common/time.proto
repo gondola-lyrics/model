@@ -4,6 +4,7 @@ package lyric.common;
 
 // A half-open time range in milliseconds: a time t falls inside when start <= t < end.
 // Both bounds are always known, so a range is never open above; an unset Time means no timing at all.
+// A zero-length range at 0 is all default, so it is omitted and reads as no timing at all.
 // Times exclude Meta.offset, which consumers apply themselves.
 // Values above 2^31-1 are invalid.
 message Time {
