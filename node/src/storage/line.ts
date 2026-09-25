@@ -2,12 +2,12 @@ import type { MakeInit } from '@root/utils'
 import type { Diagnostic } from '@root/common'
 import type { Line, LineBackground } from './proto'
 
-import { LineAnnotationSchema, LineType, PartSchema, TimeSchema, WordSchema } from '@root/common/proto'
+import { LineAnnotationSchema, LineType, PartSchema, TimeRangeSchema, WordSchema } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'
 import { LineBackgroundSchema, LineSchema } from './proto'
 
 import { byTime, canonicalizeField, canonicalizeList, childPath, dropDefault } from '@root/utils'
-import { canonicalizeLineAnnotation, canonicalizeWord, validatePart, validateTime, validateWord } from '@root/common'
+import { canonicalizeLineAnnotation, canonicalizeWord, validatePart, validateTimeRange, validateWord } from '@root/common'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -34,7 +34,7 @@ export const makeLineBackground = (init?: MakeInit<typeof LineBackgroundSchema>)
 }
 
 /**
- * Validates a Line: a NORMAL line must carry at least one word, and its Time, part and words must each be valid.
+ * Validates a Line: a NORMAL line must carry at least one word, and its time, part and words must each be valid.
  */
 export const validateLine = (line: Line, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -42,7 +42,7 @@ export const validateLine = (line: Line, path = ''): Diagnostic[] => {
     diagnostics.push({ path, code: DiagnosticCode.LineWordsEmpty })
   }
   if (line.time) {
-    diagnostics.push(...validateTime(line.time, childPath(path, 'time')))
+    diagnostics.push(...validateTimeRange(line.time, childPath(path, 'time')))
   }
   if (line.part) {
     diagnostics.push(...validatePart(line.part, childPath(path, 'part')))
@@ -64,7 +64,7 @@ export const orderLine = (line: Line): Line => {
 export const canonicalizeLineBackground = (background: LineBackground): LineBackground => {
   return {
     ...background,
-    time: dropDefault(TimeSchema, background.time),
+    time: dropDefault(TimeRangeSchema, background.time),
     words: canonicalizeList(WordSchema, background.words, canonicalizeWord),
     annotation: canonicalizeField(LineAnnotationSchema, background.annotation, canonicalizeLineAnnotation),
   }
@@ -76,7 +76,7 @@ export const canonicalizeLineBackground = (background: LineBackground): LineBack
 export const canonicalizeLine = (line: Line): Line => {
   return {
     ...line,
-    time: dropDefault(TimeSchema, line.time),
+    time: dropDefault(TimeRangeSchema, line.time),
     part: dropDefault(PartSchema, line.part),
     words: canonicalizeList(WordSchema, line.words, canonicalizeWord),
     annotation: canonicalizeField(LineAnnotationSchema, line.annotation, canonicalizeLineAnnotation),

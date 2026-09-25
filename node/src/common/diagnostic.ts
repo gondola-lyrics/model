@@ -2,9 +2,9 @@
  * An error code `validate*` can report.
  */
 export enum DiagnosticCode {
-  TimeEndBeforeStart = 'time.end.before_start',
-  TimeStartOverflow = 'time.start.overflow',
-  TimeEndOverflow = 'time.end.overflow',
+  TimeRangeEndBeforeStart = 'time_range.end.before_start',
+  TimeRangeStartOverflow = 'time_range.start.overflow',
+  TimeRangeEndOverflow = 'time_range.end.overflow',
   WordContentEmpty = 'word.content.empty',
   AgentRawMissing = 'agent.raw.missing',
   PartRawMissing = 'part.raw.missing',
