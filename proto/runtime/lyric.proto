@@ -55,6 +55,6 @@ message Lyric {
   // Performing agents referenced by lines.
   repeated lyric.common.Agent agents = 8;
 
-  // Lyric lines, ordered by Time.start ascending.
+  // Lyric lines, ordered by TimeRange.start ascending.
   repeated Line lines = 9;
 }
