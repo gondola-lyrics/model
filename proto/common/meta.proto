@@ -60,7 +60,7 @@ message MetaReference {
 // Metadata describing the song and the lyric file.
 message Meta {
   // Unrecognized meta preserved by their original key.
-  repeated Unknown unknowns = 1;
+  repeated UnknownEntry unknowns = 1;
 
   // Timeline offset in milliseconds, added to the playback clock before it is compared against a stored time.
   // A positive value therefore makes the lyric appear earlier.
