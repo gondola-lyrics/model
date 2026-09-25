@@ -17,8 +17,8 @@ export type { TimeRange } from '@gen/common/time_pb'
 export { TimeRangeSchema } from '@gen/common/time_pb'
 export { Timing, TimingSchema } from '@gen/common/timing_pb'
 
-export type { Unknown } from '@gen/common/unknown_pb'
-export { UnknownSchema } from '@gen/common/unknown_pb'
+export type { UnknownEntry } from '@gen/common/unknown_pb'
+export { UnknownEntrySchema } from '@gen/common/unknown_pb'
 
 export type {
   Word,
