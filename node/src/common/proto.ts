@@ -13,8 +13,8 @@ export { PartSchema, PartType, PartTypeSchema } from '@gen/common/part_pb'
 export type { Text } from '@gen/common/text_pb'
 export { TextSchema } from '@gen/common/text_pb'
 
-export type { Time } from '@gen/common/time_pb'
-export { TimeSchema } from '@gen/common/time_pb'
+export type { TimeRange } from '@gen/common/time_pb'
+export { TimeRangeSchema } from '@gen/common/time_pb'
 export { Timing, TimingSchema } from '@gen/common/timing_pb'
 
 export type { Unknown } from '@gen/common/unknown_pb'

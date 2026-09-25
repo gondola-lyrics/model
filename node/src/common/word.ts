@@ -1,5 +1,13 @@
 import type { MakeInit } from '@root/utils'
-import type { Time, Word, WordAnnotation, WordAnnotationRoman, WordAnnotationRuby, WordAnnotationToken, WordAnnotationTranslation } from './proto'
+import type {
+  TimeRange,
+  Word,
+  WordAnnotation,
+  WordAnnotationRoman,
+  WordAnnotationRuby,
+  WordAnnotationToken,
+  WordAnnotationTranslation,
+} from './proto'
 import type { Diagnostic } from './diagnostic'
 
 import {
@@ -11,11 +19,11 @@ import {
   WordSchema,
   WordType,
 } from './proto'
-import { TimeSchema } from './proto'
+import { TimeRangeSchema } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
 import { canonicalizeField, canonicalizeList, childPath, dropDefault, lowerTag } from '@root/utils'
-import { validateTime } from './time'
+import { validateTimeRange } from './time'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -69,7 +77,7 @@ export const makeWordAnnotation = (init?: MakeInit<typeof WordAnnotationSchema>)
 }
 
 /**
- * Validates a Word: a NORMAL word must carry non-empty content, and its Time, when set, must be valid.
+ * Validates a Word: a NORMAL word must carry non-empty content, and its time, when set, must be valid.
  */
 export const validateWord = (word: Word, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -77,7 +85,7 @@ export const validateWord = (word: Word, path = ''): Diagnostic[] => {
     diagnostics.push({ path, code: DiagnosticCode.WordContentEmpty })
   }
   if (word.time) {
-    diagnostics.push(...validateTime(word.time, childPath(path, 'time')))
+    diagnostics.push(...validateTimeRange(word.time, childPath(path, 'time')))
   }
   return diagnostics
 }
@@ -86,7 +94,7 @@ export const validateWord = (word: Word, path = ''): Diagnostic[] => {
  * Returns a copy of the annotation token with its time dropped when all-default.
  */
 export const canonicalizeWordAnnotationToken = (token: WordAnnotationToken): WordAnnotationToken => {
-  return { ...token, time: dropDefault(TimeSchema, token.time) }
+  return { ...token, time: dropDefault(TimeRangeSchema, token.time) }
 }
 
 /**
@@ -96,7 +104,7 @@ export const canonicalizeWordAnnotationRoman = (roman: WordAnnotationRoman): Wor
   return {
     ...roman,
     language: lowerTag(roman.language),
-    time: dropDefault(TimeSchema, roman.time),
+    time: dropDefault(TimeRangeSchema, roman.time),
     tokens: canonicalizeList(WordAnnotationTokenSchema, roman.tokens, canonicalizeWordAnnotationToken),
   }
 }
@@ -108,7 +116,7 @@ export const canonicalizeWordAnnotationRuby = (ruby: WordAnnotationRuby): WordAn
   return {
     ...ruby,
     language: lowerTag(ruby.language),
-    time: dropDefault(TimeSchema, ruby.time),
+    time: dropDefault(TimeRangeSchema, ruby.time),
     tokens: canonicalizeList(WordAnnotationTokenSchema, ruby.tokens, canonicalizeWordAnnotationToken),
   }
 }
@@ -139,7 +147,7 @@ export const canonicalizeWord = (word: Word): Word => {
   return {
     ...word,
     language: lowerTag(word.language),
-    time: dropDefault(TimeSchema, word.time),
+    time: dropDefault(TimeRangeSchema, word.time),
     annotation: canonicalizeField(WordAnnotationSchema, word.annotation, canonicalizeWordAnnotation),
   }
 }
@@ -147,7 +155,7 @@ export const canonicalizeWord = (word: Word): Word => {
 /**
  * Resolves an annotation item's effective time, following the inheritance chain: its own time, else the annotated word's.
  */
-export const resolveAnnotationItemTime = (item: WordAnnotationRoman | WordAnnotationRuby, word: Word): Time | undefined => {
+export const resolveAnnotationItemTime = (item: WordAnnotationRoman | WordAnnotationRuby, word: Word): TimeRange | undefined => {
   return item.time ?? word.time
 }
 
@@ -158,7 +166,7 @@ export const resolveAnnotationTokenTime = (
   token: WordAnnotationToken,
   item: WordAnnotationRoman | WordAnnotationRuby,
   word: Word,
-): Time | undefined => {
+): TimeRange | undefined => {
   return token.time ?? resolveAnnotationItemTime(item, word)
 }
 
