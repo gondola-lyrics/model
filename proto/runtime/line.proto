@@ -13,7 +13,7 @@ import "common/word.proto";
 message LineBackground {
   // Time range of this background line.
   // The parent line's end covers it, while its start may precede the parent's.
-  lyric.common.Time time = 1;
+  lyric.common.TimeRange time = 1;
 
   // Identifiers of the performing agents, the lead first.
   // Multiple ids mean known agents performing together; a named ensemble should be a single GROUP agent instead.
@@ -38,7 +38,7 @@ message Line {
   lyric.common.LineType type = 1;
 
   // Time range of the line.
-  lyric.common.Time time = 2;
+  lyric.common.TimeRange time = 2;
 
   // Structural section this line belongs to; unset means no part information.
   lyric.common.Part part = 3;
@@ -57,6 +57,6 @@ message Line {
   // Annotations explicitly applied to the whole line.
   lyric.common.LineAnnotation annotation = 7;
 
-  // Background lines attached to this line, ordered by Time.start ascending.
+  // Background lines attached to this line, ordered by TimeRange.start ascending.
   repeated LineBackground backgrounds = 8;
 }
