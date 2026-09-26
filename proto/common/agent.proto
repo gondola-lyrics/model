@@ -23,7 +23,7 @@ enum AgentType {
 // Someone performing some of the lyric, referenced by the lines they sing.
 // An agent is never linked to a MetaCredit, even when both name the same person.
 message Agent {
-  // Identifier of the agent, unique within the lyric.
+  // Identifier of the agent, non-empty and unique within the lyric.
   string id = 1;
 
   // Performing type of the agent.
