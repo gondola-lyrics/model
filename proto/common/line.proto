@@ -10,7 +10,7 @@ enum LineType {
   // A sung line, carrying at least one word.
   LINE_TYPE_NORMAL = 1;
 
-  // A stretch with no singing, carrying only its time range and optionally a part.
+  // A stretch with no singing, carrying only its time range and optionally an id and a part.
   // `part` tells whether the source stated it or it was derived from a gap in the timeline.
   LINE_TYPE_INSTRUMENTAL = 2;
 }
