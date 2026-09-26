@@ -59,12 +59,13 @@ export const orderLine = (line: Line): Line => {
 }
 
 /**
- * Returns a canonical copy of the background line: language tags lowercased, time and annotation dropped when all-default, words canonicalized.
+ * Returns a canonical copy of the background line: language tags lowercased, time and annotation dropped when all-default, empty agent references dropped, words canonicalized.
  */
 export const canonicalizeLineBackground = (background: LineBackground): LineBackground => {
   return {
     ...background,
     time: dropDefault(TimeRangeSchema, background.time),
+    agents: background.agents.filter((id) => id !== ''),
     languages: background.languages.map((tag) => tag.toLowerCase()),
     words: canonicalizeList(WordSchema, background.words, canonicalizeWord),
     annotation: canonicalizeField(LineAnnotationSchema, background.annotation, canonicalizeLineAnnotation),
@@ -72,13 +73,14 @@ export const canonicalizeLineBackground = (background: LineBackground): LineBack
 }
 
 /**
- * Returns a canonical copy of the line: language tags lowercased, time/part/annotation dropped when all-default, words canonicalized, backgrounds canonicalized then ordered.
+ * Returns a canonical copy of the line: language tags lowercased, time/part/annotation dropped when all-default, empty agent references dropped, words canonicalized, backgrounds canonicalized then ordered.
  */
 export const canonicalizeLine = (line: Line): Line => {
   return {
     ...line,
     time: dropDefault(TimeRangeSchema, line.time),
     part: dropDefault(PartSchema, line.part),
+    agents: line.agents.filter((id) => id !== ''),
     languages: line.languages.map((tag) => tag.toLowerCase()),
     words: canonicalizeList(WordSchema, line.words, canonicalizeWord),
     annotation: canonicalizeField(LineAnnotationSchema, line.annotation, canonicalizeLineAnnotation),

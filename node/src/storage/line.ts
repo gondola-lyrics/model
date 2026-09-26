@@ -59,25 +59,27 @@ export const orderLine = (line: Line): Line => {
 }
 
 /**
- * Returns a canonical copy of the background line: time and annotation dropped when all-default, words canonicalized.
+ * Returns a canonical copy of the background line: time and annotation dropped when all-default, empty agent references dropped, words canonicalized.
  */
 export const canonicalizeLineBackground = (background: LineBackground): LineBackground => {
   return {
     ...background,
     time: dropDefault(TimeRangeSchema, background.time),
+    agents: background.agents.filter((id) => id !== ''),
     words: canonicalizeList(WordSchema, background.words, canonicalizeWord),
     annotation: canonicalizeField(LineAnnotationSchema, background.annotation, canonicalizeLineAnnotation),
   }
 }
 
 /**
- * Returns a canonical copy of the line: time/part/annotation dropped when all-default, words canonicalized, backgrounds canonicalized then ordered.
+ * Returns a canonical copy of the line: time/part/annotation dropped when all-default, empty agent references dropped, words canonicalized, backgrounds canonicalized then ordered.
  */
 export const canonicalizeLine = (line: Line): Line => {
   return {
     ...line,
     time: dropDefault(TimeRangeSchema, line.time),
     part: dropDefault(PartSchema, line.part),
+    agents: line.agents.filter((id) => id !== ''),
     words: canonicalizeList(WordSchema, line.words, canonicalizeWord),
     annotation: canonicalizeField(LineAnnotationSchema, line.annotation, canonicalizeLineAnnotation),
     backgrounds: canonicalizeList(LineBackgroundSchema, line.backgrounds, canonicalizeLineBackground).sort(byTime((background) => background.time)),

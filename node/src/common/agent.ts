@@ -18,10 +18,13 @@ export const makeAgent = (init?: MakeInit<typeof AgentSchema>): Agent => {
 }
 
 /**
- * Validates an Agent: an OTHER type must carry the source's own word in `raw`.
+ * Validates an Agent: its id must be non-empty, and an OTHER type must carry the source's own word in `raw`.
  */
 export const validateAgent = (agent: Agent, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
+  if (agent.id === '') {
+    diagnostics.push({ path, code: DiagnosticCode.AgentIdEmpty })
+  }
   if (agent.type === AgentType.OTHER && agent.raw === undefined) {
     diagnostics.push({ path, code: DiagnosticCode.AgentRawMissing })
   }

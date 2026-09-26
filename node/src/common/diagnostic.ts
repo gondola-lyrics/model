@@ -6,6 +6,7 @@ export enum DiagnosticCode {
   TimeRangeStartOverflow = 'time_range.start.overflow',
   TimeRangeEndOverflow = 'time_range.end.overflow',
   WordContentEmpty = 'word.content.empty',
+  AgentIdEmpty = 'agent.id.empty',
   AgentRawMissing = 'agent.raw.missing',
   PartRawMissing = 'part.raw.missing',
   MetaCreditRawMissing = 'meta.credit.raw.missing',
