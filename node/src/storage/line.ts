@@ -19,10 +19,10 @@ export const makeLineNormal = (init: Omit<MakeInit<typeof LineSchema>, 'type'>):
 }
 
 /**
- * Creates an instrumental line, stamping LINE_TYPE_INSTRUMENTAL and carrying only a time range and optional part.
+ * Creates an instrumental line, stamping LINE_TYPE_INSTRUMENTAL and carrying only a time range, and optionally an id and a part.
  * A present part means the source stated the stretch; its absence means it was derived from a gap in the timeline.
  */
-export const makeLineInstrumental = (init?: Pick<MakeInit<typeof LineSchema>, 'time' | 'part'>): Line => {
+export const makeLineInstrumental = (init?: Pick<MakeInit<typeof LineSchema>, 'id' | 'time' | 'part'>): Line => {
   return create(LineSchema, { ...init, type: LineType.INSTRUMENTAL })
 }
 

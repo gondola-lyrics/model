@@ -47,8 +47,23 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   }
 
   const untimed = lyric.timing === Timing.NONE
+  const lineIds = new Set<string>()
+  /**
+   * Reports a non-empty line id already taken by an earlier line or background line.
+   */
+  const claimLineId = (id: string, path: string): void => {
+    if (id === '') {
+      return
+    }
+    if (lineIds.has(id)) {
+      diagnostics.push({ path, code: DiagnosticCode.LyricLineIdDuplicate })
+    }
+    lineIds.add(id)
+  }
   lyric.lines.forEach((line, i) => {
     const path = `lines[${i}]`
+    claimLineId(line.id, path)
+    line.backgrounds.forEach((background, j) => claimLineId(background.id, `${path}.backgrounds[${j}]`))
     line.agents.forEach((id, j) => {
       if (!ids.has(id)) {
         diagnostics.push({ path: `${path}.agents[${j}]`, code: DiagnosticCode.LyricLineAgentDangling })
