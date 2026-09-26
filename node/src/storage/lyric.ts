@@ -35,7 +35,10 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
     if (ids.has(agent.id)) {
       diagnostics.push({ path: `agents[${i}]`, code: DiagnosticCode.LyricAgentIdDuplicate })
     }
-    ids.add(agent.id)
+    // An empty id is reported by validateAgent and never resolves a reference.
+    if (agent.id !== '') {
+      ids.add(agent.id)
+    }
     diagnostics.push(...validateAgent(agent, `agents[${i}]`))
   })
 
