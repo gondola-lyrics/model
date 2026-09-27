@@ -2,7 +2,7 @@ import type { MakeInit } from '@root/utils'
 import type { Meta, MetaCredit, MetaReference } from './proto'
 import type { Diagnostic } from './diagnostic'
 
-import { CreditRole, MetaCreditSchema, MetaReferenceSchema, MetaSchema, TextSchema } from './proto'
+import { CreditRole, MetaCreditSchema, MetaReferenceSchema, MetaSchema, TextSchema, UnknownEntrySchema } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
 import { canonicalizeList } from '@root/utils'
@@ -50,18 +50,19 @@ export const canonicalizeMetaCredit = (credit: MetaCredit): MetaCredit => {
 }
 
 /**
- * Returns a copy of the reference with its platform lowercased.
+ * Returns a copy of the reference with its platform lowercased and empty ids dropped.
  */
 export const canonicalizeMetaReference = (reference: MetaReference): MetaReference => {
-  return { ...reference, platform: reference.platform.toLowerCase() }
+  return { ...reference, platform: reference.platform.toLowerCase(), ids: reference.ids.filter((id) => id !== '') }
 }
 
 /**
- * Returns a copy of the Meta with its text lists, credits and references canonicalized and its ISRCs upper-cased without separators.
+ * Returns a copy of the Meta with its text lists, credits and references canonicalized, all-default unknown entries dropped, and its ISRCs upper-cased without separators.
  */
 export const canonicalizeMeta = (meta: Meta): Meta => {
   return {
     ...meta,
+    unknowns: canonicalizeList(UnknownEntrySchema, meta.unknowns, (entry) => entry),
     titles: canonicalizeList(TextSchema, meta.titles, canonicalizeText),
     artists: canonicalizeList(TextSchema, meta.artists, canonicalizeText),
     albums: canonicalizeList(TextSchema, meta.albums, canonicalizeText),
