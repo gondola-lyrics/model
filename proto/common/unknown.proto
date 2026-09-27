@@ -2,6 +2,10 @@ syntax = "proto3";
 
 package lyric.common;
 
+option java_multiple_files = true;
+option java_outer_classname = "UnknownProto";
+option java_package = "gondola.lyric.model.common";
+
 // A key-value pair the model has no typed field for, kept so that a round trip loses nothing.
 // Order is significant and one key may appear more than once.
 message UnknownEntry {

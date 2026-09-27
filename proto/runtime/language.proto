@@ -2,6 +2,10 @@ syntax = "proto3";
 
 package lyric.runtime;
 
+option java_multiple_files = true;
+option java_outer_classname = "LanguageProto";
+option java_package = "gondola.lyric.model.runtime";
+
 // How much of the lyric is in one language.
 message LanguageUsage {
   // BCP 47 language tag, unique within the list when compared case-insensitively.

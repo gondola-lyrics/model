@@ -2,6 +2,10 @@ syntax = "proto3";
 
 package lyric.common;
 
+option java_multiple_files = true;
+option java_outer_classname = "TimeProto";
+option java_package = "gondola.lyric.model.common";
+
 // A half-open time range in milliseconds: a time t falls inside when start <= t < end.
 // Both bounds are always known, so a range is never open above; an unset TimeRange means no timing at all.
 // A zero-length range at 0 is all default, so it is omitted and reads as no timing at all.

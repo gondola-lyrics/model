@@ -2,6 +2,10 @@ syntax = "proto3";
 
 package lyric.common;
 
+option java_multiple_files = true;
+option java_outer_classname = "TimingProto";
+option java_package = "gondola.lyric.model.common";
+
 // Declared timing precision for a lyric.
 // Producers should fill TimeRange fields to match; consumers may treat mismatches as best-effort.
 enum Timing {

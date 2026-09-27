@@ -7,6 +7,10 @@ import "common/part.proto";
 import "common/time.proto";
 import "common/word.proto";
 
+option java_multiple_files = true;
+option java_outer_classname = "LineProto";
+option java_package = "gondola.lyric.model.storage";
+
 // Background vocal line attached to a normal line.
 // It belongs to the same part as its parent line.
 // It is not wire compatible with runtime.LineBackground despite the matching field names.

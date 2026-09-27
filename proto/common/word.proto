@@ -4,6 +4,10 @@ package lyric.common;
 
 import "common/time.proto";
 
+option java_multiple_files = true;
+option java_outer_classname = "WordProto";
+option java_package = "gondola.lyric.model.common";
+
 // Kind of a word.
 enum WordType {
   // The field was not set; treat it as missing rather than as a resolved kind.

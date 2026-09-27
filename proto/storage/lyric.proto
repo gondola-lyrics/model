@@ -7,6 +7,10 @@ import "common/meta.proto";
 import "common/timing.proto";
 import "storage/line.proto";
 
+option java_multiple_files = true;
+option java_outer_classname = "LyricProto";
+option java_package = "gondola.lyric.model.storage";
+
 // A lyric as persisted, carrying only what a source file actually stated.
 // An empty submessage means the same as an unset one, so producers leave it unset and equal lyrics encode to equal bytes.
 // A repeated field likewise never holds an entry that is all default, and preserves source order unless its own comment says otherwise.

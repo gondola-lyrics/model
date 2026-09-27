@@ -8,6 +8,10 @@ import "common/timing.proto";
 import "runtime/language.proto";
 import "runtime/line.proto";
 
+option java_multiple_files = true;
+option java_outer_classname = "LyricProto";
+option java_package = "gondola.lyric.model.runtime";
+
 // Parse validity of a lyric.
 enum LyricStatus {
   // The field was not set; treat it as missing rather than as a resolved state.

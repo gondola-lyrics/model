@@ -5,6 +5,10 @@ package lyric.common;
 import "common/text.proto";
 import "common/unknown.proto";
 
+option java_multiple_files = true;
+option java_outer_classname = "MetaProto";
+option java_package = "gondola.lyric.model.common";
+
 // Role someone is credited for.
 enum CreditRole {
   // The field was not set; treat it as missing rather than as a resolved role.
