@@ -14,7 +14,7 @@ enum Timing {
   // Timed at line level; each normal or background line should carry a valid TimeRange, and word-level TimeRange is optional.
   TIMING_LINE = 2;
 
-  // Timed per word token, where syllable-level sources also land.
-  // Each sung word should carry a valid TimeRange, and line TimeRange should cover its words.
+  // Timed per word, where syllable-level sources also land.
+  // Each sung word should carry a valid TimeRange.
   TIMING_WORD = 3;
 }

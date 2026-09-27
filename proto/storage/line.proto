@@ -16,6 +16,7 @@ message LineBackground {
 
   // Time range of this background line.
   // The parent line's end covers it, while its start may precede the parent's.
+  // It covers the range of every timed word, but need not start or end with them.
   lyric.common.TimeRange time = 2;
 
   // Identifiers of the performing agents, the lead first.
@@ -40,6 +41,7 @@ message Line {
   lyric.common.LineType type = 2;
 
   // Time range of the line.
+  // It covers the range of every timed word, but need not start or end with them.
   lyric.common.TimeRange time = 3;
 
   // Structural section this line belongs to; unset means no part information.

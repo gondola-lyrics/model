@@ -4,7 +4,7 @@ package lyric.common;
 
 import "common/time.proto";
 
-// Kind of a word token.
+// Kind of a word.
 enum WordType {
   // The field was not set; treat it as missing rather than as a resolved kind.
   WORD_TYPE_UNSPECIFIED = 0;
@@ -74,13 +74,13 @@ message WordAnnotation {
   repeated WordAnnotationTranslation translations = 3;
 }
 
-// A word token.
+// A sung word, or the separator between two words.
 // A kind a consumer does not recognize should be read for its content and time, or skipped.
 message Word {
-  // Kind of this token.
+  // Kind of this word.
   WordType type = 1;
 
-  // Time range of the word; unset when the token is not sung.
+  // Time range of the word; unset when it is not sung.
   TimeRange time = 2;
 
   // Text content, exactly as the source wrote it.
