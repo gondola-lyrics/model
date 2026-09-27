@@ -11,6 +11,7 @@ export enum DiagnosticCode {
   PartRawMissing = 'part.raw.missing',
   MetaCreditRawMissing = 'meta.credit.raw.missing',
   LineWordsEmpty = 'line.words.empty',
+  LineWordTimeUncovered = 'line.word.time.uncovered',
   LyricVersionMalformed = 'lyric.version.malformed',
   LyricAgentIdDuplicate = 'lyric.agent.id.duplicate',
   LyricLineAgentDangling = 'lyric.line.agent.dangling',

@@ -34,7 +34,7 @@ export const makeLineBackground = (init?: MakeInit<typeof LineBackgroundSchema>)
 }
 
 /**
- * Validates a Line: a NORMAL line must carry at least one word, and its time, part and words must each be valid.
+ * Validates a Line: a NORMAL line must carry at least one word, its time must cover every timed word, and its time, part and words must each be valid.
  */
 export const validateLine = (line: Line, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -47,7 +47,13 @@ export const validateLine = (line: Line, path = ''): Diagnostic[] => {
   if (line.part) {
     diagnostics.push(...validatePart(line.part, childPath(path, 'part')))
   }
-  line.words.forEach((word, i) => diagnostics.push(...validateWord(word, childPath(path, `words[${i}]`))))
+  line.words.forEach((word, i) => {
+    const wordPath = childPath(path, `words[${i}]`)
+    diagnostics.push(...validateWord(word, wordPath))
+    if (line.time && word.time && (word.time.start < line.time.start || word.time.end > line.time.end)) {
+      diagnostics.push({ path: childPath(wordPath, 'time'), code: DiagnosticCode.LineWordTimeUncovered })
+    }
+  })
   return diagnostics
 }
 
