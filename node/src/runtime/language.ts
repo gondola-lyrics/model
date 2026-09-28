@@ -25,3 +25,16 @@ export const orderLanguageUsages = (languages: LanguageUsage[]): LanguageUsage[]
 export const canonicalizeLanguageUsage = (usage: LanguageUsage): LanguageUsage => {
   return { ...usage, tag: usage.tag.toLowerCase() }
 }
+
+/**
+ * Canonicalizes a list of usages: tags lowercased, entries sharing a tag merged by summing their counts, all-default entries dropped, then ordered.
+ */
+export const canonicalizeLanguageUsages = (languages: LanguageUsage[]): LanguageUsage[] => {
+  const counts = new Map<string, number>()
+  for (const usage of languages) {
+    const tag = usage.tag.toLowerCase()
+    counts.set(tag, (counts.get(tag) ?? 0) + usage.count)
+  }
+  const merged = [...counts].filter(([tag, count]) => tag !== '' || count !== 0).map(([tag, count]) => makeLanguageUsage({ tag, count }))
+  return orderLanguageUsages(merged)
+}

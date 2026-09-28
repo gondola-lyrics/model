@@ -4,12 +4,12 @@ import type { Lyric } from './proto'
 
 import { AgentSchema, MetaSchema, Timing } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'
-import { LanguageUsageSchema, LineSchema, LyricSchema, LyricStatus } from './proto'
+import { LineSchema, LyricSchema, LyricStatus } from './proto'
 import { SCHEMA_VERSION } from '@root/version'
 
 import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath } from '@root/utils'
 import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMetaCredit } from '@root/common'
-import { canonicalizeLanguageUsage, orderLanguageUsages } from './language'
+import { canonicalizeLanguageUsages, orderLanguageUsages } from './language'
 import { canonicalizeLine, orderLine, validateLine } from './line'
 
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf'
@@ -51,6 +51,15 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   if (lyric.meta) {
     lyric.meta.credits.forEach((credit, i) => diagnostics.push(...validateMetaCredit(credit, `meta.credits[${i}]`)))
   }
+
+  const languageTags = new Set<string>()
+  lyric.languages.forEach((usage, i) => {
+    const tag = usage.tag.toLowerCase()
+    if (languageTags.has(tag)) {
+      diagnostics.push({ path: `languages[${i}]`, code: DiagnosticCode.LyricLanguageTagDuplicate })
+    }
+    languageTags.add(tag)
+  })
 
   const untimed = lyric.timing === Timing.NONE
   const lineIds = new Set<string>()
@@ -120,7 +129,7 @@ export const canonicalizeLyric = (lyric: Lyric): Lyric => {
     ...lyric,
     format: lyric.format.toLowerCase(),
     meta: canonicalizeField(MetaSchema, lyric.meta, canonicalizeMeta),
-    languages: orderLanguageUsages(canonicalizeList(LanguageUsageSchema, lyric.languages, canonicalizeLanguageUsage)),
+    languages: canonicalizeLanguageUsages(lyric.languages),
     agents: canonicalizeList(AgentSchema, lyric.agents, canonicalizeAgent),
     lines: canonicalizeList(LineSchema, lyric.lines, canonicalizeLine).sort(byTime((line) => line.time)),
   }

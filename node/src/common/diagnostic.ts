@@ -16,6 +16,7 @@ export enum DiagnosticCode {
   LyricAgentIdDuplicate = 'lyric.agent.id.duplicate',
   LyricLineAgentDangling = 'lyric.line.agent.dangling',
   LyricLineIdDuplicate = 'lyric.line.id.duplicate',
+  LyricLanguageTagDuplicate = 'lyric.language.tag.duplicate',
   LyricTimingNonePresent = 'lyric.timing.none.present',
 }
 
