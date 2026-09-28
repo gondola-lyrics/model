@@ -7,7 +7,7 @@ import { DiagnosticCode } from '@root/common'
 import { LineBackgroundSchema, LineSchema } from './proto'
 
 import { byTime, canonicalizeField, canonicalizeList, childPath, dropDefault } from '@root/utils'
-import { canonicalizeLineAnnotation, canonicalizeWord, validatePart, validateTimeRange, validateWord } from '@root/common'
+import { canonicalizeLineAnnotation, canonicalizeWord, validatePart, validateTimeRange, validateWords } from '@root/common'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -34,7 +34,7 @@ export const makeLineBackground = (init?: MakeInit<typeof LineBackgroundSchema>)
 }
 
 /**
- * Validates a Line: a NORMAL line must carry at least one word, its time must cover every timed word, and its time, part and words must each be valid.
+ * Validates a Line: a NORMAL line must carry at least one word, its time must cover every timed word, and its time, part, words and background lines must each be valid.
  */
 export const validateLine = (line: Line, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -47,13 +47,20 @@ export const validateLine = (line: Line, path = ''): Diagnostic[] => {
   if (line.part) {
     diagnostics.push(...validatePart(line.part, childPath(path, 'part')))
   }
-  line.words.forEach((word, i) => {
-    const wordPath = childPath(path, `words[${i}]`)
-    diagnostics.push(...validateWord(word, wordPath))
-    if (line.time && word.time && (word.time.start < line.time.start || word.time.end > line.time.end)) {
-      diagnostics.push({ path: childPath(wordPath, 'time'), code: DiagnosticCode.LineWordTimeUncovered })
-    }
-  })
+  diagnostics.push(...validateWords(line.words, line.time, path))
+  line.backgrounds.forEach((background, i) => diagnostics.push(...validateLineBackground(background, childPath(path, `backgrounds[${i}]`))))
+  return diagnostics
+}
+
+/**
+ * Validates a LineBackground: its time must cover every timed word, and its time and words must each be valid.
+ */
+export const validateLineBackground = (background: LineBackground, path = ''): Diagnostic[] => {
+  const diagnostics: Diagnostic[] = []
+  if (background.time) {
+    diagnostics.push(...validateTimeRange(background.time, childPath(path, 'time')))
+  }
+  diagnostics.push(...validateWords(background.words, background.time, path))
   return diagnostics
 }
 

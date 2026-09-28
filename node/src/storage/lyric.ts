@@ -1,5 +1,5 @@
 import type { MakeInit } from '@root/utils'
-import type { Diagnostic } from '@root/common'
+import type { Diagnostic, TimeRange, Word } from '@root/common'
 import type { Lyric } from './proto'
 
 import { AgentSchema, MetaSchema, Timing } from '@root/common/proto'
@@ -60,25 +60,35 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
     }
     lineIds.add(id)
   }
-  lyric.lines.forEach((line, i) => {
-    const path = `lines[${i}]`
-    claimLineId(line.id, path)
-    line.backgrounds.forEach((background, j) => claimLineId(background.id, `${path}.backgrounds[${j}]`))
-    line.agents.forEach((id, j) => {
+  /**
+   * Reports the whole-tree rules for one line or background line: agent references resolving to no agent, and any time present under TIMING_NONE.
+   */
+  const checkReferences = (agents: string[], time: TimeRange | undefined, words: Word[], path: string): void => {
+    agents.forEach((id, j) => {
       if (!ids.has(id)) {
         diagnostics.push({ path: `${path}.agents[${j}]`, code: DiagnosticCode.LyricLineAgentDangling })
       }
     })
-    if (untimed && line.time) {
+    if (untimed && time) {
       diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingNonePresent })
     }
     if (untimed) {
-      line.words.forEach((word, j) => {
+      words.forEach((word, j) => {
         if (word.time) {
           diagnostics.push({ path: `${path}.words[${j}].time`, code: DiagnosticCode.LyricTimingNonePresent })
         }
       })
     }
+  }
+  lyric.lines.forEach((line, i) => {
+    const path = `lines[${i}]`
+    claimLineId(line.id, path)
+    checkReferences(line.agents, line.time, line.words, path)
+    line.backgrounds.forEach((background, j) => {
+      const backgroundPath = `${path}.backgrounds[${j}]`
+      claimLineId(background.id, backgroundPath)
+      checkReferences(background.agents, background.time, background.words, backgroundPath)
+    })
     diagnostics.push(...validateLine(line, path))
   })
 

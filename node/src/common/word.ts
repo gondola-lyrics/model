@@ -91,6 +91,21 @@ export const validateWord = (word: Word, path = ''): Diagnostic[] => {
 }
 
 /**
+ * Validates the words of a line or background line: each word must be valid, and each timed word must fall within `time` when it is set.
+ */
+export const validateWords = (words: Word[], time: TimeRange | undefined, path = ''): Diagnostic[] => {
+  const diagnostics: Diagnostic[] = []
+  words.forEach((word, i) => {
+    const wordPath = childPath(path, `words[${i}]`)
+    diagnostics.push(...validateWord(word, wordPath))
+    if (time && word.time && (word.time.start < time.start || word.time.end > time.end)) {
+      diagnostics.push({ path: childPath(wordPath, 'time'), code: DiagnosticCode.LineWordTimeUncovered })
+    }
+  })
+  return diagnostics
+}
+
+/**
  * Returns a copy of the annotation token with its time dropped when all-default.
  */
 export const canonicalizeWordAnnotationToken = (token: WordAnnotationToken): WordAnnotationToken => {
