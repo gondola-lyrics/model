@@ -12,13 +12,13 @@ enum Timing {
   // The field was not set; treat it as missing rather than as a resolved precision.
   TIMING_UNSPECIFIED = 0;
 
-  // Untimed; line and word TimeRange fields must be unset.
+  // Untimed; line and word TimeRange fields must be unset, so every line carries its content as plain text.
   TIMING_NONE = 1;
 
-  // Timed at line level; each normal or background line should carry a valid TimeRange, and word-level TimeRange is optional.
+  // Timed at line level; each normal or background line should carry a valid TimeRange and its content as plain text.
   TIMING_LINE = 2;
 
   // Timed per word, where syllable-level sources also land.
-  // Each sung word should carry a valid TimeRange.
+  // Lines carry their content as words, each sung one holding a valid TimeRange.
   TIMING_WORD = 3;
 }

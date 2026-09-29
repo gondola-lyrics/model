@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package lyric.common;
 
+import "common/word.proto";
+
 option java_multiple_files = true;
 option java_outer_classname = "LineProto";
 option java_package = "gondola.lyric.model.common";
@@ -11,12 +13,21 @@ enum LineType {
   // The field was not set; treat it as missing rather than as a resolved kind.
   LINE_TYPE_UNSPECIFIED = 0;
 
-  // A sung line, carrying at least one word.
+  // A sung line, carrying its content as either words or plain text.
   LINE_TYPE_NORMAL = 1;
 
-  // A stretch with no singing, carrying only its time range and optionally an id and a part.
+  // A stretch with no singing, carrying no content, only its time range and optionally an id and a part.
   // `part` tells whether the source stated it or it was derived from a gap in the timeline.
   LINE_TYPE_INSTRUMENTAL = 2;
+}
+
+// The content of a normal line: either the words it is decomposed into, or its plain text. Exactly one is set.
+message LineContent {
+  // Word pieces in order; present for a word-level line, where each sung word carries a time.
+  repeated Word words = 1;
+
+  // The whole line's text; present for a line-level line not decomposed into words.
+  optional string text = 2;
 }
 
 // Romanized transliteration of a whole line.

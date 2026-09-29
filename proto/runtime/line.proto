@@ -5,7 +5,6 @@ package lyric.runtime;
 import "common/line.proto";
 import "common/part.proto";
 import "common/time.proto";
-import "common/word.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "LineProto";
@@ -31,8 +30,8 @@ message LineBackground {
   // Consumers may fall back to the languages of its words when this is empty.
   repeated string languages = 4;
 
-  // Words composing the line in order.
-  repeated lyric.common.Word words = 5;
+  // Content of the line: its words or its plain text.
+  lyric.common.LineContent content = 5;
 
   // Annotations explicitly applied to the whole line.
   lyric.common.LineAnnotation annotation = 6;
@@ -63,8 +62,8 @@ message Line {
   // Consumers may fall back to the languages of its words when this is empty.
   repeated string languages = 6;
 
-  // Words composing the line in order.
-  repeated lyric.common.Word words = 7;
+  // Content of the line: its words or its plain text.
+  lyric.common.LineContent content = 7;
 
   // Annotations explicitly applied to the whole line.
   lyric.common.LineAnnotation annotation = 8;
