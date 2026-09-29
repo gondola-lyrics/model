@@ -1,6 +1,6 @@
 import type { MakeInit } from '@root/utils'
-import type { Diagnostic, TimeRange, Word } from '@root/common'
-import type { Lyric } from './proto'
+import type { Diagnostic, TimeRange } from '@root/common'
+import type { Lyric, Word } from './proto'
 
 import { AgentSchema, MetaSchema, Timing } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'

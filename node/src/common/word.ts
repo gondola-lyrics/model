@@ -1,13 +1,5 @@
 import type { MakeInit } from '@root/utils'
-import type {
-  TimeRange,
-  Word,
-  WordAnnotation,
-  WordAnnotationRoman,
-  WordAnnotationRuby,
-  WordAnnotationToken,
-  WordAnnotationTranslation,
-} from './proto'
+import type { TimeRange, WordAnnotation, WordAnnotationRoman, WordAnnotationRuby, WordAnnotationToken, WordAnnotationTranslation } from './proto'
 import type { Diagnostic } from './diagnostic'
 
 import {
@@ -16,7 +8,6 @@ import {
   WordAnnotationSchema,
   WordAnnotationTokenSchema,
   WordAnnotationTranslationSchema,
-  WordSchema,
   WordType,
 } from './proto'
 import { TimeRangeSchema } from './proto'
@@ -28,17 +19,14 @@ import { validateTimeRange } from './time'
 import { create } from '@bufbuild/protobuf'
 
 /**
- * Creates a normal word, stamping WORD_TYPE_NORMAL so the discriminant can never be set from outside; its language tag is lowercased.
+ * The fields every layer's word shares, so helpers that only read them work on either layer.
  */
-export const makeWordNormal = (init: Omit<MakeInit<typeof WordSchema>, 'type'>): Word => {
-  return create(WordSchema, { ...init, type: WordType.NORMAL, language: init.language?.toLowerCase() })
-}
-
-/**
- * Creates a whitespace word carrying the separator as its content, stamping WORD_TYPE_SPACE.
- */
-export const makeWordSpace = (init: Pick<MakeInit<typeof WordSchema>, 'content'>): Word => {
-  return create(WordSchema, { ...init, type: WordType.SPACE })
+export type AnyWord = {
+  type: WordType
+  time?: TimeRange
+  text: string
+  language?: string
+  annotation?: WordAnnotation
 }
 
 /**
@@ -77,15 +65,15 @@ export const makeWordAnnotation = (init?: MakeInit<typeof WordAnnotationSchema>)
 }
 
 /**
- * Validates a Word: its kind must be resolved, a NORMAL word must carry non-empty content, and its time, when set, must be valid.
+ * Validates a Word: its kind must be resolved, a NORMAL word must carry non-empty text, and its time, when set, must be valid.
  */
-export const validateWord = (word: Word, path = ''): Diagnostic[] => {
+export const validateWord = (word: AnyWord, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   if (word.type === WordType.UNSPECIFIED) {
     diagnostics.push({ path, code: DiagnosticCode.WordTypeUnspecified })
   }
-  if (word.type === WordType.NORMAL && word.content === '') {
-    diagnostics.push({ path, code: DiagnosticCode.WordContentEmpty })
+  if (word.type === WordType.NORMAL && word.text === '') {
+    diagnostics.push({ path, code: DiagnosticCode.WordTextEmpty })
   }
   if (word.time) {
     diagnostics.push(...validateTimeRange(word.time, childPath(path, 'time')))
@@ -96,7 +84,7 @@ export const validateWord = (word: Word, path = ''): Diagnostic[] => {
 /**
  * Validates the words of a line or background line: each word must be valid, each sung word must carry a time, and each timed word must fall within `time` when it is set.
  */
-export const validateWords = (words: Word[], time: TimeRange | undefined, path = ''): Diagnostic[] => {
+export const validateWords = (words: AnyWord[], time: TimeRange | undefined, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   words.forEach((word, i) => {
     const wordPath = childPath(path, `words[${i}]`)
@@ -162,9 +150,10 @@ export const canonicalizeWordAnnotation = (annotation: WordAnnotation): WordAnno
 }
 
 /**
- * Returns a copy of the word with its language lowercased, time dropped when all-default, and annotation canonicalized then dropped when empty.
+ * Returns a copy of the word with the fields every layer shares canonicalized: its language lowercased, its time dropped when all-default, and its annotation canonicalized then dropped when empty.
+ * Each layer's `canonicalizeWord` builds on this to handle its own fields.
  */
-export const canonicalizeWord = (word: Word): Word => {
+export const canonicalizeWordShared = <T extends AnyWord>(word: T): T => {
   return {
     ...word,
     language: lowerTag(word.language),
@@ -176,7 +165,7 @@ export const canonicalizeWord = (word: Word): Word => {
 /**
  * Resolves an annotation item's effective time, following the inheritance chain: its own time, else the annotated word's.
  */
-export const resolveAnnotationItemTime = (item: WordAnnotationRoman | WordAnnotationRuby, word: Word): TimeRange | undefined => {
+export const resolveAnnotationItemTime = (item: WordAnnotationRoman | WordAnnotationRuby, word: AnyWord): TimeRange | undefined => {
   return item.time ?? word.time
 }
 
@@ -186,28 +175,28 @@ export const resolveAnnotationItemTime = (item: WordAnnotationRoman | WordAnnota
 export const resolveAnnotationTokenTime = (
   token: WordAnnotationToken,
   item: WordAnnotationRoman | WordAnnotationRuby,
-  word: Word,
+  word: AnyWord,
 ): TimeRange | undefined => {
   return token.time ?? resolveAnnotationItemTime(item, word)
 }
 
 /**
- * Joins the content of words in order, which restores the source text since separators are words of their own.
+ * Joins the text of words in order, which restores the source text since separators are words of their own.
  */
-export const getWordsText = (words: Word[]): string => {
-  return words.map((word) => word.content).join('')
+export const getWordsText = (words: AnyWord[]): string => {
+  return words.map((word) => word.text).join('')
 }
 
 /**
  * Collects the distinct lowercased language tags of words, in order of first appearance.
  */
-export const getWordsLanguages = (words: Word[]): string[] => {
+export const getWordsLanguages = (words: AnyWord[]): string[] => {
   return [...new Set(words.map((word) => lowerTag(word.language)).filter((tag) => tag !== undefined))]
 }
 
 /**
- * Joins the content of an annotation item's tokens with nothing in between, as they compose the item in order.
+ * Joins the text of an annotation item's tokens with nothing in between, as they compose the item in order.
  */
 export const getAnnotationItemText = (item: WordAnnotationRoman | WordAnnotationRuby): string => {
-  return item.tokens.map((token) => token.content).join('')
+  return item.tokens.map((token) => token.text).join('')
 }

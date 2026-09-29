@@ -1,22 +1,30 @@
 import type { MakeInit } from '@root/utils'
 import type { Diagnostic } from '@root/common'
-import type { Line, LineBackground } from './proto'
+import type { Line, LineBackground, LineContent } from './proto'
 
-import { LineAnnotationSchema, LineContentSchema, LineType, PartSchema, TimeRangeSchema } from '@root/common/proto'
+import { LineAnnotationSchema, LineType, PartSchema, TimeRangeSchema } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'
-import { LineBackgroundSchema, LineSchema } from './proto'
+import { LineBackgroundSchema, LineContentSchema, LineSchema, WordSchema } from './proto'
 
 import { byTime, canonicalizeField, canonicalizeList, childPath, dropDefault } from '@root/utils'
-import {
-  canonicalizeLineAnnotation,
-  canonicalizeLineContent,
-  getWordsLanguages,
-  validateContent,
-  validatePart,
-  validateTimeRange,
-} from '@root/common'
+import { canonicalizeLineAnnotation, getWordsLanguages, validateContent, validatePart, validateTimeRange } from '@root/common'
+import { canonicalizeWord } from './word'
 
 import { create } from '@bufbuild/protobuf'
+
+/**
+ * Creates a LineContent, a normal line's content; set either `words` or `text`, never both.
+ */
+export const makeLineContent = (init?: MakeInit<typeof LineContentSchema>): LineContent => {
+  return create(LineContentSchema, init)
+}
+
+/**
+ * Returns a canonical copy of the content with its words canonicalized; the plain text is left as is.
+ */
+export const canonicalizeLineContent = (content: LineContent): LineContent => {
+  return { ...content, words: canonicalizeList(WordSchema, content.words, canonicalizeWord) }
+}
 
 /**
  * Creates a normal line, stamping LINE_TYPE_NORMAL so the discriminant can never be set from outside; its language tags are lowercased.

@@ -4,4 +4,5 @@ export * from './proto'
 
 export * from './lyric'
 export * from './line'
+export * from './word'
 export * from './language'
