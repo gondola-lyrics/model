@@ -25,8 +25,8 @@ message WordAnnotationToken {
   // Time range of the token; unset means it follows the time of the item it belongs to.
   TimeRange time = 1;
 
-  // Text content of the token.
-  string content = 2;
+  // Text of the token.
+  string text = 2;
 }
 
 // Translation of a single word into another language.
@@ -36,7 +36,7 @@ message WordAnnotationTranslation {
   optional string language = 1;
 
   // Translated text for the whole word.
-  string content = 2;
+  string text = 2;
 }
 
 // Romanized transliteration of a single word.
@@ -76,26 +76,4 @@ message WordAnnotation {
 
   // Translations into another language.
   repeated WordAnnotationTranslation translations = 3;
-}
-
-// A sung word, or the separator between two words.
-// A kind a consumer does not recognize should be read for its content and time, or skipped.
-message Word {
-  // Kind of this word.
-  WordType type = 1;
-
-  // Time range of the word; unset when it is not sung.
-  TimeRange time = 2;
-
-  // Text content, exactly as the source wrote it.
-  string content = 3;
-
-  // Language of this word, as a BCP 47 tag; unset means undetermined.
-  optional string language = 4;
-
-  // Annotations attached to this word.
-  WordAnnotation annotation = 5;
-
-  // Whether the word is stressed; unset means the source carries no stress information.
-  optional bool stress = 6;
 }

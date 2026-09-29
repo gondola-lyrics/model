@@ -5,10 +5,21 @@ package lyric.runtime;
 import "common/line.proto";
 import "common/part.proto";
 import "common/time.proto";
+import "runtime/word.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "LineProto";
 option java_package = "gondola.lyric.model.runtime";
+
+// The content of a normal line: either the words it is decomposed into, or its plain text. Exactly one is set.
+// It is not wire compatible with storage.LineContent despite the matching field names.
+message LineContent {
+  // Word pieces in order; present for a word-level line, where each sung word carries a time.
+  repeated Word words = 1;
+
+  // The whole line's text; present for a line-level line not decomposed into words.
+  optional string text = 2;
+}
 
 // Background vocal line attached to a normal line.
 // It belongs to the same part as its parent line.
@@ -31,7 +42,7 @@ message LineBackground {
   repeated string languages = 4;
 
   // Content of the line: its words or its plain text.
-  lyric.common.LineContent content = 5;
+  LineContent content = 5;
 
   // Annotations explicitly applied to the whole line.
   lyric.common.LineAnnotation annotation = 6;
@@ -63,7 +74,7 @@ message Line {
   repeated string languages = 6;
 
   // Content of the line: its words or its plain text.
-  lyric.common.LineContent content = 7;
+  LineContent content = 7;
 
   // Annotations explicitly applied to the whole line.
   lyric.common.LineAnnotation annotation = 8;

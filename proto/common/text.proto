@@ -12,6 +12,6 @@ message Text {
   // BCP 47 language tag, in lower case and compared case-insensitively; unset means unspecified or default.
   optional string language = 1;
 
-  // Text content.
-  string content = 2;
+  // The text itself.
+  string text = 2;
 }

@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package lyric.storage;
+
+import "common/time.proto";
+import "common/word.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "WordProto";
+option java_package = "gondola.lyric.model.storage";
+
+// A sung word, or the separator between two words.
+// A kind a consumer does not recognize should be read for its content and time, or skipped.
+// It is not wire compatible with runtime.Word despite the matching field names.
+message Word {
+  // Kind of this word.
+  lyric.common.WordType type = 1;
+
+  // Time range of the word; unset when it is not sung.
+  lyric.common.TimeRange time = 2;
+
+  // Text of the word, exactly as the source wrote it.
+  string text = 3;
+
+  // Language of this word, as a BCP 47 tag; unset means undetermined.
+  optional string language = 4;
+
+  // Annotations attached to this word.
+  lyric.common.WordAnnotation annotation = 5;
+
+  // Whether the word is emphasized, as the source stated it; unset means no emphasis information.
+  // Emphasis asks for a swell when the word is sung, such as a syllable held longer than usual; it is not linguistic stress.
+  optional bool emphasis = 6;
+}
