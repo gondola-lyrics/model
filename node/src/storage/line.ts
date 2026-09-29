@@ -1,6 +1,6 @@
 import type { MakeInit } from '@root/utils'
 import type { Diagnostic } from '@root/common'
-import type { Line, LineBackground, LineContent } from './proto'
+import type { Line, LineBackground, LineContent, Word } from './proto'
 
 import { LineAnnotationSchema, LineType, PartSchema, TimeRangeSchema } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'
@@ -13,10 +13,17 @@ import { canonicalizeWord } from './word'
 import { create } from '@bufbuild/protobuf'
 
 /**
- * Creates a LineContent, a normal line's content; set either `words` or `text`, never both.
+ * Creates a word-level LineContent from the words the line decomposes into.
  */
-export const makeLineContent = (init?: MakeInit<typeof LineContentSchema>): LineContent => {
-  return create(LineContentSchema, init)
+export const makeLineContentWords = (words: Word[]): LineContent => {
+  return create(LineContentSchema, { words })
+}
+
+/**
+ * Creates a line-level LineContent from the line's plain text.
+ */
+export const makeLineContentText = (text: string): LineContent => {
+  return create(LineContentSchema, { text })
 }
 
 /**
