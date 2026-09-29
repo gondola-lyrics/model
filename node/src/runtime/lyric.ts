@@ -90,7 +90,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
     if (untimed) {
       words.forEach((word, j) => {
         if (word.time) {
-          diagnostics.push({ path: `${path}.words[${j}].time`, code: DiagnosticCode.LyricTimingNonePresent })
+          diagnostics.push({ path: `${path}.content.words[${j}].time`, code: DiagnosticCode.LyricTimingNonePresent })
         }
       })
     }
@@ -98,11 +98,11 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   lyric.lines.forEach((line, i) => {
     const path = `lines[${i}]`
     claimLineId(line.id, path)
-    checkReferences(line.agents, line.time, line.words, path)
+    checkReferences(line.agents, line.time, line.content?.words ?? [], path)
     line.backgrounds.forEach((background, j) => {
       const backgroundPath = `${path}.backgrounds[${j}]`
       claimLineId(background.id, backgroundPath)
-      checkReferences(background.agents, background.time, background.words, backgroundPath)
+      checkReferences(background.agents, background.time, background.content?.words ?? [], backgroundPath)
     })
     diagnostics.push(...validateLine(line, path))
   })

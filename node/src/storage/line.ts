@@ -2,12 +2,12 @@ import type { MakeInit } from '@root/utils'
 import type { Diagnostic } from '@root/common'
 import type { Line, LineBackground } from './proto'
 
-import { LineAnnotationSchema, LineType, PartSchema, TimeRangeSchema, WordSchema } from '@root/common/proto'
+import { LineAnnotationSchema, LineContentSchema, LineType, PartSchema, TimeRangeSchema } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'
 import { LineBackgroundSchema, LineSchema } from './proto'
 
 import { byTime, canonicalizeField, canonicalizeList, childPath, dropDefault } from '@root/utils'
-import { canonicalizeLineAnnotation, canonicalizeWord, validatePart, validateTimeRange, validateWords } from '@root/common'
+import { canonicalizeLineAnnotation, canonicalizeLineContent, validateContent, validatePart, validateTimeRange } from '@root/common'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -19,7 +19,7 @@ export const makeLineNormal = (init: Omit<MakeInit<typeof LineSchema>, 'type'>):
 }
 
 /**
- * Creates an instrumental line, stamping LINE_TYPE_INSTRUMENTAL and carrying only a time range, and optionally an id and a part.
+ * Creates an instrumental line, stamping LINE_TYPE_INSTRUMENTAL and carrying no content, only a time range and optionally an id and a part.
  * A present part means the source stated the stretch; its absence means it was derived from a gap in the timeline.
  */
 export const makeLineInstrumental = (init?: Pick<MakeInit<typeof LineSchema>, 'id' | 'time' | 'part'>): Line => {
@@ -34,33 +34,34 @@ export const makeLineBackground = (init?: MakeInit<typeof LineBackgroundSchema>)
 }
 
 /**
- * Validates a Line: a NORMAL line must carry at least one word, its time must cover every timed word, and its time, part, words and background lines must each be valid.
+ * Validates a Line: a NORMAL line must carry content and any other kind must not, and its time, part, content and background lines must each be valid.
  */
 export const validateLine = (line: Line, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
-  if (line.type === LineType.NORMAL && line.words.length === 0) {
-    diagnostics.push({ path, code: DiagnosticCode.LineWordsEmpty })
-  }
   if (line.time) {
     diagnostics.push(...validateTimeRange(line.time, childPath(path, 'time')))
   }
   if (line.part) {
     diagnostics.push(...validatePart(line.part, childPath(path, 'part')))
   }
-  diagnostics.push(...validateWords(line.words, line.time, path))
+  if (line.type === LineType.NORMAL) {
+    diagnostics.push(...validateContent(line.content, line.time, path))
+  } else if (line.content) {
+    diagnostics.push({ path: childPath(path, 'content'), code: DiagnosticCode.LineContentUnexpected })
+  }
   line.backgrounds.forEach((background, i) => diagnostics.push(...validateLineBackground(background, childPath(path, `backgrounds[${i}]`))))
   return diagnostics
 }
 
 /**
- * Validates a LineBackground: its time must cover every timed word, and its time and words must each be valid.
+ * Validates a LineBackground: it must carry content, and its time and content must each be valid.
  */
 export const validateLineBackground = (background: LineBackground, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   if (background.time) {
     diagnostics.push(...validateTimeRange(background.time, childPath(path, 'time')))
   }
-  diagnostics.push(...validateWords(background.words, background.time, path))
+  diagnostics.push(...validateContent(background.content, background.time, path))
   return diagnostics
 }
 
@@ -72,20 +73,20 @@ export const orderLine = (line: Line): Line => {
 }
 
 /**
- * Returns a canonical copy of the background line: time and annotation dropped when all-default, empty agent references dropped, words canonicalized.
+ * Returns a canonical copy of the background line: time/content/annotation dropped when all-default, empty agent references dropped.
  */
 export const canonicalizeLineBackground = (background: LineBackground): LineBackground => {
   return {
     ...background,
     time: dropDefault(TimeRangeSchema, background.time),
     agents: background.agents.filter((id) => id !== ''),
-    words: canonicalizeList(WordSchema, background.words, canonicalizeWord),
+    content: canonicalizeField(LineContentSchema, background.content, canonicalizeLineContent),
     annotation: canonicalizeField(LineAnnotationSchema, background.annotation, canonicalizeLineAnnotation),
   }
 }
 
 /**
- * Returns a canonical copy of the line: time/part/annotation dropped when all-default, empty agent references dropped, words canonicalized, backgrounds canonicalized then ordered.
+ * Returns a canonical copy of the line: time/part/content/annotation dropped when all-default, empty agent references dropped, backgrounds canonicalized then ordered.
  */
 export const canonicalizeLine = (line: Line): Line => {
   return {
@@ -93,7 +94,7 @@ export const canonicalizeLine = (line: Line): Line => {
     time: dropDefault(TimeRangeSchema, line.time),
     part: dropDefault(PartSchema, line.part),
     agents: line.agents.filter((id) => id !== ''),
-    words: canonicalizeList(WordSchema, line.words, canonicalizeWord),
+    content: canonicalizeField(LineContentSchema, line.content, canonicalizeLineContent),
     annotation: canonicalizeField(LineAnnotationSchema, line.annotation, canonicalizeLineAnnotation),
     backgrounds: canonicalizeList(LineBackgroundSchema, line.backgrounds, canonicalizeLineBackground).sort(byTime((background) => background.time)),
   }

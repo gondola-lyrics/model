@@ -1,8 +1,15 @@
 export type { Agent } from '@gen/common/agent_pb'
 export { AgentSchema, AgentType, AgentTypeSchema } from '@gen/common/agent_pb'
 
-export type { LineAnnotation, LineAnnotationRoman, LineAnnotationTranslation } from '@gen/common/line_pb'
-export { LineAnnotationSchema, LineAnnotationRomanSchema, LineAnnotationTranslationSchema, LineType, LineTypeSchema } from '@gen/common/line_pb'
+export type { LineAnnotation, LineAnnotationRoman, LineAnnotationTranslation, LineContent } from '@gen/common/line_pb'
+export {
+  LineAnnotationSchema,
+  LineAnnotationRomanSchema,
+  LineAnnotationTranslationSchema,
+  LineContentSchema,
+  LineType,
+  LineTypeSchema,
+} from '@gen/common/line_pb'
 
 export type { Meta, MetaCredit, MetaReference } from '@gen/common/meta_pb'
 export { MetaSchema, MetaCreditSchema, MetaReferenceSchema, CreditRole, CreditRoleSchema } from '@gen/common/meta_pb'

@@ -1,12 +1,52 @@
 import type { MakeInit } from '@root/utils'
-import type { LineAnnotation, LineAnnotationRoman, LineAnnotationTranslation, Word } from './proto'
+import type { LineAnnotation, LineAnnotationRoman, LineAnnotationTranslation, LineContent, TimeRange, Word } from './proto'
+import type { Diagnostic } from './diagnostic'
 
-import { LineAnnotationRomanSchema, LineAnnotationSchema, LineAnnotationTranslationSchema, WordType } from './proto'
+import { LineAnnotationRomanSchema, LineAnnotationSchema, LineAnnotationTranslationSchema, LineContentSchema, WordSchema, WordType } from './proto'
+import { DiagnosticCode } from './diagnostic'
 
-import { canonicalizeList, lowerTag } from '@root/utils'
-import { getAnnotationItemText } from './word'
+import { canonicalizeList, childPath, lowerTag } from '@root/utils'
+import { canonicalizeWord, getAnnotationItemText, getWordsText, validateWords } from './word'
 
 import { create } from '@bufbuild/protobuf'
+
+/**
+ * Creates a LineContent, a normal line's content; set either `words` or `text`, never both.
+ */
+export const makeLineContent = (init?: MakeInit<typeof LineContentSchema>): LineContent => {
+  return create(LineContentSchema, init)
+}
+
+/**
+ * Validates a normal line's or background line's content: exactly one of `words` or `text` must be set, and its words must be valid.
+ */
+export const validateContent = (content: LineContent | undefined, time: TimeRange | undefined, path = ''): Diagnostic[] => {
+  const diagnostics: Diagnostic[] = []
+  const contentPath = childPath(path, 'content')
+  const hasWords = content !== undefined && content.words.length > 0
+  const hasText = content?.text !== undefined
+  if (!hasWords && !hasText) {
+    diagnostics.push({ path, code: DiagnosticCode.LineContentMissing })
+  } else if (hasWords && hasText) {
+    diagnostics.push({ path: contentPath, code: DiagnosticCode.LineContentAmbiguous })
+  }
+  diagnostics.push(...validateWords(content?.words ?? [], time, contentPath))
+  return diagnostics
+}
+
+/**
+ * Returns a line's text: its plain text when it carries that, otherwise its words joined.
+ */
+export const getContentText = (content: LineContent | undefined): string => {
+  return content?.text ?? getWordsText(content?.words ?? [])
+}
+
+/**
+ * Returns a canonical copy of the content with its words canonicalized; the plain text is left as is.
+ */
+export const canonicalizeLineContent = (content: LineContent): LineContent => {
+  return { ...content, words: canonicalizeList(WordSchema, content.words, canonicalizeWord) }
+}
 
 /**
  * Creates a LineAnnotation, the per-line annotation container.
@@ -55,10 +95,11 @@ export const canonicalizeLineAnnotation = (annotation: LineAnnotation): LineAnno
 }
 
 /**
- * Derives line-level romans from the words' own, one per language in order of first appearance; the result is for display and must never be stored on the line.
+ * Derives line-level romans from the content's words, one per language in order of first appearance; the result is for display and must never be stored on the line.
  * Words lacking a roman in that language are skipped, and any spaces between two romanized words collapse to a single U+0020.
  */
-export const deriveLineRomans = (words: Word[]): LineAnnotationRoman[] => {
+export const deriveLineRomans = (content: LineContent | undefined): LineAnnotationRoman[] => {
+  const words = content?.words ?? []
   const languages = new Set(words.flatMap((word) => word.annotation?.romans.map((roman) => lowerTag(roman.language)) ?? []))
   const romans: LineAnnotationRoman[] = []
   for (const language of languages) {

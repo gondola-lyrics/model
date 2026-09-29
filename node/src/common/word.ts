@@ -77,10 +77,13 @@ export const makeWordAnnotation = (init?: MakeInit<typeof WordAnnotationSchema>)
 }
 
 /**
- * Validates a Word: a NORMAL word must carry non-empty content, and its time, when set, must be valid.
+ * Validates a Word: its kind must be resolved, a NORMAL word must carry non-empty content, and its time, when set, must be valid.
  */
 export const validateWord = (word: Word, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
+  if (word.type === WordType.UNSPECIFIED) {
+    diagnostics.push({ path, code: DiagnosticCode.WordTypeUnspecified })
+  }
   if (word.type === WordType.NORMAL && word.content === '') {
     diagnostics.push({ path, code: DiagnosticCode.WordContentEmpty })
   }
@@ -91,13 +94,16 @@ export const validateWord = (word: Word, path = ''): Diagnostic[] => {
 }
 
 /**
- * Validates the words of a line or background line: each word must be valid, and each timed word must fall within `time` when it is set.
+ * Validates the words of a line or background line: each word must be valid, each sung word must carry a time, and each timed word must fall within `time` when it is set.
  */
 export const validateWords = (words: Word[], time: TimeRange | undefined, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   words.forEach((word, i) => {
     const wordPath = childPath(path, `words[${i}]`)
     diagnostics.push(...validateWord(word, wordPath))
+    if (word.type === WordType.NORMAL && word.time === undefined) {
+      diagnostics.push({ path: wordPath, code: DiagnosticCode.LineWordTimeMissing })
+    }
     if (time && word.time && (word.time.start < time.start || word.time.end > time.end)) {
       diagnostics.push({ path: childPath(wordPath, 'time'), code: DiagnosticCode.LineWordTimeUncovered })
     }
