@@ -37,3 +37,12 @@ export const validateAgent = (agent: Agent, path = ''): Diagnostic[] => {
 export const canonicalizeAgent = (agent: Agent): Agent => {
   return { ...agent, names: canonicalizeList(TextSchema, agent.names, canonicalizeText) }
 }
+
+/**
+ * Resolves a line's agent ids to the Agent objects they reference, in order with the lead first.
+ * An id matching no agent is skipped, so a dangling reference drops out rather than leaving a hole.
+ */
+export const resolveLineAgents = (line: { agents: string[] }, agents: Agent[]): Agent[] => {
+  const idMap = new Map(agents.map((agent): [string, Agent] => [agent.id, agent]))
+  return line.agents.map((id) => idMap.get(id)).filter((agent) => agent !== undefined)
+}
