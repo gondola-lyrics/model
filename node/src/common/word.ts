@@ -92,7 +92,7 @@ export const validateWordAnnotation = (annotation: WordAnnotation, path = ''): D
 }
 
 /**
- * Validates a Word: its kind must be resolved, a NORMAL word must carry non-empty text, and its time and annotation, when set, must be valid.
+ * Validates a Word: its kind must be resolved, a NORMAL word must carry non-empty text, a SPACE word must carry nothing but its text, and any time and annotation it does carry must be valid.
  */
 export const validateWord = (word: AnyWord, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -101,6 +101,23 @@ export const validateWord = (word: AnyWord, path = ''): Diagnostic[] => {
   }
   if (word.type === WordType.NORMAL && word.text === '') {
     diagnostics.push({ path, code: DiagnosticCode.WordTextEmpty })
+  }
+  if (word.type === WordType.SPACE) {
+    // A SPACE word carries the separator and nothing else; a field holding an all-default value still counts as carried, and a forbidden one is never descended into.
+    if (word.time !== undefined) {
+      diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LineWordTimeUnexpected })
+    }
+    if (word.language !== undefined) {
+      diagnostics.push({ path: childPath(path, 'language'), code: DiagnosticCode.LineWordLanguageUnexpected })
+    }
+    if (word.annotation !== undefined) {
+      diagnostics.push({ path: childPath(path, 'annotation'), code: DiagnosticCode.LineWordAnnotationUnexpected })
+    }
+    // Each layer shapes emphasis differently, so it is read through presence alone rather than through either layer's schema.
+    if ('emphasis' in word && word.emphasis !== undefined) {
+      diagnostics.push({ path: childPath(path, 'emphasis'), code: DiagnosticCode.LineWordEmphasisUnexpected })
+    }
+    return diagnostics
   }
   if (word.time) {
     diagnostics.push(...validateTimeRange(word.time, childPath(path, 'time')))
@@ -124,7 +141,9 @@ export const validateWords = (words: AnyWord[], time: TimeRange | undefined, pat
     if (missing) {
       diagnostics.push({ path: wordPath, code: DiagnosticCode.LineWordTimeMissing })
     }
-    if (!missing && isTimeRangeInDomain(time) && isTimeRangeInDomain(word.time) && (word.time.start < time.start || word.time.end > time.end)) {
+    // A word already reported for its own time, whether it is missing or not allowed at all, is not compared against the line on top of that.
+    const comparable = !missing && word.type !== WordType.SPACE
+    if (comparable && isTimeRangeInDomain(time) && isTimeRangeInDomain(word.time) && (word.time.start < time.start || word.time.end > time.end)) {
       diagnostics.push({ path: childPath(wordPath, 'time'), code: DiagnosticCode.LineWordTimeUncovered })
     }
   })
