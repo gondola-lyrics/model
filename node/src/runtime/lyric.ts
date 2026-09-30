@@ -23,7 +23,17 @@ export const makeLyric = (
     status: LyricStatus.VALID | LyricStatus.INVALID
   },
 ): Lyric => {
-  return create(LyricSchema, { ...init, version: SCHEMA_VERSION })
+  return create(LyricSchema, {
+    version: SCHEMA_VERSION,
+    format: init.format,
+    status: init.status,
+    timing: init.timing,
+    meta: init.meta,
+    extra: init.extra,
+    languages: init.languages,
+    agents: init.agents,
+    lines: init.lines,
+  })
 }
 
 /**

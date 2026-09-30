@@ -37,7 +37,17 @@ export const canonicalizeLineContent = (content: LineContent): LineContent => {
  * Creates a normal line, stamping LINE_TYPE_NORMAL so the discriminant can never be set from outside; its language tags are lowercased.
  */
 export const makeLineNormal = (init: Omit<MakeInit<typeof LineSchema>, 'type'>): Line => {
-  return create(LineSchema, { ...init, type: LineType.NORMAL, languages: init.languages?.map((tag) => tag.toLowerCase()) })
+  return create(LineSchema, {
+    id: init.id,
+    type: LineType.NORMAL,
+    time: init.time,
+    part: init.part,
+    agents: init.agents,
+    languages: init.languages?.map((tag) => tag.toLowerCase()),
+    content: init.content,
+    annotation: init.annotation,
+    backgrounds: init.backgrounds,
+  })
 }
 
 /**
@@ -45,7 +55,7 @@ export const makeLineNormal = (init: Omit<MakeInit<typeof LineSchema>, 'type'>):
  * A present part means the source stated the stretch; its absence means it was derived from a gap in the timeline.
  */
 export const makeLineInstrumental = (init?: Pick<MakeInit<typeof LineSchema>, 'id' | 'time' | 'part'>): Line => {
-  return create(LineSchema, { ...init, type: LineType.INSTRUMENTAL })
+  return create(LineSchema, { id: init?.id, time: init?.time, part: init?.part, type: LineType.INSTRUMENTAL })
 }
 
 /**

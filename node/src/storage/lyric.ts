@@ -17,7 +17,15 @@ import { create, fromBinary, toBinary } from '@bufbuild/protobuf'
  * Creates a storage Lyric, stamping the current schema version over any version in init.
  */
 export const makeLyric = (init?: Omit<MakeInit<typeof LyricSchema>, 'version'>): Lyric => {
-  return create(LyricSchema, { ...init, version: SCHEMA_VERSION })
+  return create(LyricSchema, {
+    version: SCHEMA_VERSION,
+    format: init?.format,
+    timing: init?.timing,
+    meta: init?.meta,
+    extra: init?.extra,
+    agents: init?.agents,
+    lines: init?.lines,
+  })
 }
 
 /**
