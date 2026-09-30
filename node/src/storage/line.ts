@@ -6,7 +6,7 @@ import { LineAnnotationSchema, LineType, PartSchema, TimeRangeSchema } from '@ro
 import { DiagnosticCode } from '@root/common'
 import { LineBackgroundSchema, LineContentSchema, LineSchema, WordSchema } from './proto'
 
-import { byTime, canonicalizeField, canonicalizeList, childPath, dropDefault } from '@root/utils'
+import { byTime, canonicalizeField, canonicalizeList, childPath, dropDefault, isTimeRangeOrdered } from '@root/utils'
 import { canonicalizeLineAnnotation, validateContent, validatePart, validateTimeRange } from '@root/common'
 import { canonicalizeWord } from './word'
 
@@ -97,7 +97,14 @@ export const validateLine = (line: Line, path = ''): Diagnostic[] => {
   if (instrumental && line.backgrounds.length > 0) {
     diagnostics.push({ path: childPath(path, 'backgrounds'), code: DiagnosticCode.LineBackgroundsUnexpected })
   } else {
-    line.backgrounds.forEach((background, i) => diagnostics.push(...validateLineBackground(background, childPath(path, `backgrounds[${i}]`))))
+    line.backgrounds.forEach((background, i) => {
+      const backgroundPath = childPath(path, `backgrounds[${i}]`)
+      // The parent's end covers a background line, while its start may precede the parent's; a range reported for its own numbers or order never joins this comparison.
+      if (isTimeRangeOrdered(line.time) && isTimeRangeOrdered(background.time) && background.time.end > line.time.end) {
+        diagnostics.push({ path: childPath(backgroundPath, 'time'), code: DiagnosticCode.LineBackgroundsTimeUncovered })
+      }
+      diagnostics.push(...validateLineBackground(background, backgroundPath))
+    })
   }
   return diagnostics
 }

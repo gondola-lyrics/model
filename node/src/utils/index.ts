@@ -44,6 +44,13 @@ export const isTimeRangeInDomain = (range: { start: number; end: number } | unde
 }
 
 /**
+ * Reports whether a time range is in domain and runs the right way, which is what relating two ranges to each other needs on top of their numbers being usable.
+ */
+export const isTimeRangeOrdered = (range: { start: number; end: number } | undefined): range is { start: number; end: number } => {
+  return isTimeRangeInDomain(range) && range.end >= range.start
+}
+
+/**
  * Joins a parent diagnostic path with a child segment, so a nested field reads as `lines[0].words[1]`.
  */
 export const childPath = (parent: string, child: string): string => {

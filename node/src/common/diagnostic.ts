@@ -26,6 +26,7 @@ export enum DiagnosticCode {
   LineLanguagesUnexpected = 'line.languages.unexpected',
   LineAnnotationUnexpected = 'line.annotation.unexpected',
   LineBackgroundsUnexpected = 'line.backgrounds.unexpected',
+  LineBackgroundsTimeUncovered = 'line.backgrounds.time.uncovered',
   LineContentMissing = 'line.content.missing',
   LineContentAmbiguous = 'line.content.ambiguous',
   LineContentUnexpected = 'line.content.unexpected',
