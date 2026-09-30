@@ -112,17 +112,19 @@ export const validateWord = (word: AnyWord, path = ''): Diagnostic[] => {
 }
 
 /**
- * Validates the words of a line or background line: each word must be valid, each sung word must carry a time, and each timed word must fall within `time` when it is set.
+ * Validates the words of a line or background line: each word must be valid, each sung word must carry a usable time, and each timed word must fall within `time` when it is set.
  */
 export const validateWords = (words: AnyWord[], time: TimeRange | undefined, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   words.forEach((word, i) => {
     const wordPath = childPath(path, `words[${i}]`)
     diagnostics.push(...validateWord(word, wordPath))
-    if (word.type === WordType.NORMAL && word.time === undefined) {
+    // An all-default range is omitted by the schema and reads as no timing at all, so a sung word carrying one has no time either.
+    const missing = word.type === WordType.NORMAL && (word.time === undefined || (word.time.start === 0 && word.time.end === 0))
+    if (missing) {
       diagnostics.push({ path: wordPath, code: DiagnosticCode.LineWordTimeMissing })
     }
-    if (isTimeRangeInDomain(time) && isTimeRangeInDomain(word.time) && (word.time.start < time.start || word.time.end > time.end)) {
+    if (!missing && isTimeRangeInDomain(time) && isTimeRangeInDomain(word.time) && (word.time.start < time.start || word.time.end > time.end)) {
       diagnostics.push({ path: childPath(wordPath, 'time'), code: DiagnosticCode.LineWordTimeUncovered })
     }
   })
