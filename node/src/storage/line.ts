@@ -65,22 +65,40 @@ export const makeLineBackground = (init?: MakeInit<typeof LineBackgroundSchema>)
 }
 
 /**
- * Validates a Line: a NORMAL line must carry content and any other kind must not, and its time, part, content and background lines must each be valid.
+ * Validates a Line: its kind must be resolved, a NORMAL line must carry content, an INSTRUMENTAL one must carry only its range, and its time, part, content and background lines must each be valid.
  */
 export const validateLine = (line: Line, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
+  const instrumental = line.type === LineType.INSTRUMENTAL
+  if (line.type === LineType.UNSPECIFIED) {
+    diagnostics.push({ path: childPath(path, 'type'), code: DiagnosticCode.LineTypeUnspecified })
+  }
   if (line.time) {
     diagnostics.push(...validateTimeRange(line.time, childPath(path, 'time')))
+  } else if (instrumental) {
+    // An instrumental line is a stretch of the timeline, so it is nothing without its range.
+    diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LineTimeMissing })
   }
   if (line.part) {
     diagnostics.push(...validatePart(line.part, childPath(path, 'part')))
+  }
+  // An instrumental line carries no singing, so every field describing one is not allowed, and a forbidden field is never descended into.
+  if (instrumental && line.agents.length > 0) {
+    diagnostics.push({ path: childPath(path, 'agents'), code: DiagnosticCode.LineAgentsUnexpected })
   }
   if (line.type === LineType.NORMAL) {
     diagnostics.push(...validateContent(line.content, line.time, path))
   } else if (line.content) {
     diagnostics.push({ path: childPath(path, 'content'), code: DiagnosticCode.LineContentUnexpected })
   }
-  line.backgrounds.forEach((background, i) => diagnostics.push(...validateLineBackground(background, childPath(path, `backgrounds[${i}]`))))
+  if (instrumental && line.annotation !== undefined) {
+    diagnostics.push({ path: childPath(path, 'annotation'), code: DiagnosticCode.LineAnnotationUnexpected })
+  }
+  if (instrumental && line.backgrounds.length > 0) {
+    diagnostics.push({ path: childPath(path, 'backgrounds'), code: DiagnosticCode.LineBackgroundsUnexpected })
+  } else {
+    line.backgrounds.forEach((background, i) => diagnostics.push(...validateLineBackground(background, childPath(path, `backgrounds[${i}]`))))
+  }
   return diagnostics
 }
 

@@ -2,7 +2,7 @@ import type { MakeInit } from '@root/utils'
 import type { Diagnostic, TimeRange } from '@root/common'
 import type { Lyric, Word } from './proto'
 
-import { AgentSchema, MetaSchema, Timing } from '@root/common/proto'
+import { AgentSchema, LineType, MetaSchema, Timing } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'
 import { LineSchema, LyricSchema, LyricStatus } from './proto'
 import { SCHEMA_VERSION } from '@root/version'
@@ -44,6 +44,10 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
 
   if (!SEMVER_PATTERN.test(lyric.version)) {
     diagnostics.push({ path: 'version', code: DiagnosticCode.LyricVersionMalformed })
+  }
+
+  if (lyric.status === LyricStatus.UNSPECIFIED) {
+    diagnostics.push({ path: 'status', code: DiagnosticCode.LyricStatusUnspecified })
   }
 
   const ids = new Set<string>()
@@ -89,13 +93,16 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   }
   /**
    * Reports the whole-tree rules for one line or background line: agent references resolving to no agent, and any time present under TIMING_NONE.
+   * It walks every node whatever the line's kind, since a whole-tree invariant holds regardless; `checkAgents` only turns off the reference loop for a line whose whole agent list was already reported as not allowed.
    */
-  const checkReferences = (agents: string[], time: TimeRange | undefined, words: Word[], path: string): void => {
-    agents.forEach((id, j) => {
-      if (!ids.has(id)) {
-        diagnostics.push({ path: `${path}.agents[${j}]`, code: DiagnosticCode.LyricLineAgentDangling })
-      }
-    })
+  const checkReferences = (agents: string[], time: TimeRange | undefined, words: Word[], path: string, checkAgents = true): void => {
+    if (checkAgents) {
+      agents.forEach((id, j) => {
+        if (!ids.has(id)) {
+          diagnostics.push({ path: `${path}.agents[${j}]`, code: DiagnosticCode.LyricLineAgentDangling })
+        }
+      })
+    }
     if (untimed && time) {
       diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingNonePresent })
     }
@@ -110,7 +117,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   lyric.lines.forEach((line, i) => {
     const path = `lines[${i}]`
     claimLineId(line.id, path)
-    checkReferences(line.agents, line.time, line.content?.words ?? [], path)
+    checkReferences(line.agents, line.time, line.content?.words ?? [], path, line.type !== LineType.INSTRUMENTAL)
     line.backgrounds.forEach((background, j) => {
       const backgroundPath = `${path}.backgrounds[${j}]`
       claimLineId(background.id, backgroundPath)
