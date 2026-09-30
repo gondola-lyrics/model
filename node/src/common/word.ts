@@ -13,7 +13,7 @@ import {
 import { TimeRangeSchema } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
-import { canonicalizeField, canonicalizeList, childPath, dropDefault, isTimeRangeInDomain, lowerTag } from '@root/utils'
+import { canonicalizeField, canonicalizeList, childPath, dropDefault, findDuplicates, isTimeRangeInDomain, lowerTag } from '@root/utils'
 import { validateTimeRange } from './time'
 
 import { create } from '@bufbuild/protobuf'
@@ -65,11 +65,19 @@ export const makeWordAnnotation = (init?: MakeInit<typeof WordAnnotationSchema>)
 }
 
 /**
- * Validates a WordAnnotation: every ruby and roman item, and every token within them, must carry a valid time when it carries one at all.
+ * Validates a WordAnnotation: each of its lists holds one entry per language, and every ruby and roman item, and every token within them, must carry a valid time when it carries one at all.
  * An item or token without a time inherits one, so its absence is never a problem here.
  */
 export const validateWordAnnotation = (annotation: WordAnnotation, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
+  /**
+   * Reports every entry of one list whose language an earlier entry already took, treating an unset and an empty tag as the same default language.
+   */
+  const checkLanguages = (items: { language?: string }[], field: string, code: DiagnosticCode): void => {
+    findDuplicates(items, (item) => lowerTag(item.language) ?? '').forEach((i) => {
+      diagnostics.push({ path: childPath(path, `${field}[${i}]`), code })
+    })
+  }
   /**
    * Validates the time of every item in one timed annotation list, and of every token those items hold.
    */
@@ -86,6 +94,9 @@ export const validateWordAnnotation = (annotation: WordAnnotation, path = ''): D
       })
     })
   }
+  checkLanguages(annotation.rubies, 'rubies', DiagnosticCode.LineWordAnnotationRubiesLanguageDuplicate)
+  checkLanguages(annotation.romans, 'romans', DiagnosticCode.LineWordAnnotationRomansLanguageDuplicate)
+  checkLanguages(annotation.translations, 'translations', DiagnosticCode.LineWordAnnotationTranslationsLanguageDuplicate)
   validateItems(annotation.rubies, 'rubies')
   validateItems(annotation.romans, 'romans')
   return diagnostics

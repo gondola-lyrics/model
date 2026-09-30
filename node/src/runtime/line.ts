@@ -7,7 +7,7 @@ import { DiagnosticCode } from '@root/common'
 import { LineBackgroundSchema, LineContentSchema, LineSchema, WordSchema } from './proto'
 
 import { byTime, canonicalizeField, canonicalizeList, childPath, dropDefault, isTimeRangeOrdered } from '@root/utils'
-import { canonicalizeLineAnnotation, getWordsLanguages, validateContent, validatePart, validateTimeRange } from '@root/common'
+import { canonicalizeLineAnnotation, getWordsLanguages, validateContent, validateLineAnnotation, validatePart, validateTimeRange } from '@root/common'
 import { canonicalizeWord } from './word'
 
 import { create } from '@bufbuild/protobuf'
@@ -97,6 +97,8 @@ export const validateLine = (line: Line, path = ''): Diagnostic[] => {
   }
   if (instrumental && line.annotation !== undefined) {
     diagnostics.push({ path: childPath(path, 'annotation'), code: DiagnosticCode.LineAnnotationUnexpected })
+  } else if (line.annotation) {
+    diagnostics.push(...validateLineAnnotation(line.annotation, childPath(path, 'annotation')))
   }
   if (instrumental && line.backgrounds.length > 0) {
     diagnostics.push({ path: childPath(path, 'backgrounds'), code: DiagnosticCode.LineBackgroundsUnexpected })
@@ -114,7 +116,7 @@ export const validateLine = (line: Line, path = ''): Diagnostic[] => {
 }
 
 /**
- * Validates a LineBackground: it must carry content, and its time and content must each be valid.
+ * Validates a LineBackground: it must carry content, and its time, content and annotation must each be valid.
  */
 export const validateLineBackground = (background: LineBackground, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -122,6 +124,9 @@ export const validateLineBackground = (background: LineBackground, path = ''): D
     diagnostics.push(...validateTimeRange(background.time, childPath(path, 'time')))
   }
   diagnostics.push(...validateContent(background.content, background.time, path))
+  if (background.annotation) {
+    diagnostics.push(...validateLineAnnotation(background.annotation, childPath(path, 'annotation')))
+  }
   return diagnostics
 }
 

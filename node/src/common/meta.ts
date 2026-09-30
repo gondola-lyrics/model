@@ -5,7 +5,7 @@ import type { Diagnostic } from './diagnostic'
 import { CreditRole, MetaCreditSchema, MetaReferenceSchema, MetaSchema, TextSchema, UnknownEntrySchema } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
-import { canonicalizeList, checkNumberDomain, childPath } from '@root/utils'
+import { canonicalizeList, checkNumberDomain, childPath, findDuplicates, lowerTag } from '@root/utils'
 import { canonicalizeText } from './text'
 
 import { create } from '@bufbuild/protobuf'
@@ -54,10 +54,19 @@ export const validateMetaCredit = (credit: MetaCredit, path = ''): Diagnostic[] 
 }
 
 /**
- * Validates a Meta: its offset and its duration, when set, must lie within the schema's domain, and each of its credits must be valid.
+ * Validates a Meta: its offset and its duration, when set, must lie within the schema's domain, its titles, albums and references hold one entry per key, and each of its credits must be valid.
  */
 export const validateMeta = (meta: Meta, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
+  /**
+   * Reports every entry of one list whose key an earlier entry already took, locating the later one.
+   */
+  const checkDuplicates = <T>(items: T[], key: (item: T) => string, field: string, code: DiagnosticCode): void => {
+    findDuplicates(items, key).forEach((i) => {
+      diagnostics.push({ path: childPath(path, `${field}[${i}]`), code })
+    })
+  }
+  const byLanguage = (text: { language?: string }): string => lowerTag(text.language) ?? ''
   const offset = checkNumberDomain(meta.offset, MIN_OFFSET, MAX_OFFSET)
   if (offset === 'invalid') {
     diagnostics.push({ path: childPath(path, 'offset'), code: DiagnosticCode.MetaOffsetInvalid })
@@ -72,7 +81,11 @@ export const validateMeta = (meta: Meta, path = ''): Diagnostic[] => {
       diagnostics.push({ path: childPath(path, 'duration'), code: DiagnosticCode.MetaDurationOverflow })
     }
   }
+  // Titles and albums are one per language, while artists, authors and credited names are one per person, so only the first two are checked.
+  checkDuplicates(meta.titles, byLanguage, 'titles', DiagnosticCode.MetaTitlesLanguageDuplicate)
+  checkDuplicates(meta.albums, byLanguage, 'albums', DiagnosticCode.MetaAlbumsLanguageDuplicate)
   meta.credits.forEach((credit, i) => diagnostics.push(...validateMetaCredit(credit, childPath(path, `credits[${i}]`))))
+  checkDuplicates(meta.references, (reference) => reference.platform.toLowerCase(), 'references', DiagnosticCode.MetaReferencesPlatformDuplicate)
   return diagnostics
 }
 

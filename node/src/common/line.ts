@@ -6,7 +6,7 @@ import type { Diagnostic } from './diagnostic'
 import { LineAnnotationRomanSchema, LineAnnotationSchema, LineAnnotationTranslationSchema, WordType } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
-import { canonicalizeList, childPath, lowerTag } from '@root/utils'
+import { canonicalizeList, childPath, findDuplicates, lowerTag } from '@root/utils'
 import { getAnnotationItemText, getWordsText, validateWords } from './word'
 
 import { create } from '@bufbuild/protobuf'
@@ -55,6 +55,24 @@ export const isSyllableLine = (line: { content?: AnyLineContent }): boolean => {
  */
 export const makeLineAnnotation = (init?: MakeInit<typeof LineAnnotationSchema>): LineAnnotation => {
   return create(LineAnnotationSchema, init)
+}
+
+/**
+ * Validates a LineAnnotation: each of its lists holds one entry per language, so a language may not repeat within one.
+ */
+export const validateLineAnnotation = (annotation: LineAnnotation, path = ''): Diagnostic[] => {
+  const diagnostics: Diagnostic[] = []
+  /**
+   * Reports every entry of one list whose language an earlier entry already took, treating an unset and an empty tag as the same default language.
+   */
+  const checkLanguages = (items: { language?: string }[], field: string, code: DiagnosticCode): void => {
+    findDuplicates(items, (item) => lowerTag(item.language) ?? '').forEach((i) => {
+      diagnostics.push({ path: childPath(path, `${field}[${i}]`), code })
+    })
+  }
+  checkLanguages(annotation.romans, 'romans', DiagnosticCode.LineAnnotationRomansLanguageDuplicate)
+  checkLanguages(annotation.translations, 'translations', DiagnosticCode.LineAnnotationTranslationsLanguageDuplicate)
+  return diagnostics
 }
 
 /**

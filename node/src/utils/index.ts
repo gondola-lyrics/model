@@ -51,6 +51,22 @@ export const isTimeRangeOrdered = (range: { start: number; end: number } | undef
 }
 
 /**
+ * Collects the indexes of entries whose key an earlier entry already took, so a list holding one entry per key can report every repeat without reordering or merging anything.
+ */
+export const findDuplicates = <T>(items: T[], key: (item: T) => string): number[] => {
+  const seen = new Set<string>()
+  const duplicates: number[] = []
+  items.forEach((item, i) => {
+    const value = key(item)
+    if (seen.has(value)) {
+      duplicates.push(i)
+    }
+    seen.add(value)
+  })
+  return duplicates
+}
+
+/**
  * Joins a parent diagnostic path with a child segment, so a nested field reads as `lines[0].words[1]`.
  */
 export const childPath = (parent: string, child: string): string => {

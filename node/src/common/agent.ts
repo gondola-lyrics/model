@@ -5,7 +5,7 @@ import type { Diagnostic } from './diagnostic'
 import { AgentSchema, AgentType, TextSchema } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
-import { canonicalizeList } from '@root/utils'
+import { canonicalizeList, childPath, findDuplicates, lowerTag } from '@root/utils'
 import { canonicalizeText } from './text'
 
 import { create } from '@bufbuild/protobuf'
@@ -18,7 +18,7 @@ export const makeAgent = (init?: MakeInit<typeof AgentSchema>): Agent => {
 }
 
 /**
- * Validates an Agent: its id must be non-empty, and an OTHER type must carry the source's own word in `raw`.
+ * Validates an Agent: its id must be non-empty, an OTHER type must carry the source's own word in `raw`, and its names hold one entry per language.
  */
 export const validateAgent = (agent: Agent, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -28,6 +28,10 @@ export const validateAgent = (agent: Agent, path = ''): Diagnostic[] => {
   if (agent.type === AgentType.OTHER && agent.raw === undefined) {
     diagnostics.push({ path, code: DiagnosticCode.AgentRawMissing })
   }
+  // The names are one per language rather than one per member, so a language may not repeat; an unset and an empty tag are the same default language.
+  findDuplicates(agent.names, (name) => lowerTag(name.language) ?? '').forEach((i) => {
+    diagnostics.push({ path: childPath(path, `names[${i}]`), code: DiagnosticCode.AgentNamesLanguageDuplicate })
+  })
   return diagnostics
 }
 
