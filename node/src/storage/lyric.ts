@@ -8,7 +8,7 @@ import { LineSchema, LyricSchema } from './proto'
 import { SCHEMA_VERSION } from '@root/version'
 
 import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath } from '@root/utils'
-import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMetaCredit } from '@root/common'
+import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMeta } from '@root/common'
 import { canonicalizeLine, orderLine, validateLine } from './line'
 
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf'
@@ -51,7 +51,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   })
 
   if (lyric.meta) {
-    lyric.meta.credits.forEach((credit, i) => diagnostics.push(...validateMetaCredit(credit, `meta.credits[${i}]`)))
+    diagnostics.push(...validateMeta(lyric.meta, 'meta'))
   }
 
   const untimed = lyric.timing === Timing.NONE

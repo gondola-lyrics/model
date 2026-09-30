@@ -5,10 +5,21 @@ import type { Diagnostic } from './diagnostic'
 import { CreditRole, MetaCreditSchema, MetaReferenceSchema, MetaSchema, TextSchema, UnknownEntrySchema } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
-import { canonicalizeList } from '@root/utils'
+import { canonicalizeList, checkNumberDomain, childPath } from '@root/utils'
 import { canonicalizeText } from './text'
 
 import { create } from '@bufbuild/protobuf'
+
+/**
+ * The schema declares a duration above this bound invalid, matching a time.
+ */
+const MAX_DURATION = 2 ** 31 - 1
+
+/**
+ * The offset is a sint32, so it spans the whole signed 32-bit range.
+ */
+const MIN_OFFSET = -(2 ** 31)
+const MAX_OFFSET = 2 ** 31 - 1
 
 /**
  * Creates a Meta, the lyric's metadata.
@@ -39,6 +50,29 @@ export const validateMetaCredit = (credit: MetaCredit, path = ''): Diagnostic[] 
   if (credit.role === CreditRole.OTHER && credit.raw === undefined) {
     diagnostics.push({ path, code: DiagnosticCode.MetaCreditRawMissing })
   }
+  return diagnostics
+}
+
+/**
+ * Validates a Meta: its offset and its duration, when set, must lie within the schema's domain, and each of its credits must be valid.
+ */
+export const validateMeta = (meta: Meta, path = ''): Diagnostic[] => {
+  const diagnostics: Diagnostic[] = []
+  const offset = checkNumberDomain(meta.offset, MIN_OFFSET, MAX_OFFSET)
+  if (offset === 'invalid') {
+    diagnostics.push({ path: childPath(path, 'offset'), code: DiagnosticCode.MetaOffsetInvalid })
+  } else if (offset === 'overflow') {
+    diagnostics.push({ path: childPath(path, 'offset'), code: DiagnosticCode.MetaOffsetOverflow })
+  }
+  if (meta.duration !== undefined) {
+    const duration = checkNumberDomain(meta.duration, 0, MAX_DURATION)
+    if (duration === 'invalid') {
+      diagnostics.push({ path: childPath(path, 'duration'), code: DiagnosticCode.MetaDurationInvalid })
+    } else if (duration === 'overflow') {
+      diagnostics.push({ path: childPath(path, 'duration'), code: DiagnosticCode.MetaDurationOverflow })
+    }
+  }
+  meta.credits.forEach((credit, i) => diagnostics.push(...validateMetaCredit(credit, childPath(path, `credits[${i}]`))))
   return diagnostics
 }
 

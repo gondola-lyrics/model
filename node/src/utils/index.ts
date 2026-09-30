@@ -15,6 +15,35 @@ export const SEMVER_PATTERN =
   /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
 
 /**
+ * The schema declares a time above this bound invalid.
+ */
+export const MAX_TIME = 2 ** 31 - 1
+
+/**
+ * How a number sits against the integer domain a schema field allows.
+ * `invalid` marks a value the field could never hold, `overflow` marks an integer of the right sign lying outside the bounds.
+ */
+export type NumberDomain = 'ok' | 'invalid' | 'overflow'
+
+/**
+ * Classifies a number against the inclusive integer bounds a schema field allows.
+ * A fraction, NaN or infinity belongs to no field at all, and neither does a negative value in an unsigned one, so those are invalid rather than out of bounds.
+ */
+export const checkNumberDomain = (value: number, min: number, max: number): NumberDomain => {
+  if (!Number.isInteger(value) || (min >= 0 && value < 0)) {
+    return 'invalid'
+  }
+  return value < min || value > max ? 'overflow' : 'ok'
+}
+
+/**
+ * Reports whether a time range is set and both its bounds hold numbers the schema allows, so comparing it against another range is meaningful.
+ */
+export const isTimeRangeInDomain = (range: { start: number; end: number } | undefined): range is { start: number; end: number } => {
+  return range !== undefined && checkNumberDomain(range.start, 0, MAX_TIME) === 'ok' && checkNumberDomain(range.end, 0, MAX_TIME) === 'ok'
+}
+
+/**
  * Joins a parent diagnostic path with a child segment, so a nested field reads as `lines[0].words[1]`.
  */
 export const childPath = (parent: string, child: string): string => {

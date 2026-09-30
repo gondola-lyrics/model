@@ -3,6 +3,8 @@
  */
 export enum DiagnosticCode {
   TimeRangeEndBeforeStart = 'time.range.end.before_start',
+  TimeRangeStartInvalid = 'time.range.start.invalid',
+  TimeRangeEndInvalid = 'time.range.end.invalid',
   TimeRangeStartOverflow = 'time.range.start.overflow',
   TimeRangeEndOverflow = 'time.range.end.overflow',
   WordTypeUnspecified = 'word.type.unspecified',
@@ -11,6 +13,13 @@ export enum DiagnosticCode {
   AgentRawMissing = 'agent.raw.missing',
   PartRawMissing = 'part.raw.missing',
   MetaCreditRawMissing = 'meta.credit.raw.missing',
+  MetaOffsetInvalid = 'meta.offset.invalid',
+  MetaOffsetOverflow = 'meta.offset.overflow',
+  MetaDurationInvalid = 'meta.duration.invalid',
+  MetaDurationOverflow = 'meta.duration.overflow',
+  LanguageUsageTagEmpty = 'language.usage.tag.empty',
+  LanguageUsageCountInvalid = 'language.usage.count.invalid',
+  LanguageUsageCountOverflow = 'language.usage.count.overflow',
   LineContentMissing = 'line.content.missing',
   LineContentAmbiguous = 'line.content.ambiguous',
   LineContentUnexpected = 'line.content.unexpected',

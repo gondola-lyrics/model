@@ -2,6 +2,7 @@ import type { MakeInit } from '@root/utils'
 import type { TimeRange } from './proto'
 import type { Diagnostic } from './diagnostic'
 
+import { MAX_TIME, checkNumberDomain } from '@root/utils'
 import { TimeRangeSchema } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
@@ -14,21 +15,24 @@ export const makeTimeRange = (init?: MakeInit<typeof TimeRangeSchema>): TimeRang
   return create(TimeRangeSchema, init)
 }
 
-// The schema declares times above this bound invalid.
-const MAX_TIME = 2 ** 31 - 1
-
 /**
- * Validates a TimeRange: its end may not fall before its start, and neither bound may exceed 2^31-1.
+ * Validates a TimeRange: neither bound may hold a value outside the schema's domain, and when both hold a usable one the end may not fall before the start.
  */
 export const validateTimeRange = (range: TimeRange, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
-  if (range.end < range.start) {
+  const start = checkNumberDomain(range.start, 0, MAX_TIME)
+  const end = checkNumberDomain(range.end, 0, MAX_TIME)
+  if (start === 'ok' && end === 'ok' && range.end < range.start) {
     diagnostics.push({ path, code: DiagnosticCode.TimeRangeEndBeforeStart })
   }
-  if (range.start > MAX_TIME) {
+  if (start === 'invalid') {
+    diagnostics.push({ path, code: DiagnosticCode.TimeRangeStartInvalid })
+  } else if (start === 'overflow') {
     diagnostics.push({ path, code: DiagnosticCode.TimeRangeStartOverflow })
   }
-  if (range.end > MAX_TIME) {
+  if (end === 'invalid') {
+    diagnostics.push({ path, code: DiagnosticCode.TimeRangeEndInvalid })
+  } else if (end === 'overflow') {
     diagnostics.push({ path, code: DiagnosticCode.TimeRangeEndOverflow })
   }
   return diagnostics

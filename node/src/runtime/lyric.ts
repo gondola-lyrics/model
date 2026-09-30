@@ -8,8 +8,8 @@ import { LineSchema, LyricSchema, LyricStatus } from './proto'
 import { SCHEMA_VERSION } from '@root/version'
 
 import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath } from '@root/utils'
-import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMetaCredit } from '@root/common'
-import { canonicalizeLanguageUsages, orderLanguageUsages } from './language'
+import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMeta } from '@root/common'
+import { canonicalizeLanguageUsages, orderLanguageUsages, validateLanguageUsage } from './language'
 import { canonicalizeLine, orderLine, validateLine } from './line'
 
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf'
@@ -59,16 +59,18 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   })
 
   if (lyric.meta) {
-    lyric.meta.credits.forEach((credit, i) => diagnostics.push(...validateMetaCredit(credit, `meta.credits[${i}]`)))
+    diagnostics.push(...validateMeta(lyric.meta, 'meta'))
   }
 
   const languageTags = new Set<string>()
   lyric.languages.forEach((usage, i) => {
+    const path = `languages[${i}]`
     const tag = usage.tag.toLowerCase()
     if (languageTags.has(tag)) {
-      diagnostics.push({ path: `languages[${i}]`, code: DiagnosticCode.LyricLanguageTagDuplicate })
+      diagnostics.push({ path, code: DiagnosticCode.LyricLanguageTagDuplicate })
     }
     languageTags.add(tag)
+    diagnostics.push(...validateLanguageUsage(usage, path))
   })
 
   const untimed = lyric.timing === Timing.NONE

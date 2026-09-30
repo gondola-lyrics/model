@@ -13,7 +13,7 @@ import {
 import { TimeRangeSchema } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
-import { canonicalizeField, canonicalizeList, childPath, dropDefault, lowerTag } from '@root/utils'
+import { canonicalizeField, canonicalizeList, childPath, dropDefault, isTimeRangeInDomain, lowerTag } from '@root/utils'
 import { validateTimeRange } from './time'
 
 import { create } from '@bufbuild/protobuf'
@@ -92,7 +92,7 @@ export const validateWords = (words: AnyWord[], time: TimeRange | undefined, pat
     if (word.type === WordType.NORMAL && word.time === undefined) {
       diagnostics.push({ path: wordPath, code: DiagnosticCode.LineWordTimeMissing })
     }
-    if (time && word.time && (word.time.start < time.start || word.time.end > time.end)) {
+    if (isTimeRangeInDomain(time) && isTimeRangeInDomain(word.time) && (word.time.start < time.start || word.time.end > time.end)) {
       diagnostics.push({ path: childPath(wordPath, 'time'), code: DiagnosticCode.LineWordTimeUncovered })
     }
   })
