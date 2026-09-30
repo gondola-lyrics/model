@@ -65,7 +65,34 @@ export const makeWordAnnotation = (init?: MakeInit<typeof WordAnnotationSchema>)
 }
 
 /**
- * Validates a Word: its kind must be resolved, a NORMAL word must carry non-empty text, and its time, when set, must be valid.
+ * Validates a WordAnnotation: every ruby and roman item, and every token within them, must carry a valid time when it carries one at all.
+ * An item or token without a time inherits one, so its absence is never a problem here.
+ */
+export const validateWordAnnotation = (annotation: WordAnnotation, path = ''): Diagnostic[] => {
+  const diagnostics: Diagnostic[] = []
+  /**
+   * Validates the time of every item in one timed annotation list, and of every token those items hold.
+   */
+  const validateItems = (items: (WordAnnotationRuby | WordAnnotationRoman)[], field: string): void => {
+    items.forEach((item, i) => {
+      const itemPath = childPath(path, `${field}[${i}]`)
+      if (item.time) {
+        diagnostics.push(...validateTimeRange(item.time, childPath(itemPath, 'time')))
+      }
+      item.tokens.forEach((token, j) => {
+        if (token.time) {
+          diagnostics.push(...validateTimeRange(token.time, childPath(itemPath, `tokens[${j}].time`)))
+        }
+      })
+    })
+  }
+  validateItems(annotation.rubies, 'rubies')
+  validateItems(annotation.romans, 'romans')
+  return diagnostics
+}
+
+/**
+ * Validates a Word: its kind must be resolved, a NORMAL word must carry non-empty text, and its time and annotation, when set, must be valid.
  */
 export const validateWord = (word: AnyWord, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -77,6 +104,9 @@ export const validateWord = (word: AnyWord, path = ''): Diagnostic[] => {
   }
   if (word.time) {
     diagnostics.push(...validateTimeRange(word.time, childPath(path, 'time')))
+  }
+  if (word.annotation) {
+    diagnostics.push(...validateWordAnnotation(word.annotation, childPath(path, 'annotation')))
   }
   return diagnostics
 }
