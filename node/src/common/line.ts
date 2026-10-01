@@ -46,7 +46,7 @@ export const getContentText = (content: AnyLineContent | undefined): string => {
 /**
  * Reports whether a line is word-level, i.e. its content carries words rather than plain text; an instrumental or text line is not.
  */
-export const isSyllableLine = (line: { content?: AnyLineContent }): boolean => {
+export const isWordLevelLine = (line: { content?: AnyLineContent }): boolean => {
   return (line.content?.words.length ?? 0) > 0
 }
 
