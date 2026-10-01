@@ -42,6 +42,10 @@ message LineBackground {
 
   // Annotations applied to the whole line.
   lyric.common.LineAnnotation annotation = 5;
+
+  // BCP 47 language tags the source declares for this line, each at most once.
+  // Consumers may fall back to the languages of its words when this is empty.
+  repeated string languages = 6;
 }
 
 // A line of the lyric.
@@ -73,4 +77,8 @@ message Line {
 
   // Background lines attached to this line, ordered by TimeRange.start ascending.
   repeated LineBackground backgrounds = 8;
+
+  // BCP 47 language tags the source declares for this line, each at most once.
+  // Consumers may fall back to the languages of its words when this is empty.
+  repeated string languages = 9;
 }
