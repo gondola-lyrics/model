@@ -34,7 +34,7 @@ export const canonicalizeLineContent = (content: LineContent): LineContent => {
 }
 
 /**
- * Creates a normal line, stamping LINE_TYPE_NORMAL so the discriminant can never be set from outside.
+ * Creates a normal line, stamping LINE_TYPE_NORMAL so the discriminant can never be set from outside; its language tags are lowercased.
  */
 export const makeLineNormal = (init: Omit<MakeInit<typeof LineSchema>, 'type'>): Line => {
   return create(LineSchema, {
@@ -43,6 +43,7 @@ export const makeLineNormal = (init: Omit<MakeInit<typeof LineSchema>, 'type'>):
     time: init.time,
     part: init.part,
     agents: init.agents,
+    languages: init.languages?.map((tag) => tag.toLowerCase()),
     content: init.content,
     annotation: init.annotation,
     backgrounds: init.backgrounds,
@@ -58,10 +59,10 @@ export const makeLineInstrumental = (init?: Pick<MakeInit<typeof LineSchema>, 'i
 }
 
 /**
- * Creates a LineBackground, a background vocal line attached to a normal line.
+ * Creates a LineBackground, a background vocal line attached to a normal line; its language tags are lowercased.
  */
 export const makeLineBackground = (init?: MakeInit<typeof LineBackgroundSchema>): LineBackground => {
-  return create(LineBackgroundSchema, init)
+  return create(LineBackgroundSchema, { ...init, languages: init?.languages?.map((tag) => tag.toLowerCase()) })
 }
 
 /**

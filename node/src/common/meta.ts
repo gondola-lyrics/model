@@ -22,10 +22,10 @@ const MIN_OFFSET = -(2 ** 31)
 const MAX_OFFSET = 2 ** 31 - 1
 
 /**
- * Creates a Meta, the lyric's metadata.
+ * Creates a Meta, the lyric's metadata; its language tag is lowercased.
  */
 export const makeMeta = (init?: MakeInit<typeof MetaSchema>): Meta => {
-  return create(MetaSchema, init)
+  return create(MetaSchema, { ...init, language: init?.language?.toLowerCase() })
 }
 
 /**
