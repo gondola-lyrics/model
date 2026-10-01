@@ -106,6 +106,9 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
     if (untimed && time) {
       diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingNonePresent })
     }
+    if (untimed && words.length > 0) {
+      diagnostics.push({ path: `${path}.content.words`, code: DiagnosticCode.LyricTimingNoneWords })
+    }
     if (untimed) {
       words.forEach((word, j) => {
         if (word.time) {

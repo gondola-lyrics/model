@@ -53,6 +53,7 @@ export enum DiagnosticCode {
   LyricLineIdDuplicate = 'lyric.line.id.duplicate',
   LyricLanguageTagDuplicate = 'lyric.language.tag.duplicate',
   LyricTimingNonePresent = 'lyric.timing.none.present',
+  LyricTimingNoneWords = 'lyric.timing.none.words',
 }
 
 /**
