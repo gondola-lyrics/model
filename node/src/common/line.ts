@@ -7,7 +7,7 @@ import { LineAnnotationRomanSchema, LineAnnotationSchema, LineAnnotationTranslat
 import { DiagnosticCode } from './diagnostic'
 
 import { canonicalizeList, childPath, findDuplicates, lowerTag } from '@root/utils'
-import { getAnnotationItemText, getWordsText, validateWords } from './word'
+import { getAnnotationItemText, getWordsLanguages, getWordsText, validateWords } from './word'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -48,6 +48,14 @@ export const getContentText = (content: AnyLineContent | undefined): string => {
  */
 export const isSyllableLine = (line: { content?: AnyLineContent }): boolean => {
   return (line.content?.words.length ?? 0) > 0
+}
+
+/**
+ * Returns the line's language tags, falling back to those of its words when the line lists none.
+ * Both layers carry the same shape, so one helper serves a line and a background line of either.
+ */
+export const getLineLanguages = (line: { languages: string[]; content?: AnyLineContent }): string[] => {
+  return line.languages.length > 0 ? line.languages : getWordsLanguages(line.content?.words ?? [])
 }
 
 /**

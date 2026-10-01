@@ -7,7 +7,7 @@ import { DiagnosticCode } from '@root/common'
 import { LineBackgroundSchema, LineContentSchema, LineSchema, WordSchema } from './proto'
 
 import { byTime, canonicalizeField, canonicalizeList, childPath, dropDefault, isTimeRangeOrdered } from '@root/utils'
-import { canonicalizeLineAnnotation, getWordsLanguages, validateContent, validateLineAnnotation, validatePart, validateTimeRange } from '@root/common'
+import { canonicalizeLineAnnotation, validateContent, validateLineAnnotation, validatePart, validateTimeRange } from '@root/common'
 import { canonicalizeWord } from './word'
 
 import { create } from '@bufbuild/protobuf'
@@ -165,11 +165,4 @@ export const canonicalizeLine = (line: Line): Line => {
     annotation: canonicalizeField(LineAnnotationSchema, line.annotation, canonicalizeLineAnnotation),
     backgrounds: canonicalizeList(LineBackgroundSchema, line.backgrounds, canonicalizeLineBackground).sort(byTime((background) => background.time)),
   }
-}
-
-/**
- * Returns the line's language tags, falling back to those of its words when the line lists none.
- */
-export const getLineLanguages = (line: Line | LineBackground): string[] => {
-  return line.languages.length > 0 ? line.languages : getWordsLanguages(line.content?.words ?? [])
 }
