@@ -250,10 +250,11 @@ export const getWordsText = (words: AnyWord[]): string => {
 }
 
 /**
- * Collects the distinct lowercased language tags of words, in order of first appearance.
+ * Collects the distinct lowercased language tags of normal words, in order of first appearance.
  */
 export const getWordsLanguages = (words: AnyWord[]): string[] => {
-  return [...new Set(words.map((word) => lowerTag(word.language)).filter((tag) => tag !== undefined))]
+  const normal = words.filter((word) => word.type === WordType.NORMAL)
+  return [...new Set(normal.map((word) => lowerTag(word.language)).filter((tag) => tag !== undefined))]
 }
 
 /**
