@@ -53,8 +53,9 @@ message Lyric {
   // Map entries carry no wire order, so byte comparison requires deterministic serialization.
   map<string, string> extra = 6;
 
-  // Languages used across the lyric, ordered by descending count and then by ascending tag.
-  // Counted over the words of normal lines only, so spaces, annotations and background lines never contribute.
+  // Declared languages across normal lines, ordered by descending count and then by ascending tag.
+  // Each line unions its own tags with its normal words' tags, counting each distinct tag once even when its own list is non-empty.
+  // Space words, annotations and background lines never contribute.
   repeated LanguageUsage languages = 7;
 
   // Performing agents referenced by lines.

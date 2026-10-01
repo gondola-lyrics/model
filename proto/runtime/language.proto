@@ -6,14 +6,13 @@ option java_multiple_files = true;
 option java_outer_classname = "LanguageProto";
 option java_package = "gondola.lyric.model.runtime";
 
-// How much of the lyric is in one language.
+// How many normal lines declare one language.
 message LanguageUsage {
   // BCP 47 language tag, unique within the list when compared case-insensitively.
-  // The tag `und` collects words carrying no language, so the counts always cover the whole lyric.
+  // Explicit `und` tags count like any other tag; missing or empty tags contribute nothing.
   string tag = 1;
 
-  // Weighted amount of text in this language, exact and never normalized; a share is this count over the sum of all counts.
-  // Text written in han, kana or hangul counts one per character, and everything else counts one per word.
-  // Text that yields neither, such as digits or punctuation, counts as nothing.
+  // Number of normal lines declaring this tag on the line or any normal word, with each line contributing at most once.
+  // Counts measure line coverage rather than text length, so a multilingual line contributes to several languages.
   uint32 count = 2;
 }
