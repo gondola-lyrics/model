@@ -12,7 +12,7 @@ option java_outer_classname = "LyricProto";
 option java_package = "gondola.lyric.model.storage";
 
 // A lyric as persisted, carrying only what a source file actually stated.
-// An empty submessage means the same as an unset one, so producers leave it unset and equal lyrics encode to equal bytes.
+// An empty submessage means the same as an unset one.
 // A repeated field likewise never holds an entry that is all default, and preserves source order unless its own comment says otherwise.
 // Every agent id a line references must exist in `agents`.
 // Every non-empty line id, background lines included, is unique within the lyric.
@@ -33,7 +33,6 @@ message Lyric {
 
   // Format-specific data with no typed field, looked up by key.
   // Unlike `Meta.unknowns`, a consumer may act on these.
-  // Map entries carry no wire order, so byte comparison requires deterministic serialization.
   map<string, string> extra = 5;
 
   // Performing agents referenced by lines.

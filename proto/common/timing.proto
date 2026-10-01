@@ -7,7 +7,6 @@ option java_outer_classname = "TimingProto";
 option java_package = "gondola.lyric.model.common";
 
 // Declared timing precision for a lyric.
-// Producers should fill TimeRange fields to match; consumers may treat mismatches as best-effort.
 enum Timing {
   // The field was not set; treat it as missing rather than as a resolved precision.
   TIMING_UNSPECIFIED = 0;

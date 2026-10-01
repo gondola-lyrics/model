@@ -32,7 +32,6 @@ message WordAnnotationToken {
 // Translation of a single word into another language.
 message WordAnnotationTranslation {
   // Target language of this translation, as a BCP 47 tag.
-  // Set it when multiple languages coexist, to tell them apart.
   optional string language = 1;
 
   // Translated text for the whole word.
@@ -45,7 +44,6 @@ message WordAnnotationRoman {
   TimeRange time = 1;
 
   // Language (BCP 47 tag) or transliteration scheme of this item.
-  // Set it when multiple languages coexist, to tell them apart.
   optional string language = 2;
 
   // Tokens composing the item in order.
@@ -58,7 +56,6 @@ message WordAnnotationRuby {
   TimeRange time = 1;
 
   // Language (BCP 47 tag) or transliteration scheme of this item.
-  // Set it when multiple languages coexist, to tell them apart.
   optional string language = 2;
 
   // Tokens composing the item in order.

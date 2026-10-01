@@ -12,7 +12,6 @@ option java_outer_classname = "LineProto";
 option java_package = "gondola.lyric.model.storage";
 
 // The content of a normal line: either the words it is decomposed into, or its plain text. Exactly one is set.
-// It is not wire compatible with runtime.LineContent despite the matching field names.
 message LineContent {
   // Word pieces in order; present for a word-level line, where each sung word carries a time.
   repeated Word words = 1;
@@ -23,7 +22,6 @@ message LineContent {
 
 // Background vocal line attached to a normal line.
 // It belongs to the same part as its parent line.
-// It is not wire compatible with runtime.LineBackground despite the matching field names.
 message LineBackground {
   // Identifier of this background line; empty means none.
   string id = 1;
@@ -38,7 +36,6 @@ message LineBackground {
   repeated string agents = 3;
 
   // BCP 47 language tags the source declares for this line, each at most once.
-  // Consumers may fall back to the languages of its words when this is empty.
   repeated string languages = 4;
 
   // Content of the line: its words or its plain text.
@@ -49,8 +46,6 @@ message LineBackground {
 }
 
 // A line of the lyric.
-// A kind a consumer does not recognize should be read for its words and time, or skipped.
-// It is not wire compatible with runtime.Line despite the matching field names.
 message Line {
   // Identifier of the line; empty means none.
   string id = 1;
@@ -70,7 +65,6 @@ message Line {
   repeated string agents = 5;
 
   // BCP 47 language tags the source declares for this line, each at most once.
-  // Consumers may fall back to the languages of its words when this is empty.
   repeated string languages = 6;
 
   // Content of the line: its words or its plain text.

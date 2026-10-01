@@ -31,7 +31,6 @@ message LineAnnotationRoman {
 // Translation of a whole line into another language.
 message LineAnnotationTranslation {
   // Target language of this translation, as a BCP 47 tag.
-  // Set it when multiple languages coexist, to tell them apart.
   optional string language = 1;
 
   // Translated text.

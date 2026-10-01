@@ -21,8 +21,6 @@ message WordEmphasis {
 }
 
 // A sung word, or the separator between two words.
-// A kind a consumer does not recognize should be read for its content and time, or skipped.
-// It is not wire compatible with storage.Word despite the matching field names.
 message Word {
   // Kind of this word.
   lyric.common.WordType type = 1;

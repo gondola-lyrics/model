@@ -14,7 +14,6 @@ enum AgentType {
   AGENT_TYPE_UNSPECIFIED = 0;
 
   // A type this enum does not cover; the source's own word is kept in `Agent.raw`.
-  // A value a consumer does not recognize falls here too, with no raw to go with it.
   AGENT_TYPE_OTHER = 1;
 
   // A single person.

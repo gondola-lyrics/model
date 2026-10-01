@@ -25,7 +25,7 @@ enum LyricStatus {
 }
 
 // A lyric prepared for playback, carrying derived values a source file need not have stated.
-// An empty submessage means the same as an unset one, so producers leave it unset and equal lyrics encode to equal bytes.
+// An empty submessage means the same as an unset one.
 // A repeated field likewise never holds an entry that is all default, and preserves source order unless its own comment says otherwise.
 // Every agent id a line references must exist in `agents`.
 // Every non-empty line id, background lines included, is unique within the lyric.
@@ -50,7 +50,6 @@ message Lyric {
 
   // Format-specific data with no typed field, looked up by key.
   // Unlike `Meta.unknowns`, a consumer may act on these.
-  // Map entries carry no wire order, so byte comparison requires deterministic serialization.
   map<string, string> extra = 6;
 
   // Declared languages across normal lines, ordered by descending count and then by ascending tag.
