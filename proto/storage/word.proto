@@ -19,11 +19,11 @@ message Word {
   // Time range of the word; unset when it is not sung.
   lyric.common.TimeRange time = 2;
 
-  // Text of the word, exactly as the source wrote it.
-  string text = 3;
-
   // Language of this word, as a BCP 47 tag; unset means undetermined.
-  optional string language = 4;
+  optional string language = 3;
+
+  // Text of the word, exactly as the source wrote it.
+  string text = 4;
 
   // Annotations attached to this word.
   lyric.common.WordAnnotation annotation = 5;

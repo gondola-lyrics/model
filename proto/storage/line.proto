@@ -37,15 +37,15 @@ message LineBackground {
   // Multiple ids mean known agents performing together; a named ensemble should be a single GROUP agent instead.
   repeated string agents = 3;
 
-  // Content of the line: its words or its plain text.
-  LineContent content = 4;
-
-  // Annotations applied to the whole line.
-  lyric.common.LineAnnotation annotation = 5;
-
   // BCP 47 language tags the source declares for this line, each at most once.
   // Consumers may fall back to the languages of its words when this is empty.
-  repeated string languages = 6;
+  repeated string languages = 4;
+
+  // Content of the line: its words or its plain text.
+  LineContent content = 5;
+
+  // Annotations applied to the whole line.
+  lyric.common.LineAnnotation annotation = 6;
 }
 
 // A line of the lyric.
@@ -69,16 +69,16 @@ message Line {
   // Multiple ids mean known agents performing together; a named ensemble should be a single GROUP agent instead.
   repeated string agents = 5;
 
-  // Content of the line: its words or its plain text.
-  LineContent content = 6;
-
-  // Annotations applied to the whole line.
-  lyric.common.LineAnnotation annotation = 7;
-
-  // Background lines attached to this line, ordered by TimeRange.start ascending.
-  repeated LineBackground backgrounds = 8;
-
   // BCP 47 language tags the source declares for this line, each at most once.
   // Consumers may fall back to the languages of its words when this is empty.
-  repeated string languages = 9;
+  repeated string languages = 6;
+
+  // Content of the line: its words or its plain text.
+  LineContent content = 7;
+
+  // Annotations applied to the whole line.
+  lyric.common.LineAnnotation annotation = 8;
+
+  // Background lines attached to this line, ordered by TimeRange.start ascending.
+  repeated LineBackground backgrounds = 9;
 }
