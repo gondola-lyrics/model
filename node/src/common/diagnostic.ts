@@ -28,6 +28,7 @@ export enum DiagnosticCode {
   LineTimeMissing = 'line.time.missing',
   LineAgentsUnexpected = 'line.agents.unexpected',
   LineLanguagesUnexpected = 'line.languages.unexpected',
+  LineLanguagesDuplicate = 'line.languages.duplicate',
   LineAnnotationUnexpected = 'line.annotation.unexpected',
   LineAnnotationRomansLanguageDuplicate = 'line.annotation.romans.language.duplicate',
   LineAnnotationTranslationsLanguageDuplicate = 'line.annotation.translations.language.duplicate',

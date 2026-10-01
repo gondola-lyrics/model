@@ -6,7 +6,7 @@ import { LineAnnotationSchema, LineType, PartSchema, TimeRangeSchema } from '@ro
 import { DiagnosticCode } from '@root/common'
 import { LineBackgroundSchema, LineContentSchema, LineSchema, WordSchema } from './proto'
 
-import { byTime, canonicalizeField, canonicalizeList, childPath, dropDefault, isTimeRangeOrdered } from '@root/utils'
+import { byTime, canonicalizeField, canonicalizeList, childPath, dropDefault, findDuplicates, isTimeRangeOrdered, lowerTag } from '@root/utils'
 import { canonicalizeLineAnnotation, validateContent, validateLineAnnotation, validatePart, validateTimeRange } from '@root/common'
 import { canonicalizeWord } from './word'
 
@@ -89,6 +89,10 @@ export const validateLine = (line: Line, path = ''): Diagnostic[] => {
   }
   if (instrumental && line.languages.length > 0) {
     diagnostics.push({ path: childPath(path, 'languages'), code: DiagnosticCode.LineLanguagesUnexpected })
+  } else if (!instrumental) {
+    findDuplicates(line.languages, (tag) => lowerTag(tag) ?? '').forEach((i) => {
+      diagnostics.push({ path: childPath(path, `languages[${i}]`), code: DiagnosticCode.LineLanguagesDuplicate })
+    })
   }
   if (line.type === LineType.NORMAL) {
     diagnostics.push(...validateContent(line.content, line.time, path))
@@ -123,6 +127,9 @@ export const validateLineBackground = (background: LineBackground, path = ''): D
   if (background.time) {
     diagnostics.push(...validateTimeRange(background.time, childPath(path, 'time')))
   }
+  findDuplicates(background.languages, (tag) => lowerTag(tag) ?? '').forEach((i) => {
+    diagnostics.push({ path: childPath(path, `languages[${i}]`), code: DiagnosticCode.LineLanguagesDuplicate })
+  })
   diagnostics.push(...validateContent(background.content, background.time, path))
   if (background.annotation) {
     diagnostics.push(...validateLineAnnotation(background.annotation, childPath(path, 'annotation')))
