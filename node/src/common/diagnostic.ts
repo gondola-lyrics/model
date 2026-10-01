@@ -63,3 +63,26 @@ export interface Diagnostic {
   path: string
   code: DiagnosticCode
 }
+
+/**
+ * Resolves a diagnostic path against the node it was reported from, returning the value located there.
+ * The path locates by field name and list index only, each segment `field` or `field[n]` joined by dots, as `validate*` builds it.
+ * It returns undefined when a segment names an unset field or runs past a list, so a diagnostic about an absent field yields undefined there.
+ */
+export const resolveDiagnosticPath = (root: unknown, path: string): unknown => {
+  if (path === '') {
+    return root
+  }
+  let node: unknown = root
+  for (const segment of path.split('.')) {
+    const match = /^([a-z]+)(?:\[(\d+)\])?$/.exec(segment)
+    if (match === null || node === null || typeof node !== 'object') {
+      return undefined
+    }
+    node = (node as Record<string, unknown>)[match[1]!]
+    if (match[2] !== undefined) {
+      node = Array.isArray(node) ? node[Number(match[2])] : undefined
+    }
+  }
+  return node
+}
