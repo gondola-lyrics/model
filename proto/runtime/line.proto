@@ -35,7 +35,7 @@ message LineBackground {
   // Multiple ids mean known agents performing together; a named ensemble should be a single GROUP agent instead.
   repeated string agents = 3;
 
-  // BCP 47 language tags of this line, in the order they first appear among its words.
+  // BCP 47 language tags of this line, each at most once and in the order they first appear among its words.
   repeated string languages = 4;
 
   // Content of the line: its words or its plain text.
@@ -64,7 +64,7 @@ message Line {
   // Multiple ids mean known agents performing together; a named ensemble should be a single GROUP agent instead.
   repeated string agents = 5;
 
-  // BCP 47 language tags of this line, in the order they first appear among its words.
+  // BCP 47 language tags of this line, each at most once and in the order they first appear among its words.
   repeated string languages = 6;
 
   // Content of the line: its words or its plain text.
