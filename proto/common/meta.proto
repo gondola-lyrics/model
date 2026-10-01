@@ -74,24 +74,28 @@ message Meta {
   // Values above 2^31-1 are invalid.
   optional uint32 duration = 3;
 
+  // Language the source declares for the whole lyric, as a BCP 47 tag; unset means the source declares none.
+  // It need not appear among the languages of the lines, since it is declared rather than derived from them.
+  optional string language = 4;
+
   // Song titles, one entry per language.
-  repeated Text titles = 4;
+  repeated Text titles = 5;
 
   // Song artists, one entry per artist.
-  repeated Text artists = 5;
+  repeated Text artists = 6;
 
   // Song albums, one entry per language.
-  repeated Text albums = 6;
+  repeated Text albums = 7;
 
   // Authors or transcribers of the lyric file rather than of the song, one entry per author.
-  repeated Text authors = 7;
+  repeated Text authors = 8;
 
   // International Standard Recording Codes, in upper case and without separators.
-  repeated string isrcs = 8;
+  repeated string isrcs = 9;
 
   // Song credits such as lyricist or composer.
-  repeated MetaCredit credits = 9;
+  repeated MetaCredit credits = 10;
 
   // Cross-platform references, one entry per platform.
-  repeated MetaReference references = 10;
+  repeated MetaReference references = 11;
 }
