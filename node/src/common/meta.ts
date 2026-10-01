@@ -104,12 +104,13 @@ export const canonicalizeMetaReference = (reference: MetaReference): MetaReferen
 }
 
 /**
- * Returns a copy of the Meta with its text lists, credits and references canonicalized, all-default unknown entries dropped, and its ISRCs upper-cased without separators.
+ * Returns a copy of the Meta with its language tag lowercased, its text lists, credits and references canonicalized, all-default unknown entries dropped, and its ISRCs upper-cased without separators.
  */
 export const canonicalizeMeta = (meta: Meta): Meta => {
   return {
     ...meta,
     unknowns: canonicalizeList(UnknownEntrySchema, meta.unknowns, (entry) => entry),
+    language: lowerTag(meta.language),
     titles: canonicalizeList(TextSchema, meta.titles, canonicalizeText),
     artists: canonicalizeList(TextSchema, meta.artists, canonicalizeText),
     albums: canonicalizeList(TextSchema, meta.albums, canonicalizeText),

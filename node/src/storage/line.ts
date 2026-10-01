@@ -87,6 +87,9 @@ export const validateLine = (line: Line, path = ''): Diagnostic[] => {
   if (instrumental && line.agents.length > 0) {
     diagnostics.push({ path: childPath(path, 'agents'), code: DiagnosticCode.LineAgentsUnexpected })
   }
+  if (instrumental && line.languages.length > 0) {
+    diagnostics.push({ path: childPath(path, 'languages'), code: DiagnosticCode.LineLanguagesUnexpected })
+  }
   if (line.type === LineType.NORMAL) {
     diagnostics.push(...validateContent(line.content, line.time, path))
   } else if (line.content) {
@@ -135,20 +138,21 @@ export const orderLine = (line: Line): Line => {
 }
 
 /**
- * Returns a canonical copy of the background line: time/content/annotation dropped when all-default, empty agent references dropped.
+ * Returns a canonical copy of the background line: language tags lowercased, deduplicated and emptied out, time/content/annotation dropped when all-default, empty agent references dropped.
  */
 export const canonicalizeLineBackground = (background: LineBackground): LineBackground => {
   return {
     ...background,
     time: dropDefault(TimeRangeSchema, background.time),
     agents: background.agents.filter((id) => id !== ''),
+    languages: [...new Set(background.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
     content: canonicalizeField(LineContentSchema, background.content, canonicalizeLineContent),
     annotation: canonicalizeField(LineAnnotationSchema, background.annotation, canonicalizeLineAnnotation),
   }
 }
 
 /**
- * Returns a canonical copy of the line: time/part/content/annotation dropped when all-default, empty agent references dropped, backgrounds canonicalized then ordered.
+ * Returns a canonical copy of the line: language tags lowercased, deduplicated and emptied out, time/part/content/annotation dropped when all-default, empty agent references dropped, backgrounds canonicalized then ordered.
  */
 export const canonicalizeLine = (line: Line): Line => {
   return {
@@ -156,6 +160,7 @@ export const canonicalizeLine = (line: Line): Line => {
     time: dropDefault(TimeRangeSchema, line.time),
     part: dropDefault(PartSchema, line.part),
     agents: line.agents.filter((id) => id !== ''),
+    languages: [...new Set(line.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
     content: canonicalizeField(LineContentSchema, line.content, canonicalizeLineContent),
     annotation: canonicalizeField(LineAnnotationSchema, line.annotation, canonicalizeLineAnnotation),
     backgrounds: canonicalizeList(LineBackgroundSchema, line.backgrounds, canonicalizeLineBackground).sort(byTime((background) => background.time)),
