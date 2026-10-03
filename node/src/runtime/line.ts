@@ -2,11 +2,21 @@ import type { MakeInit } from '@root/utils'
 import type { Diagnostic } from '@root/common'
 import type { Line, LineBackground, LineContent, Word } from './proto'
 
-import { LineAnnotationSchema, LineType, PartSchema, TimeRangeSchema } from '@root/common/proto'
+import { LineAnnotationSchema, LineType, PartSchema } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'
 import { LineBackgroundSchema, LineContentSchema, LineSchema, WordSchema } from './proto'
 
-import { byTime, canonicalizeField, canonicalizeList, childPath, dropDefault, findDuplicates, isTimeRangeOrdered, lowerTag } from '@root/utils'
+import {
+  byTime,
+  canonicalizeField,
+  canonicalizeList,
+  childPath,
+  dropDefault,
+  findDuplicates,
+  getTimeRangeEnd,
+  isTimeRangeOrdered,
+  lowerTag,
+} from '@root/utils'
 import { canonicalizeLineAnnotation, validateContent, validateLineAnnotation, validatePart, validateTimeRange } from '@root/common'
 import { canonicalizeWord } from './word'
 
@@ -110,7 +120,7 @@ export const validateLine = (line: Line, path = ''): Diagnostic[] => {
     line.backgrounds.forEach((background, i) => {
       const backgroundPath = childPath(path, `backgrounds[${i}]`)
       // The parent's end covers a background line, while its start may precede the parent's; a range reported for its own numbers or order never joins this comparison.
-      if (isTimeRangeOrdered(line.time) && isTimeRangeOrdered(background.time) && background.time.end > line.time.end) {
+      if (isTimeRangeOrdered(line.time) && isTimeRangeOrdered(background.time) && getTimeRangeEnd(background.time) > getTimeRangeEnd(line.time)) {
         diagnostics.push({ path: childPath(backgroundPath, 'time'), code: DiagnosticCode.LineBackgroundsTimeUncovered })
       }
       diagnostics.push(...validateLineBackground(background, backgroundPath))
@@ -145,12 +155,11 @@ export const orderLine = (line: Line): Line => {
 }
 
 /**
- * Returns a canonical copy of the background line: language tags lowercased, deduplicated and emptied out, time/content/annotation dropped when all-default, empty agent references dropped.
+ * Returns a canonical copy of the background line: language tags lowercased, deduplicated and emptied out, content/annotation dropped when all-default, empty agent references dropped.
  */
 export const canonicalizeLineBackground = (background: LineBackground): LineBackground => {
   return {
     ...background,
-    time: dropDefault(TimeRangeSchema, background.time),
     agents: background.agents.filter((id) => id !== ''),
     languages: [...new Set(background.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
     content: canonicalizeField(LineContentSchema, background.content, canonicalizeLineContent),
@@ -159,12 +168,11 @@ export const canonicalizeLineBackground = (background: LineBackground): LineBack
 }
 
 /**
- * Returns a canonical copy of the line: language tags lowercased, deduplicated and emptied out, time/part/content/annotation dropped when all-default, empty agent references dropped, backgrounds canonicalized then ordered.
+ * Returns a canonical copy of the line: language tags lowercased, deduplicated and emptied out, part/content/annotation dropped when all-default, empty agent references dropped, backgrounds canonicalized then ordered.
  */
 export const canonicalizeLine = (line: Line): Line => {
   return {
     ...line,
-    time: dropDefault(TimeRangeSchema, line.time),
     part: dropDefault(PartSchema, line.part),
     agents: line.agents.filter((id) => id !== ''),
     languages: [...new Set(line.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],

@@ -10,10 +10,9 @@ import {
   WordAnnotationTranslationSchema,
   WordType,
 } from './proto'
-import { TimeRangeSchema } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
-import { canonicalizeField, canonicalizeList, childPath, dropDefault, findDuplicates, isTimeRangeInDomain, lowerTag } from '@root/utils'
+import { canonicalizeField, canonicalizeList, childPath, findDuplicates, getTimeRangeEnd, isTimeRangeInDomain, lowerTag } from '@root/utils'
 import { validateTimeRange } from './time'
 
 import { create } from '@bufbuild/protobuf'
@@ -147,14 +146,18 @@ export const validateWords = (words: AnyWord[], time: TimeRange | undefined, pat
   words.forEach((word, i) => {
     const wordPath = childPath(path, `words[${i}]`)
     diagnostics.push(...validateWord(word, wordPath))
-    // An all-default range is omitted by the schema and reads as no timing at all, so a sung word carrying one has no time either.
-    const missing = word.type === WordType.NORMAL && (word.time === undefined || (word.time.start === 0 && word.time.end === 0))
+    const missing = word.type === WordType.NORMAL && word.time === undefined
     if (missing) {
       diagnostics.push({ path: wordPath, code: DiagnosticCode.LineWordTimeMissing })
     }
     // A word already reported for its own time, whether it is missing or not allowed at all, is not compared against the line on top of that.
     const comparable = !missing && word.type !== WordType.SPACE
-    if (comparable && isTimeRangeInDomain(time) && isTimeRangeInDomain(word.time) && (word.time.start < time.start || word.time.end > time.end)) {
+    if (
+      comparable &&
+      isTimeRangeInDomain(time) &&
+      isTimeRangeInDomain(word.time) &&
+      (word.time.start < time.start || getTimeRangeEnd(word.time) > getTimeRangeEnd(time))
+    ) {
       diagnostics.push({ path: childPath(wordPath, 'time'), code: DiagnosticCode.LineWordTimeUncovered })
     }
   })
@@ -162,32 +165,30 @@ export const validateWords = (words: AnyWord[], time: TimeRange | undefined, pat
 }
 
 /**
- * Returns a copy of the annotation token with its time dropped when all-default.
+ * Returns a copy of the annotation token, which holds only a time and its text and so has nothing to normalize.
  */
 export const canonicalizeWordAnnotationToken = (token: WordAnnotationToken): WordAnnotationToken => {
-  return { ...token, time: dropDefault(TimeRangeSchema, token.time) }
+  return { ...token }
 }
 
 /**
- * Returns a copy of the roman annotation with its language lowercased, time dropped when all-default, and tokens canonicalized.
+ * Returns a copy of the roman annotation with its language lowercased and its tokens canonicalized.
  */
 export const canonicalizeWordAnnotationRoman = (roman: WordAnnotationRoman): WordAnnotationRoman => {
   return {
     ...roman,
     language: lowerTag(roman.language),
-    time: dropDefault(TimeRangeSchema, roman.time),
     tokens: canonicalizeList(WordAnnotationTokenSchema, roman.tokens, canonicalizeWordAnnotationToken),
   }
 }
 
 /**
- * Returns a copy of the ruby annotation with its language lowercased, time dropped when all-default, and tokens canonicalized.
+ * Returns a copy of the ruby annotation with its language lowercased and its tokens canonicalized.
  */
 export const canonicalizeWordAnnotationRuby = (ruby: WordAnnotationRuby): WordAnnotationRuby => {
   return {
     ...ruby,
     language: lowerTag(ruby.language),
-    time: dropDefault(TimeRangeSchema, ruby.time),
     tokens: canonicalizeList(WordAnnotationTokenSchema, ruby.tokens, canonicalizeWordAnnotationToken),
   }
 }
@@ -212,14 +213,13 @@ export const canonicalizeWordAnnotation = (annotation: WordAnnotation): WordAnno
 }
 
 /**
- * Returns a copy of the word with the fields every layer shares canonicalized: its language lowercased, its time dropped when all-default, and its annotation canonicalized then dropped when empty.
+ * Returns a copy of the word with the fields every layer shares canonicalized: its language lowercased, and its annotation canonicalized then dropped when empty.
  * Each layer's `canonicalizeWord` builds on this to handle its own fields.
  */
 export const canonicalizeWordShared = <T extends AnyWord>(word: T): T => {
   return {
     ...word,
     language: lowerTag(word.language),
-    time: dropDefault(TimeRangeSchema, word.time),
     annotation: canonicalizeField(WordAnnotationSchema, word.annotation, canonicalizeWordAnnotation),
   }
 }

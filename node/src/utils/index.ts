@@ -37,17 +37,33 @@ export const checkNumberDomain = (value: number, min: number, max: number): Numb
 }
 
 /**
- * Reports whether a time range is set and both its bounds hold numbers the schema allows, so comparing it against another range is meaningful.
+ * The bounds a time range holds, so helpers that only read them work on either layer's message and on a plain object.
  */
-export const isTimeRangeInDomain = (range: { start: number; end: number } | undefined): range is { start: number; end: number } => {
-  return range !== undefined && checkNumberDomain(range.start, 0, MAX_TIME) === 'ok' && checkNumberDomain(range.end, 0, MAX_TIME) === 'ok'
+export type TimeRangeBounds = { start: number; end?: number }
+
+/**
+ * Reports whether a time range is set and both its bounds hold numbers the schema allows, so comparing it against another range is meaningful.
+ * An unknown end holds no number, so it has no domain to fall outside of.
+ */
+export const isTimeRangeInDomain = (range: TimeRangeBounds | undefined): range is TimeRangeBounds => {
+  if (range === undefined || checkNumberDomain(range.start, 0, MAX_TIME) !== 'ok') {
+    return false
+  }
+  return range.end === undefined || checkNumberDomain(range.end, 0, MAX_TIME) === 'ok'
 }
 
 /**
  * Reports whether a time range is in domain and runs the right way, which is what relating two ranges to each other needs on top of their numbers being usable.
  */
-export const isTimeRangeOrdered = (range: { start: number; end: number } | undefined): range is { start: number; end: number } => {
-  return isTimeRangeInDomain(range) && range.end >= range.start
+export const isTimeRangeOrdered = (range: TimeRangeBounds | undefined): range is TimeRangeBounds => {
+  return isTimeRangeInDomain(range) && (range.end === undefined || range.end >= range.start)
+}
+
+/**
+ * Returns a time range's end as a number two ranges can be compared on, where an unknown end is open above and so ranks past every value a bound may hold.
+ */
+export const getTimeRangeEnd = (range: TimeRangeBounds | undefined): number => {
+  return range?.end ?? MAX_TIME + 1
 }
 
 /**
@@ -99,12 +115,13 @@ export const scoreTag = (tag: string, range: string): number => {
 
 /**
  * Builds a comparator ordering items by start ascending then end ascending, reading each item's bounds through a callback.
+ * An unknown end is open above, so among equal starts it orders after every known one.
  */
-export const byTime = <T>(bounds: (item: T) => { start: number; end: number } | undefined) => {
+export const byTime = <T>(bounds: (item: T) => TimeRangeBounds | undefined) => {
   return (a: T, b: T): number => {
     const x = bounds(a)
     const y = bounds(b)
-    return (x?.start ?? 0) - (y?.start ?? 0) || (x?.end ?? 0) - (y?.end ?? 0)
+    return (x?.start ?? 0) - (y?.start ?? 0) || getTimeRangeEnd(x) - getTimeRangeEnd(y)
   }
 }
 
