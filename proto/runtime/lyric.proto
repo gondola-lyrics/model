@@ -25,7 +25,7 @@ enum LyricStatus {
 }
 
 // A lyric prepared for playback, carrying derived values a source file need not have stated.
-// An empty submessage means the same as an unset one.
+// An empty submessage means the same as an unset one, except for TimeRange, which is a range even when all default.
 // A repeated field likewise never holds an entry that is all default, and preserves source order unless its own comment says otherwise.
 // Every agent id a line references must exist in `agents`.
 // Every non-empty line id, background lines included, is unique within the lyric.
