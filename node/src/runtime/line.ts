@@ -76,7 +76,7 @@ export const makeLineBackground = (init?: MakeInit<typeof LineBackgroundSchema>)
 }
 
 /**
- * Validates a Line: its kind must be resolved, a NORMAL line must carry content, an INSTRUMENTAL one must carry only its range, and its time, part, content and background lines must each be valid.
+ * Validates a Line: its kind must be resolved, a NORMAL line must carry content, an INSTRUMENTAL one must carry only a range that ends somewhere, and its time, part, content and background lines must each be valid.
  */
 export const validateLine = (line: Line, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -84,10 +84,13 @@ export const validateLine = (line: Line, path = ''): Diagnostic[] => {
   if (line.type === LineType.UNSPECIFIED) {
     diagnostics.push({ path: childPath(path, 'type'), code: DiagnosticCode.LineTypeUnspecified })
   }
+  // An instrumental line is the stretch its range marks out, so it is nothing without a range, and nothing with one that never ends.
   if (line.time) {
     diagnostics.push(...validateTimeRange(line.time, childPath(path, 'time')))
+    if (instrumental && line.time.end === undefined) {
+      diagnostics.push({ path: childPath(path, 'time.end'), code: DiagnosticCode.LineTimeEndMissing })
+    }
   } else if (instrumental) {
-    // An instrumental line is a stretch of the timeline, so it is nothing without its range.
     diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LineTimeMissing })
   }
   if (line.part) {

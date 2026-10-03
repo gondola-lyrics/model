@@ -26,6 +26,7 @@ export enum DiagnosticCode {
   LanguageUsageCountOverflow = 'language.usage.count.overflow',
   LineTypeUnspecified = 'line.type.unspecified',
   LineTimeMissing = 'line.time.missing',
+  LineTimeEndMissing = 'line.time.end.missing',
   LineAgentsUnexpected = 'line.agents.unexpected',
   LineLanguagesUnexpected = 'line.languages.unexpected',
   LineLanguagesDuplicate = 'line.languages.duplicate',
