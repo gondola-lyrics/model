@@ -1,6 +1,6 @@
 import type { MakeInit } from '@root/utils'
 import type { Diagnostic, TimeRange } from '@root/common'
-import type { Lyric, Word } from './proto'
+import type { LineContent, Lyric } from './proto'
 
 import { AgentSchema, LineType, MetaSchema, Timing } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'
@@ -55,6 +55,9 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   }
 
   const untimed = lyric.timing === Timing.NONE
+  const lineTimed = lyric.timing === Timing.LINE
+  let anyContent = false
+  let anyWords = false
   const lineIds = new Set<string>()
   /**
    * Reports a non-empty line id already taken by an earlier line or background line.
@@ -69,16 +72,26 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
     lineIds.add(id)
   }
   /**
-   * Reports the whole-tree rules for one line or background line: agent references resolving to no agent, and any time present under TIMING_NONE.
-   * It walks every node whatever the line's kind, since a whole-tree invariant holds regardless; `checkAgents` only turns off the reference loop for a line whose whole agent list was already reported as not allowed.
+   * Reports the whole-tree rules for one line or background line: agent references resolving to no agent, and whatever the declared timing asks of it.
+   * It walks every node whatever the line's kind, since a whole-tree invariant holds regardless; `sung` is false for an instrumental line, whose agents and own range validateLine already rules on, and which no timing level describes.
    */
-  const checkReferences = (agents: string[], time: TimeRange | undefined, words: Word[], path: string, checkAgents = true): void => {
-    if (checkAgents) {
+  const checkReferences = (agents: string[], time: TimeRange | undefined, content: LineContent | undefined, path: string, sung = true): void => {
+    const words = content?.words ?? []
+    if (sung) {
       agents.forEach((id, j) => {
         if (!ids.has(id)) {
           diagnostics.push({ path: `${path}.agents[${j}]`, code: DiagnosticCode.LyricLineAgentDangling })
         }
       })
+      anyWords = anyWords || words.length > 0
+      anyContent = anyContent || words.length > 0 || content?.text !== undefined
+      // Line-level timing sits on the line itself, so a sung line needs its own range and may not be split into words.
+      if (lineTimed && words.length > 0) {
+        diagnostics.push({ path: `${path}.content.words`, code: DiagnosticCode.LyricTimingLineWords })
+      }
+      if (lineTimed && time === undefined) {
+        diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingLineTimeMissing })
+      }
     }
     if (untimed && time) {
       diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingNonePresent })
@@ -97,14 +110,18 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   lyric.lines.forEach((line, i) => {
     const path = `lines[${i}]`
     claimLineId(line.id, path)
-    checkReferences(line.agents, line.time, line.content?.words ?? [], path, line.type !== LineType.INSTRUMENTAL)
+    checkReferences(line.agents, line.time, line.content, path, line.type !== LineType.INSTRUMENTAL)
     line.backgrounds.forEach((background, j) => {
       const backgroundPath = `${path}.backgrounds[${j}]`
       claimLineId(background.id, backgroundPath)
-      checkReferences(background.agents, background.time, background.content?.words ?? [], backgroundPath)
+      checkReferences(background.agents, background.time, background.content, backgroundPath)
     })
     diagnostics.push(...validateLine(line, path))
   })
+  // Word-level timing needs only one line split into words, since a word-level source may leave the rest whole; a lyric with no content at all declares nothing to check.
+  if (lyric.timing === Timing.WORD && anyContent && !anyWords) {
+    diagnostics.push({ path: 'timing', code: DiagnosticCode.LyricTimingWordMissing })
+  }
 
   return diagnostics
 }
