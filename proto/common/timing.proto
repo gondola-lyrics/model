@@ -14,10 +14,10 @@ enum Timing {
   // Untimed; line and word TimeRange fields must be unset, so every line carries its content as plain text.
   TIMING_NONE = 1;
 
-  // Timed at line level; each normal or background line should carry a valid TimeRange and its content as plain text.
+  // Timed at line level; every normal or background line carries a valid TimeRange and its content as plain text.
   TIMING_LINE = 2;
 
   // Timed per word, where syllable-level sources also land.
-  // Lines carry their content as words, each sung one holding a valid TimeRange.
+  // At least one normal or background line carries its content as words, each sung one holding a valid TimeRange; the rest may stay whole.
   TIMING_WORD = 3;
 }
