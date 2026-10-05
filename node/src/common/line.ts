@@ -3,7 +3,7 @@ import type { LineAnnotation, LineAnnotationRoman, LineAnnotationTranslation, Ti
 import type { AnyWord } from './word'
 import type { Diagnostic } from './diagnostic'
 
-import { LineAnnotationRomanSchema, LineAnnotationSchema, LineAnnotationTranslationSchema, WordType } from './proto'
+import { LineAnnotationRomanSchema, LineAnnotationSchema, LineAnnotationTranslationSchema, Timing, WordType } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
 import { canonicalizeList, childPath, findDuplicates, lowerTag } from '@root/utils'
@@ -21,8 +21,14 @@ export type AnyLineContent = {
 
 /**
  * Validates a normal line's or background line's content: exactly one of `words` or `text` must be set, and its words must be valid.
+ * `timing` is the lyric's declared precision, which its words need in order to know whether they own their times.
  */
-export const validateContent = (content: AnyLineContent | undefined, time: TimeRange | undefined, path = ''): Diagnostic[] => {
+export const validateContent = (
+  content: AnyLineContent | undefined,
+  time: TimeRange | undefined,
+  path = '',
+  timing = Timing.UNSPECIFIED,
+): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   const contentPath = childPath(path, 'content')
   const hasWords = content !== undefined && content.words.length > 0
@@ -32,7 +38,7 @@ export const validateContent = (content: AnyLineContent | undefined, time: TimeR
   } else if (hasWords && hasText) {
     diagnostics.push({ path: contentPath, code: DiagnosticCode.LineContentAmbiguous })
   }
-  diagnostics.push(...validateWords(content?.words ?? [], time, contentPath))
+  diagnostics.push(...validateWords(content?.words ?? [], time, contentPath, timing))
   return diagnostics
 }
 

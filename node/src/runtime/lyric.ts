@@ -139,7 +139,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
       claimLineId(background.id, backgroundPath)
       checkReferences(background.agents, background.time, background.content, backgroundPath)
     })
-    diagnostics.push(...validateLine(line, path))
+    diagnostics.push(...validateLine(line, path, lyric.timing))
   })
   // Word-level timing needs only one line split into words, since a word-level source may leave the rest whole; a lyric with no content at all declares nothing to check.
   if (lyric.timing === Timing.WORD && anyContent && !anyWords) {

@@ -3,6 +3,7 @@ import type { TimeRange, WordAnnotation, WordAnnotationRoman, WordAnnotationRuby
 import type { Diagnostic } from './diagnostic'
 
 import {
+  Timing,
   WordAnnotationRomanSchema,
   WordAnnotationRubySchema,
   WordAnnotationSchema,
@@ -12,7 +13,7 @@ import {
 } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
-import { canonicalizeField, canonicalizeList, childPath, findDuplicates, getTimeRangeEnd, isTimeRangeInDomain, lowerTag } from '@root/utils'
+import { canonicalizeField, canonicalizeList, childPath, findDuplicates, getTimeRangeEnd, isTimeRangeOrdered, lowerTag } from '@root/utils'
 import { validateTimeRange } from './time'
 
 import { create } from '@bufbuild/protobuf'
@@ -139,23 +140,25 @@ export const validateWord = (word: AnyWord, path = ''): Diagnostic[] => {
 }
 
 /**
- * Validates the words of a line or background line: each word must be valid, each sung word must carry a usable time, and each timed word must fall within `time` when it is set.
+ * Validates the words of a line or background line: each word must be valid, each sung word must carry a time, and each timed word must fall within `time` when it is set.
+ * Those two time rules hold only where `timing` puts timing on the words; under NONE and LINE the lyric reports the words themselves instead.
  */
-export const validateWords = (words: AnyWord[], time: TimeRange | undefined, path = ''): Diagnostic[] => {
+export const validateWords = (words: AnyWord[], time: TimeRange | undefined, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
+  const ownTimes = timing !== Timing.NONE && timing !== Timing.LINE
   words.forEach((word, i) => {
     const wordPath = childPath(path, `words[${i}]`)
     diagnostics.push(...validateWord(word, wordPath))
-    const missing = word.type === WordType.NORMAL && word.time === undefined
-    if (missing) {
+    if (ownTimes && word.type === WordType.NORMAL && word.time === undefined) {
       diagnostics.push({ path: wordPath, code: DiagnosticCode.LineWordTimeMissing })
     }
-    // A word already reported for its own time, whether it is missing or not allowed at all, is not compared against the line on top of that.
-    const comparable = !missing && word.type !== WordType.SPACE
+    // A range reported for its own numbers or order never joins this comparison, on either side, and an absent one has nothing to compare.
+    // A SPACE word was already told to carry no time at all, so its range stays out of it too.
     if (
-      comparable &&
-      isTimeRangeInDomain(time) &&
-      isTimeRangeInDomain(word.time) &&
+      ownTimes &&
+      word.type !== WordType.SPACE &&
+      isTimeRangeOrdered(time) &&
+      isTimeRangeOrdered(word.time) &&
       (word.time.start < time.start || getTimeRangeEnd(word.time) > getTimeRangeEnd(time))
     ) {
       diagnostics.push({ path: childPath(wordPath, 'time'), code: DiagnosticCode.LineWordTimeUncovered })

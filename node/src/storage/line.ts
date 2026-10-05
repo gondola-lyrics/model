@@ -2,7 +2,7 @@ import type { MakeInit } from '@root/utils'
 import type { Diagnostic } from '@root/common'
 import type { Line, LineBackground, LineContent, Word } from './proto'
 
-import { LineAnnotationSchema, LineType, PartSchema } from '@root/common/proto'
+import { LineAnnotationSchema, LineType, PartSchema, Timing } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'
 import { LineBackgroundSchema, LineContentSchema, LineSchema, WordSchema } from './proto'
 
@@ -77,8 +77,9 @@ export const makeLineBackground = (init?: MakeInit<typeof LineBackgroundSchema>)
 
 /**
  * Validates a Line: its kind must be resolved, a NORMAL line must carry content, an INSTRUMENTAL one must carry only a range that ends somewhere, and its time, part, content and background lines must each be valid.
+ * `timing` is the lyric's declared precision, passed down to its words; what the timing itself demands needs the whole lyric and stays in `validateLyric`.
  */
-export const validateLine = (line: Line, path = ''): Diagnostic[] => {
+export const validateLine = (line: Line, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   const instrumental = line.type === LineType.INSTRUMENTAL
   if (line.type === LineType.UNSPECIFIED) {
@@ -108,7 +109,7 @@ export const validateLine = (line: Line, path = ''): Diagnostic[] => {
     })
   }
   if (line.type === LineType.NORMAL) {
-    diagnostics.push(...validateContent(line.content, line.time, path))
+    diagnostics.push(...validateContent(line.content, line.time, path, timing))
   } else if (line.content) {
     diagnostics.push({ path: childPath(path, 'content'), code: DiagnosticCode.LineContentUnexpected })
   }
@@ -126,7 +127,7 @@ export const validateLine = (line: Line, path = ''): Diagnostic[] => {
       if (isTimeRangeOrdered(line.time) && isTimeRangeOrdered(background.time) && getTimeRangeEnd(background.time) > getTimeRangeEnd(line.time)) {
         diagnostics.push({ path: childPath(backgroundPath, 'time'), code: DiagnosticCode.LineBackgroundsTimeUncovered })
       }
-      diagnostics.push(...validateLineBackground(background, backgroundPath))
+      diagnostics.push(...validateLineBackground(background, backgroundPath, timing))
     })
   }
   return diagnostics
@@ -134,8 +135,9 @@ export const validateLine = (line: Line, path = ''): Diagnostic[] => {
 
 /**
  * Validates a LineBackground: it must carry content, and its time, content and annotation must each be valid.
+ * `timing` is the lyric's declared precision, passed down to its words.
  */
-export const validateLineBackground = (background: LineBackground, path = ''): Diagnostic[] => {
+export const validateLineBackground = (background: LineBackground, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   if (background.time) {
     diagnostics.push(...validateTimeRange(background.time, childPath(path, 'time')))
@@ -143,7 +145,7 @@ export const validateLineBackground = (background: LineBackground, path = ''): D
   findDuplicates(background.languages, (tag) => lowerTag(tag) ?? '').forEach((i) => {
     diagnostics.push({ path: childPath(path, `languages[${i}]`), code: DiagnosticCode.LineLanguagesDuplicate })
   })
-  diagnostics.push(...validateContent(background.content, background.time, path))
+  diagnostics.push(...validateContent(background.content, background.time, path, timing))
   if (background.annotation) {
     diagnostics.push(...validateLineAnnotation(background.annotation, childPath(path, 'annotation')))
   }
