@@ -128,8 +128,12 @@ export const byTime = <T>(bounds: (item: T) => TimeRangeBounds | undefined) => {
 
 /**
  * Reports whether a message equals a freshly created default, so an all-default submessage can be treated as unset.
+ * Unknown fields count as payload even though `equals` ignores them by default.
  */
 const isDefault = <Desc extends DescMessage>(schema: Desc, message: MessageShape<Desc>): boolean => {
+  if (message.$unknown?.length) {
+    return false
+  }
   return equals(schema, message, create(schema))
 }
 
