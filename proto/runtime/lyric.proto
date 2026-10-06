@@ -27,7 +27,7 @@ enum LyricStatus {
 // A lyric prepared for playback, carrying derived values a source file need not have stated.
 // An empty submessage means the same as an unset one, except for TimeRange, which is a range even when all default.
 // A repeated field likewise never holds an entry that is all default, and preserves source order unless its own comment says otherwise.
-// Every agent id a line references must exist in `agents`.
+// Every agent id a line references, background lines included, must exist in `agents`.
 // Every non-empty line id, background lines included, is unique within the lyric.
 // Every BCP 47 language tag is stored in lower case.
 message Lyric {
@@ -39,7 +39,7 @@ message Lyric {
   string format = 2;
 
   // Parse validity of the lyric.
-  // When INVALID, only `version` and `status` are guaranteed; all other fields are best-effort and may be empty.
+  // When INVALID, only `version` and `status` are guaranteed; the other fields are best-effort and may be empty, and no rule is relaxed for them.
   LyricStatus status = 3;
 
   // Declared timing precision.

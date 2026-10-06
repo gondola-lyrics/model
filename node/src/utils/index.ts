@@ -5,6 +5,7 @@ import { create, equals } from '@bufbuild/protobuf'
 /**
  * The user-settable init fields `create` accepts, narrowed from MessageInitShape's plain-object variant.
  * Its `$`-prefixed fields (`$typeName`, `$unknown`) are stripped.
+ * Nothing in it is deep-copied, so editing a message or array it carries afterwards can reach the message built from it.
  */
 export type MakeInit<Desc extends DescMessage> = Omit<Extract<MessageInitShape<Desc>, { $typeName?: undefined }>, `$${string}`>
 

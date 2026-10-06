@@ -13,7 +13,7 @@ option java_package = "gondola.lyric.model.runtime";
 
 // The content of a normal line: either the words it is decomposed into, or its plain text. Exactly one is set.
 message LineContent {
-  // Word pieces in order; present for a word-level line, where each sung word carries a time.
+  // Word pieces in order; present for a word-level line, where WORD timing puts a time on each sung word.
   repeated Word words = 1;
 
   // The whole line's text; present for a line-level line not decomposed into words.

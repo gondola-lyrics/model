@@ -47,7 +47,7 @@ message MetaCredit {
   // The source's own word for this role; unset means the role was inferred rather than stated.
   optional string raw = 2;
 
-  // Everyone credited for this role, one entry per person.
+  // Everyone credited for this role, one entry per person rather than one per language.
   repeated Text names = 3;
 }
 
@@ -80,13 +80,13 @@ message Meta {
   // Song titles, one entry per language.
   repeated Text titles = 5;
 
-  // Song artists, one entry per artist.
+  // Song artists, one entry per artist rather than one per language.
   repeated Text artists = 6;
 
   // Song albums, one entry per language.
   repeated Text albums = 7;
 
-  // Authors or transcribers of the lyric file rather than of the song, one entry per author.
+  // Authors or transcribers of the lyric file, not of the song, one entry per author rather than one per language.
   repeated Text authors = 8;
 
   // International Standard Recording Codes, in upper case and without separators.
