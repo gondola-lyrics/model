@@ -45,8 +45,14 @@ export const canonicalizeAgent = (agent: Agent): Agent => {
 /**
  * Resolves a line's agent ids to the Agent objects they reference, in order with the lead first.
  * An id matching no agent is skipped, so a dangling reference drops out rather than leaving a hole.
+ * An empty id never resolves, and the first agent claiming an id keeps it, matching what validate reports about both.
  */
 export const resolveLineAgents = (line: { agents: string[] }, agents: Agent[]): Agent[] => {
-  const idMap = new Map(agents.map((agent): [string, Agent] => [agent.id, agent]))
+  const idMap = new Map<string, Agent>()
+  for (const agent of agents) {
+    if (agent.id !== '' && !idMap.has(agent.id)) {
+      idMap.set(agent.id, agent)
+    }
+  }
   return line.agents.map((id) => idMap.get(id)).filter((agent) => agent !== undefined)
 }

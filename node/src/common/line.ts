@@ -59,11 +59,14 @@ export const isWordLevelLine = (line: { content?: AnyLineContent }): boolean => 
 }
 
 /**
- * Returns the line's language tags, falling back to those of its words when the line lists none.
+ * Derives the line's distinct lowercased language tags, falling back to those of its words when the line lists none.
  * Both layers carry the same shape, so one helper serves a line and a background line of either.
  */
-export const getLineLanguages = (line: { languages: string[]; content?: AnyLineContent }): string[] => {
-  return line.languages.length > 0 ? line.languages : getWordsLanguages(line.content?.words ?? [])
+export const deriveLineLanguages = (line: { languages: string[]; content?: AnyLineContent }): string[] => {
+  if (line.languages.length === 0) {
+    return getWordsLanguages(line.content?.words ?? [])
+  }
+  return [...new Set(line.languages.map((tag) => lowerTag(tag)).filter((tag) => tag !== undefined))]
 }
 
 /**
