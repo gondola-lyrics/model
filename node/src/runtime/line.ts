@@ -77,7 +77,8 @@ export const makeLineBackground = (init?: MakeInit<typeof LineBackgroundSchema>)
 
 /**
  * Validates a Line: its kind must be resolved, a NORMAL line must carry content, an INSTRUMENTAL one must carry only a range that ends somewhere, and its time, part, content and background lines must each be valid.
- * `timing` is the lyric's declared precision, passed down to its words; what the timing itself demands needs the whole lyric and stays in `validateLyric`.
+ * An unresolved kind is asked for no content and forbidden none, though whatever content it carries is still checked.
+ * `timing` is the lyric's declared precision, passed down to its words; an untimed lyric asks an instrumental line for no range, since `validateLyric` reports the line itself instead.
  */
 export const validateLine = (line: Line, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -86,12 +87,14 @@ export const validateLine = (line: Line, path = '', timing = Timing.UNSPECIFIED)
     diagnostics.push({ path: childPath(path, 'type'), code: DiagnosticCode.LineTypeUnspecified })
   }
   // An instrumental line is the stretch its range marks out, so it is nothing without a range, and nothing with one that never ends.
+  // An untimed lyric marks out no stretches, so there the lyric reports the line itself and asks for no range here.
+  const needsRange = instrumental && timing !== Timing.NONE
   if (line.time) {
     diagnostics.push(...validateTimeRange(line.time, childPath(path, 'time')))
-    if (instrumental && line.time.end === undefined) {
+    if (needsRange && line.time.end === undefined) {
       diagnostics.push({ path: childPath(path, 'time.end'), code: DiagnosticCode.LineTimeEndMissing })
     }
-  } else if (instrumental) {
+  } else if (needsRange) {
     diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LineTimeMissing })
   }
   if (line.part) {
@@ -108,10 +111,13 @@ export const validateLine = (line: Line, path = '', timing = Timing.UNSPECIFIED)
       diagnostics.push({ path: childPath(path, `languages[${i}]`), code: DiagnosticCode.LineLanguagesDuplicate })
     })
   }
-  if (line.type === LineType.NORMAL) {
-    diagnostics.push(...validateContent(line.content, line.time, path, timing))
-  } else if (line.content) {
-    diagnostics.push({ path: childPath(path, 'content'), code: DiagnosticCode.LineContentUnexpected })
+  // Content belongs to a sung line, so an instrumental one may carry none, while an unresolved kind is asked for none and forbidden none.
+  if (instrumental) {
+    if (line.content) {
+      diagnostics.push({ path: childPath(path, 'content'), code: DiagnosticCode.LineContentUnexpected })
+    }
+  } else {
+    diagnostics.push(...validateContent(line.content, line.time, path, timing, line.type === LineType.NORMAL))
   }
   if (instrumental && line.annotation !== undefined) {
     diagnostics.push({ path: childPath(path, 'annotation'), code: DiagnosticCode.LineAnnotationUnexpected })

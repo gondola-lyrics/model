@@ -73,10 +73,17 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   }
   /**
    * Reports the whole-tree rules for one line or background line: agent references resolving to no agent, and whatever the declared timing asks of it.
-   * It walks every node whatever the line's kind, since a whole-tree invariant holds regardless; `sung` is false for an instrumental line, whose agents and own range validateLine already rules on, and which no timing level describes.
+   * It walks every node whatever the line's kind, since a whole-tree invariant holds regardless; an instrumental line's agents and own range validateLine already rules on, and a background line is read as the sung line it always is.
    */
-  const checkReferences = (agents: string[], time: TimeRange | undefined, content: LineContent | undefined, path: string, sung = true): void => {
+  const checkReferences = (
+    agents: string[],
+    time: TimeRange | undefined,
+    content: LineContent | undefined,
+    path: string,
+    type = LineType.NORMAL,
+  ): void => {
     const words = content?.words ?? []
+    const sung = type !== LineType.INSTRUMENTAL
     if (sung) {
       agents.forEach((id, j) => {
         if (!ids.has(id)) {
@@ -89,9 +96,13 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
       if (lineTimed && words.length > 0) {
         diagnostics.push({ path: `${path}.content.words`, code: DiagnosticCode.LyricTimingLineWords })
       }
-      if (lineTimed && time === undefined) {
+      // Only a kind known to sing is asked for a range, since an unresolved one may turn out to need none.
+      if (lineTimed && time === undefined && type !== LineType.UNSPECIFIED) {
         diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingLineTimeMissing })
       }
+    } else if (untimed) {
+      // An untimed lyric marks out no stretches, so it carries no instrumental line at all.
+      diagnostics.push({ path: childPath(path, 'type'), code: DiagnosticCode.LyricTimingNoneInstrumental })
     }
     if (untimed && time) {
       diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingNonePresent })
@@ -110,7 +121,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   lyric.lines.forEach((line, i) => {
     const path = `lines[${i}]`
     claimLineId(line.id, path)
-    checkReferences(line.agents, line.time, line.content, path, line.type !== LineType.INSTRUMENTAL)
+    checkReferences(line.agents, line.time, line.content, path, line.type)
     line.backgrounds.forEach((background, j) => {
       const backgroundPath = `${path}.backgrounds[${j}]`
       claimLineId(background.id, backgroundPath)

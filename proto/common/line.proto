@@ -15,7 +15,7 @@ enum LineType {
   LINE_TYPE_NORMAL = 1;
 
   // A stretch with no singing, carrying no content, only its time range and optionally an id and a part.
-  // The range is all it has, so its end must be known.
+  // The range is all it has, so its end must be known, and an untimed lyric carries no such line.
   // `part` tells whether the source stated it or it was derived from a gap in the timeline.
   LINE_TYPE_INSTRUMENTAL = 2;
 }

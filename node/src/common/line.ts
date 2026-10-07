@@ -22,18 +22,20 @@ export type AnyLineContent = {
 /**
  * Validates a normal line's or background line's content: exactly one of `words` or `text` must be set, and its words must be valid.
  * `timing` is the lyric's declared precision, which its words need in order to know whether they own their times.
+ * `required` is false where the line's kind is unresolved, so absent content goes unreported while what is present is still checked.
  */
 export const validateContent = (
   content: AnyLineContent | undefined,
   time: TimeRange | undefined,
   path = '',
   timing = Timing.UNSPECIFIED,
+  required = true,
 ): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   const contentPath = childPath(path, 'content')
   const hasWords = content !== undefined && content.words.length > 0
   const hasText = content?.text !== undefined
-  if (!hasWords && !hasText) {
+  if (required && !hasWords && !hasText) {
     diagnostics.push({ path, code: DiagnosticCode.LineContentMissing })
   } else if (hasWords && hasText) {
     diagnostics.push({ path: contentPath, code: DiagnosticCode.LineContentAmbiguous })

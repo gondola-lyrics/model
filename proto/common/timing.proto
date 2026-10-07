@@ -11,7 +11,7 @@ enum Timing {
   // The field was not set; treat it as missing rather than as a resolved precision.
   TIMING_UNSPECIFIED = 0;
 
-  // Untimed; line and word TimeRange fields must be unset, so every line carries its content as plain text.
+  // Untimed; line and word TimeRange fields must be unset, so every line carries its content as plain text and no line is instrumental.
   TIMING_NONE = 1;
 
   // Timed at line level; every normal or background line carries a valid TimeRange and its content as plain text.
