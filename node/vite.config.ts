@@ -6,6 +6,7 @@ import { defineConfig } from 'vite'
 const root = import.meta.dirname
 const src = resolve(root, 'src')
 const gen = resolve(root, 'gen')
+const out = resolve(root, 'dist')
 
 const runtimeSrc = resolve(src, 'runtime')
 const storageSrc = resolve(src, 'storage')
@@ -22,6 +23,8 @@ export default defineConfig({
       tsconfigPath: resolve(root, 'tsconfig.json'),
       include: ['src', 'gen'],
       bundleTypes: true,
+      // The same directory listed twice, so the second pass rewrites every declaration with the CommonJS extension.
+      outDirs: [{ dir: out }, { dir: out, moduleFormat: 'cjs' }],
     }),
   ],
   build: {
