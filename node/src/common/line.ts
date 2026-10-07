@@ -61,6 +61,7 @@ export const isWordLevelLine = (line: { content?: AnyLineContent }): boolean => 
 /**
  * Derives the line's distinct lowercased language tags, falling back to those of its words when the line lists none.
  * Both layers carry the same shape, so one helper serves a line and a background line of either.
+ * It answers what one line shows, while `deriveLanguageUsages` unions line and word tags for the lyric-wide count.
  */
 export const deriveLineLanguages = (line: { languages: string[]; content?: AnyLineContent }): string[] => {
   if (line.languages.length === 0) {

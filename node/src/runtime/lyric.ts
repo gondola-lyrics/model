@@ -9,7 +9,7 @@ import { SCHEMA_VERSION } from '@root/version'
 
 import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath } from '@root/utils'
 import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMeta } from '@root/common'
-import { canonicalizeLanguageUsages, orderLanguageUsages, validateLanguageUsage } from './language'
+import { canonicalizeLanguageUsages, deriveLanguageUsages, orderLanguageUsages, validateLanguageUsage } from './language'
 import { canonicalizeLine, orderLine, validateLine } from './line'
 
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf'
@@ -76,6 +76,15 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
     languageTags.add(tag)
     diagnostics.push(...validateLanguageUsage(usage, path))
   })
+
+  // The usages are derived from the lines, so the stored list must be exactly what deriving them yields, order included.
+  const derived = deriveLanguageUsages(lyric.lines)
+  const sameLanguages =
+    lyric.languages.length === derived.length &&
+    lyric.languages.every((usage, i) => usage.tag === derived[i]?.tag && usage.count === derived[i]?.count)
+  if (!sameLanguages) {
+    diagnostics.push({ path: 'languages', code: DiagnosticCode.LyricLanguagesMismatch })
+  }
 
   const untimed = lyric.timing === Timing.NONE
   const lineTimed = lyric.timing === Timing.LINE
