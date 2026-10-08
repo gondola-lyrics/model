@@ -13,6 +13,7 @@ import {
   childPath,
   dropDefault,
   findDuplicates,
+  findUnordered,
   getTimeRangeEnd,
   isTimeRangeOrdered,
   lowerTag,
@@ -86,13 +87,17 @@ export const validateLine = (line: Line, path = '', timing = Timing.UNSPECIFIED)
   if (line.type === LineType.UNSPECIFIED) {
     diagnostics.push({ path: childPath(path, 'type'), code: DiagnosticCode.LineTypeUnspecified })
   }
-  // An instrumental line is the stretch its range marks out, so it is nothing without a range, and nothing with one that never ends.
+  // An instrumental line is the stretch its range marks out, so it is nothing without a range, and nothing with one that never ends or one that ends where it starts.
   // An untimed lyric marks out no stretches, so there the lyric reports the line itself and asks for no range here.
   const needsRange = instrumental && timing !== Timing.NONE
   if (line.time) {
     diagnostics.push(...validateTimeRange(line.time, childPath(path, 'time')))
     if (needsRange && line.time.end === undefined) {
       diagnostics.push({ path: childPath(path, 'time.end'), code: DiagnosticCode.LineTimeEndMissing })
+    }
+    // Only a range running the right way makes its bounds worth comparing, so a range already reported for its own numbers is left alone here.
+    if (needsRange && isTimeRangeOrdered(line.time) && line.time.end === line.time.start) {
+      diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LineTimeEmpty })
     }
   } else if (needsRange) {
     diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LineTimeMissing })
@@ -127,6 +132,10 @@ export const validateLine = (line: Line, path = '', timing = Timing.UNSPECIFIED)
   if (instrumental && line.backgrounds.length > 0) {
     diagnostics.push({ path: childPath(path, 'backgrounds'), code: DiagnosticCode.LineBackgroundsUnexpected })
   } else {
+    // The schema declares the list ordered, so an entry starting before the one it follows is out of place.
+    findUnordered(line.backgrounds, (background) => background.time).forEach((i) => {
+      diagnostics.push({ path: childPath(path, `backgrounds[${i}]`), code: DiagnosticCode.LineBackgroundsUnordered })
+    })
     line.backgrounds.forEach((background, i) => {
       const backgroundPath = childPath(path, `backgrounds[${i}]`)
       // The parent's end covers a background line, while its start may precede the parent's; a range reported for its own numbers or order never joins this comparison.

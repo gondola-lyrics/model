@@ -85,6 +85,26 @@ export const findDuplicates = <T>(items: T[], key: (item: T) => string): number[
 }
 
 /**
+ * Collects the indexes of entries whose start time falls before the last start seen, so a list the schema declares ordered can report every entry out of place.
+ * Entries carrying no usable range are passed over rather than treated as early, since a range that says nothing about when it starts cannot say it starts too soon.
+ */
+export const findUnordered = <T>(items: T[], bounds: (item: T) => TimeRangeBounds | undefined): number[] => {
+  const unordered: number[] = []
+  let last: number | undefined
+  items.forEach((item, i) => {
+    const range = bounds(item)
+    if (!isTimeRangeOrdered(range)) {
+      return
+    }
+    if (last !== undefined && range.start < last) {
+      unordered.push(i)
+    }
+    last = range.start
+  })
+  return unordered
+}
+
+/**
  * Joins a parent diagnostic path with a child segment, so a nested field reads as `lines[0].words[1]`.
  */
 export const childPath = (parent: string, child: string): string => {
