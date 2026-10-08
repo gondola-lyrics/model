@@ -1,6 +1,7 @@
 import type { DescMessage, MessageInitShape, MessageShape } from '@bufbuild/protobuf'
 
-import { create, equals } from '@bufbuild/protobuf'
+import { create, equals, ScalarType } from '@bufbuild/protobuf'
+import { TimeRangeSchema } from '@root/common/proto'
 
 /**
  * The user-settable init fields `create` accepts, narrowed from MessageInitShape's plain-object variant.
@@ -164,4 +165,62 @@ export const canonicalizeList = <Desc extends DescMessage>(
   canon: (message: MessageShape<Desc>) => MessageShape<Desc>,
 ): MessageShape<Desc>[] => {
   return messages.map(canon).filter((message) => !isDefault(schema, message))
+}
+
+/**
+ * The schemas whose all-default instance is meaningful anyway, so a field of one may hold the default.
+ * A time range says when something happens even when it says nothing about its bounds, while every other message reads the same empty as unset.
+ */
+const DEFAULT_IS_MEANINGFUL: readonly DescMessage[] = [TimeRangeSchema]
+
+/**
+ * Reports whether a path locates `path` or something below it, so an entry another rule already spoke about is recognized.
+ */
+const coversPath = (other: string, path: string): boolean => {
+  return other === path || other.startsWith(`${path}.`) || other.startsWith(`${path}[`)
+}
+
+/**
+ * Walks a message from its schema, collecting the path of every entry in a repeated field that is all default.
+ */
+const collectDefaultEntries = (schema: DescMessage, message: MessageShape<DescMessage>, path: string): string[] => {
+  if (DEFAULT_IS_MEANINGFUL.includes(schema)) {
+    return []
+  }
+  const found: string[] = []
+  const entries = message as unknown as Record<string, unknown>
+  for (const field of schema.fields) {
+    const child = path === '' ? field.localName : `${path}.${field.localName}`
+    if (field.fieldKind === 'list') {
+      const values = entries[field.localName] as readonly unknown[]
+      if (field.message !== undefined) {
+        values.forEach((value, i) => {
+          const entryPath = `${child}[${i}]`
+          if (isDefault(field.message, value as MessageShape<DescMessage>)) {
+            found.push(entryPath)
+          }
+          found.push(...collectDefaultEntries(field.message, value as MessageShape<DescMessage>, entryPath))
+        })
+      } else if (field.scalar === ScalarType.STRING) {
+        // An empty string is the scalar default, and a repeated string field never holds one for the same reason as a message entry.
+        values.forEach((value, i) => {
+          if (value === '') {
+            found.push(`${child}[${i}]`)
+          }
+        })
+      }
+    } else if (field.fieldKind === 'message' && entries[field.localName] !== undefined) {
+      found.push(...collectDefaultEntries(field.message, entries[field.localName] as MessageShape<DescMessage>, child))
+    }
+  }
+  return found
+}
+
+/**
+ * Collects the path of every entry in a repeated field that is all default, reading the whole tree from its schema.
+ * A repeated field never holds one, since a list the source never mentioned at that index shifts the ones after it and counts as a declaration of its own.
+ * `covered` holds the paths an existing diagnostic locates, which silence an entry at or above them, so a rule that already spoke about a field is not restated by this sweep.
+ */
+export const findDefaultEntries = (schema: DescMessage, message: MessageShape<DescMessage>, covered: readonly string[] = []): string[] => {
+  return collectDefaultEntries(schema, message, '').filter((path) => !covered.some((other) => coversPath(other, path)))
 }

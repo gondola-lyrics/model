@@ -7,7 +7,7 @@ import { DiagnosticCode } from '@root/common'
 import { LineSchema, LyricSchema } from './proto'
 import { SCHEMA_VERSION } from '@root/version'
 
-import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath } from '@root/utils'
+import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath, findDefaultEntries } from '@root/utils'
 import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMeta } from '@root/common'
 import { canonicalizeLine, orderLine, validateLine } from './line'
 
@@ -133,6 +133,12 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   if (lyric.timing === Timing.WORD && anyContent && !anyWords) {
     diagnostics.push({ path: 'timing', code: DiagnosticCode.LyricTimingWordMissing })
   }
+  // A rule that already spoke about a path keeps the sweep off it, and validateAgent reports an all-default agent at the agent rather than inside it.
+  const covered = diagnostics.map((diagnostic) => diagnostic.path)
+  lyric.agents.forEach((agent, i) => covered.push(`agents[${i}]`))
+  findDefaultEntries(LyricSchema, lyric, covered).forEach((path) => {
+    diagnostics.push({ path, code: DiagnosticCode.LyricListEntryEmpty })
+  })
 
   return diagnostics
 }
