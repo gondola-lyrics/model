@@ -8,7 +8,7 @@ import { LineSchema, LyricSchema } from './proto'
 import { SCHEMA_VERSION } from '@root/version'
 
 import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath, findDefaultEntries, findUnordered } from '@root/utils'
-import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMeta } from '@root/common'
+import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateLyricTags, validateMeta } from '@root/common'
 import { canonicalizeLine, orderLine, validateLine } from './line'
 
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf'
@@ -53,6 +53,9 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   if (lyric.meta) {
     diagnostics.push(...validateMeta(lyric.meta, 'meta'))
   }
+
+  // Every tag outside the lines is read here, since a line's own are read by validateLine, which knows the fields its kind forbids.
+  diagnostics.push(...validateLyricTags(LyricSchema, lyric))
 
   const untimed = lyric.timing === Timing.NONE
   const lineTimed = lyric.timing === Timing.LINE

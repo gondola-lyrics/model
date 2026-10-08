@@ -7,6 +7,7 @@ import { DiagnosticCode } from '@root/common'
 import { LanguageUsageSchema } from './proto'
 
 import { checkNumberDomain, childPath, lowerTag } from '@root/utils'
+import { isLanguageTag } from '@root/common'
 import { create } from '@bufbuild/protobuf'
 
 /**
@@ -28,6 +29,8 @@ export const validateLanguageUsage = (usage: LanguageUsage, path = ''): Diagnost
   const diagnostics: Diagnostic[] = []
   if (usage.tag === '') {
     diagnostics.push({ path: childPath(path, 'tag'), code: DiagnosticCode.LanguageUsageTagEmpty })
+  } else if (!isLanguageTag(usage.tag)) {
+    diagnostics.push({ path: childPath(path, 'tag'), code: DiagnosticCode.LanguageTagMalformed })
   }
   const count = checkNumberDomain(usage.count, 0, MAX_COUNT)
   if (count === 'invalid') {

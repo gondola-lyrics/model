@@ -18,7 +18,7 @@ import {
   isTimeRangeOrdered,
   lowerTag,
 } from '@root/utils'
-import { canonicalizeLineAnnotation, validateContent, validateLineAnnotation, validatePart, validateTimeRange } from '@root/common'
+import { canonicalizeLineAnnotation, validateContent, validateLineAnnotation, validateLineTags, validatePart, validateTimeRange } from '@root/common'
 import { canonicalizeWord } from './word'
 
 import { create } from '@bufbuild/protobuf'
@@ -83,6 +83,10 @@ export const makeLineBackground = (init?: MakeInit<typeof LineBackgroundSchema>)
  */
 export const validateLine = (line: Line, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
+  // Tags are read here rather than by the lyric, since only this knows which fields a line's kind forbids, and a forbidden field is never descended into.
+  if (line.type !== LineType.INSTRUMENTAL) {
+    diagnostics.push(...validateLineTags(LineSchema, line, path))
+  }
   const instrumental = line.type === LineType.INSTRUMENTAL
   if (line.type === LineType.UNSPECIFIED) {
     diagnostics.push({ path: childPath(path, 'type'), code: DiagnosticCode.LineTypeUnspecified })

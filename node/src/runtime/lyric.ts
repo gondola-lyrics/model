@@ -8,7 +8,7 @@ import { LineSchema, LyricSchema, LyricStatus } from './proto'
 import { SCHEMA_VERSION } from '@root/version'
 
 import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath, findDefaultEntries, findUnordered } from '@root/utils'
-import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMeta } from '@root/common'
+import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateLyricTags, validateMeta } from '@root/common'
 import { canonicalizeLanguageUsages, deriveLanguageUsages, orderLanguageUsages, validateLanguageUsage } from './language'
 import { canonicalizeLine, orderLine, validateLine } from './line'
 
@@ -65,6 +65,9 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   if (lyric.meta) {
     diagnostics.push(...validateMeta(lyric.meta, 'meta'))
   }
+
+  // Every tag outside the lines is read here, since a line's own are read by validateLine, which knows the fields its kind forbids.
+  diagnostics.push(...validateLyricTags(LyricSchema, lyric))
 
   const languageTags = new Set<string>()
   lyric.languages.forEach((usage, i) => {
