@@ -53,10 +53,10 @@ message MetaCredit {
 
 // Identifiers this song carries on one external platform.
 message MetaReference {
-  // Platform name in lower case.
+  // Platform name in lower case, non-empty.
   string platform = 1;
 
-  // Identifiers on that platform, exactly as the platform writes them.
+  // Identifiers on that platform, exactly as the platform writes them, non-empty.
   repeated string ids = 2;
 }
 

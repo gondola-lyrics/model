@@ -54,7 +54,21 @@ export const validateMetaCredit = (credit: MetaCredit, path = ''): Diagnostic[] 
 }
 
 /**
- * Validates a Meta: its offset and its duration, when set, must lie within the schema's domain, its titles, albums and references hold one entry per key, and each of its credits must be valid.
+ * Validates a MetaReference: it must name the platform it points at, and carry at least one identifier on it; an empty identifier is reported by the lyric's entry sweep.
+ */
+export const validateMetaReference = (reference: MetaReference, path = ''): Diagnostic[] => {
+  const diagnostics: Diagnostic[] = []
+  if (reference.platform === '') {
+    diagnostics.push({ path: childPath(path, 'platform'), code: DiagnosticCode.MetaReferencePlatformEmpty })
+  }
+  if (reference.ids.length === 0) {
+    diagnostics.push({ path: childPath(path, 'ids'), code: DiagnosticCode.MetaReferenceIdsEmpty })
+  }
+  return diagnostics
+}
+
+/**
+ * Validates a Meta: its offset and its duration, when set, must lie within the schema's domain, its titles, albums and references hold one entry per key, and each of its credits and references must be valid.
  */
 export const validateMeta = (meta: Meta, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -86,6 +100,7 @@ export const validateMeta = (meta: Meta, path = ''): Diagnostic[] => {
   checkDuplicates(meta.albums, byLanguage, 'albums', DiagnosticCode.MetaAlbumsLanguageDuplicate)
   meta.credits.forEach((credit, i) => diagnostics.push(...validateMetaCredit(credit, childPath(path, `credits[${i}]`))))
   checkDuplicates(meta.references, (reference) => reference.platform.toLowerCase(), 'references', DiagnosticCode.MetaReferencesPlatformDuplicate)
+  meta.references.forEach((reference, i) => diagnostics.push(...validateMetaReference(reference, childPath(path, `references[${i}]`))))
   return diagnostics
 }
 
