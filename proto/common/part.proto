@@ -43,8 +43,7 @@ enum PartType {
 }
 
 // The structural section a line belongs to.
-// A section is the run of adjacent lines carrying the same type, so two adjacent sections of that type read as one.
-// Every line of one section carries the same raw.
+// A section is the run of adjacent lines carrying the same type and the same raw, so two adjacent sections read as one only when the source names them alike.
 message Part {
   // Structural type of the section.
   PartType type = 1;
