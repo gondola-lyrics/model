@@ -14,7 +14,7 @@ option java_package = "gondola.lyric.model.runtime";
 
 // Parse validity of a lyric.
 enum LyricStatus {
-  // The field was not set; treat it as missing rather than as a resolved state.
+  // The field was not set; treat it as missing rather than as a resolved state, as is every value this enum does not declare.
   LYRIC_STATUS_UNSPECIFIED = 0;
 
   // Parsing the lyric failed; why is not carried here.

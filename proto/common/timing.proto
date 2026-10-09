@@ -8,7 +8,7 @@ option java_package = "gondola.lyric.model.common";
 
 // Declared timing precision for a lyric.
 enum Timing {
-  // The field was not set; treat it as missing rather than as a resolved precision.
+  // The field was not set; treat it as missing rather than as a resolved precision, as is every value this enum does not declare.
   TIMING_UNSPECIFIED = 0;
 
   // Untimed; line and word TimeRange fields must be unset, so every line carries its content as plain text and no line is instrumental.

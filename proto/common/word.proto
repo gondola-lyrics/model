@@ -10,7 +10,7 @@ option java_package = "gondola.lyric.model.common";
 
 // Kind of a word.
 enum WordType {
-  // The field was not set; treat it as missing rather than as a resolved kind.
+  // The field was not set; treat it as missing rather than as a resolved kind, as is every value this enum does not declare.
   WORD_TYPE_UNSPECIFIED = 0;
 
   // A sung word, carrying non-empty content that never includes the separators around it.

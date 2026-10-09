@@ -2,12 +2,12 @@ import type { MakeInit } from '@root/utils'
 import type { Diagnostic, TimeRange } from '@root/common'
 import type { LineContent, Lyric } from './proto'
 
-import { AgentSchema, LineType, MetaSchema, Timing } from '@root/common/proto'
+import { AgentSchema, LineType, LineTypeSchema, MetaSchema, Timing, TimingSchema } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'
 import { LineSchema, LyricSchema } from './proto'
 import { SCHEMA_VERSION } from '@root/version'
 
-import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath, findDefaultEntries, findUnordered } from '@root/utils'
+import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath, findDefaultEntries, findUnordered, isUnresolved } from '@root/utils'
 import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateLyricTags, validateMeta } from '@root/common'
 import { canonicalizeLine, orderLine, validateLine } from './line'
 
@@ -36,6 +36,11 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
 
   if (!SEMVER_PATTERN.test(lyric.version)) {
     diagnostics.push({ path: 'version', code: DiagnosticCode.LyricVersionMalformed })
+  }
+
+  // An unresolved precision leaves every timing rule with nothing to hold the lyric to, so a lyric that never stated one is reported rather than read as untimed.
+  if (isUnresolved(TimingSchema, lyric.timing)) {
+    diagnostics.push({ path: 'timing', code: DiagnosticCode.LyricTimingUnspecified })
   }
 
   const ids = new Set<string>()
@@ -86,6 +91,8 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
     type = LineType.NORMAL,
   ): void => {
     const words = content?.words ?? []
+    // A kind outside the enum turns out to need no range as readily as the zero value, so both are left unasked.
+    const unresolvedType = isUnresolved(LineTypeSchema, type)
     const sung = type !== LineType.INSTRUMENTAL
     if (sung) {
       agents.forEach((id, j) => {
@@ -100,7 +107,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
         diagnostics.push({ path: `${path}.content.words`, code: DiagnosticCode.LyricTimingLineWords })
       }
       // Only a kind known to sing is asked for a range, since an unresolved one may turn out to need none.
-      if (lineTimed && time === undefined && type !== LineType.UNSPECIFIED) {
+      if (lineTimed && time === undefined && !unresolvedType) {
         diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingLineTimeMissing })
       }
     } else if (untimed) {

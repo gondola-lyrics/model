@@ -2,10 +2,10 @@ import type { MakeInit } from '@root/utils'
 import type { Agent } from './proto'
 import type { Diagnostic } from './diagnostic'
 
-import { AgentSchema, AgentType, TextSchema } from './proto'
+import { AgentSchema, AgentType, AgentTypeSchema, TextSchema } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
-import { canonicalizeList, childPath, findDuplicates, lowerTag } from '@root/utils'
+import { canonicalizeList, childPath, findDuplicates, isUnresolved, lowerTag } from '@root/utils'
 import { canonicalizeText } from './text'
 
 import { create } from '@bufbuild/protobuf'
@@ -18,14 +18,16 @@ export const makeAgent = (init?: MakeInit<typeof AgentSchema>): Agent => {
 }
 
 /**
- * Validates an Agent: its id must be non-empty, an OTHER type must carry the source's own word in `raw`, and its names hold one entry per language.
+ * Validates an Agent: its id must be non-empty, its type must be resolved, an OTHER type must carry the source's own word in `raw`, and its names hold one entry per language.
  */
 export const validateAgent = (agent: Agent, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   if (agent.id === '') {
     diagnostics.push({ path, code: DiagnosticCode.AgentIdEmpty })
   }
-  if (agent.type === AgentType.OTHER && agent.raw === undefined) {
+  if (isUnresolved(AgentTypeSchema, agent.type)) {
+    diagnostics.push({ path: childPath(path, 'type'), code: DiagnosticCode.AgentTypeUnspecified })
+  } else if (agent.type === AgentType.OTHER && agent.raw === undefined) {
     diagnostics.push({ path, code: DiagnosticCode.AgentRawMissing })
   }
   // The names are one per language rather than one per member, so a language may not repeat; an unset and an empty tag are the same default language.

@@ -10,7 +10,7 @@ option java_package = "gondola.lyric.model.common";
 
 // Performing type of an agent.
 enum AgentType {
-  // The field was not set; treat it as missing rather than as a resolved type.
+  // The field was not set; treat it as missing rather than as a resolved type, as is every value this enum does not declare.
   AGENT_TYPE_UNSPECIFIED = 0;
 
   // A type this enum does not cover; the source's own word is kept in `Agent.raw`.

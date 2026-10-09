@@ -10,10 +10,20 @@ import {
   WordAnnotationTokenSchema,
   WordAnnotationTranslationSchema,
   WordType,
+  WordTypeSchema,
 } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
-import { canonicalizeField, canonicalizeList, childPath, findDuplicates, getTimeRangeEnd, isTimeRangeOrdered, lowerTag } from '@root/utils'
+import {
+  canonicalizeField,
+  canonicalizeList,
+  childPath,
+  findDuplicates,
+  getTimeRangeEnd,
+  isTimeRangeOrdered,
+  isUnresolved,
+  lowerTag,
+} from '@root/utils'
 import { validateTimeRange } from './time'
 
 import { create } from '@bufbuild/protobuf'
@@ -107,7 +117,8 @@ export const validateWordAnnotation = (annotation: WordAnnotation, path = ''): D
  */
 export const validateWord = (word: AnyWord, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
-  if (word.type === WordType.UNSPECIFIED) {
+  // A kind outside the enum reads as unresolved too, since a value this schema does not know cannot be held to any of its kind's rules.
+  if (isUnresolved(WordTypeSchema, word.type)) {
     diagnostics.push({ path, code: DiagnosticCode.WordTypeUnspecified })
   }
   if (word.type === WordType.NORMAL && word.text === '') {

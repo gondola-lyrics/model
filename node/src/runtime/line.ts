@@ -2,7 +2,7 @@ import type { MakeInit } from '@root/utils'
 import type { Diagnostic } from '@root/common'
 import type { Line, LineBackground, LineContent, Word } from './proto'
 
-import { LineAnnotationSchema, LineType, PartSchema, Timing } from '@root/common/proto'
+import { LineAnnotationSchema, LineType, LineTypeSchema, PartSchema, Timing } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'
 import { LineBackgroundSchema, LineContentSchema, LineSchema, WordSchema } from './proto'
 
@@ -16,6 +16,7 @@ import {
   findUnordered,
   getTimeRangeEnd,
   isTimeRangeOrdered,
+  isUnresolved,
   lowerTag,
 } from '@root/utils'
 import { canonicalizeLineAnnotation, validateContent, validateLineAnnotation, validateLineTags, validatePart, validateTimeRange } from '@root/common'
@@ -88,7 +89,8 @@ export const validateLine = (line: Line, path = '', timing = Timing.UNSPECIFIED)
     diagnostics.push(...validateLineTags(LineSchema, line, path))
   }
   const instrumental = line.type === LineType.INSTRUMENTAL
-  if (line.type === LineType.UNSPECIFIED) {
+  // A kind outside the enum reads as unresolved too, since a value this schema does not know cannot be held to any of its kind's rules.
+  if (isUnresolved(LineTypeSchema, line.type)) {
     diagnostics.push({ path: childPath(path, 'type'), code: DiagnosticCode.LineTypeUnspecified })
   }
   // An instrumental line is the stretch its range marks out, so it is nothing without a range, and nothing with one that never ends or one that ends where it starts.

@@ -2,10 +2,10 @@ import type { MakeInit } from '@root/utils'
 import type { Meta, MetaCredit, MetaReference } from './proto'
 import type { Diagnostic } from './diagnostic'
 
-import { CreditRole, MetaCreditSchema, MetaReferenceSchema, MetaSchema, TextSchema, UnknownEntrySchema } from './proto'
+import { CreditRole, CreditRoleSchema, MetaCreditSchema, MetaReferenceSchema, MetaSchema, TextSchema, UnknownEntrySchema } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
-import { canonicalizeList, checkNumberDomain, childPath, findDuplicates, lowerTag } from '@root/utils'
+import { canonicalizeList, checkNumberDomain, childPath, findDuplicates, isUnresolved, lowerTag } from '@root/utils'
 import { canonicalizeText } from './text'
 
 import { create } from '@bufbuild/protobuf'
@@ -43,11 +43,14 @@ export const makeMetaReference = (init?: MakeInit<typeof MetaReferenceSchema>): 
 }
 
 /**
- * Validates a MetaCredit: an OTHER role must carry the source's own word in `raw`.
+ * Validates a MetaCredit: its role must be resolved, and an OTHER role must carry the source's own word in `raw`.
+ * An unresolved role makes no credit at all, so `raw` is asked for only once the role says which one it named.
  */
 export const validateMetaCredit = (credit: MetaCredit, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
-  if (credit.role === CreditRole.OTHER && credit.raw === undefined) {
+  if (isUnresolved(CreditRoleSchema, credit.role)) {
+    diagnostics.push({ path: childPath(path, 'role'), code: DiagnosticCode.MetaCreditRoleUnspecified })
+  } else if (credit.role === CreditRole.OTHER && credit.raw === undefined) {
     diagnostics.push({ path, code: DiagnosticCode.MetaCreditRawMissing })
   }
   return diagnostics

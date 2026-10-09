@@ -11,7 +11,7 @@ option java_package = "gondola.lyric.model.common";
 
 // Role someone is credited for.
 enum CreditRole {
-  // The field was not set; treat it as missing rather than as a resolved role.
+  // The field was not set; treat it as missing rather than as a resolved role, as is every value this enum does not declare.
   CREDIT_ROLE_UNSPECIFIED = 0;
 
   // A role this enum does not cover; the source's own word is kept in `MetaCredit.raw`.

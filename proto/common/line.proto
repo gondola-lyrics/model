@@ -8,7 +8,7 @@ option java_package = "gondola.lyric.model.common";
 
 // Kind of a lyric line.
 enum LineType {
-  // The field was not set; treat it as missing rather than as a resolved kind.
+  // The field was not set; treat it as missing rather than as a resolved kind, as is every value this enum does not declare.
   LINE_TYPE_UNSPECIFIED = 0;
 
   // A sung line, carrying its content as either words or plain text.

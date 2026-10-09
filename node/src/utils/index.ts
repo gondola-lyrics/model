@@ -1,4 +1,4 @@
-import type { DescMessage, MessageInitShape, MessageShape } from '@bufbuild/protobuf'
+import type { DescEnum, DescMessage, MessageInitShape, MessageShape } from '@bufbuild/protobuf'
 
 import { create, equals, ScalarType } from '@bufbuild/protobuf'
 import { TimeRangeSchema } from '@root/common/proto'
@@ -20,6 +20,14 @@ export const SEMVER_PATTERN =
  * The schema declares a time above this bound invalid.
  */
 export const MAX_TIME = 2 ** 31 - 1
+
+/**
+ * Reports whether a value is the zero value of an enum, which the schema reads as "the field was not set" rather than as a resolved value.
+ * A value the enum does not declare at all reads the same way, so a producer's future value is treated as unresolved here instead of being reported as an error.
+ */
+export const isUnresolved = (schema: DescEnum, value: number): boolean => {
+  return value === 0 || schema.value[value] === undefined
+}
 
 /**
  * How a number sits against the integer domain a schema field allows.

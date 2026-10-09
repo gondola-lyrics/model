@@ -8,7 +8,7 @@ option java_package = "gondola.lyric.model.common";
 
 // Structural type of a part.
 enum PartType {
-  // The field was not set; treat it as missing rather than as a resolved type.
+  // The field was not set; treat it as missing rather than as a resolved type, as is every value this enum does not declare.
   PART_TYPE_UNSPECIFIED = 0;
 
   // A type this enum does not cover; the source's own word is kept in `Part.raw`.
