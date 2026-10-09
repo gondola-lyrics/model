@@ -20,7 +20,7 @@ export type AnyLineContent = {
 }
 
 /**
- * Validates a normal line's or background line's content: exactly one of `words` or `text` must be set, and its words must be valid.
+ * Validates a normal line's or background line's content: exactly one of `words` or `text` must be set, the text must be non-empty when it is the one set, and its words must be valid.
  * `timing` is the lyric's declared precision, which its words need in order to know whether they own their times.
  * `required` is false where the line's kind is unresolved, so absent content goes unreported while what is present is still checked.
  */
@@ -39,6 +39,10 @@ export const validateContent = (
     diagnostics.push({ path, code: DiagnosticCode.LineContentMissing })
   } else if (hasWords && hasText) {
     diagnostics.push({ path: contentPath, code: DiagnosticCode.LineContentAmbiguous })
+  }
+  // An empty text is set as far as the two-of-one rule is concerned, and so would otherwise stand in for a line with nothing in it.
+  if (content?.text === '') {
+    diagnostics.push({ path: childPath(contentPath, 'text'), code: DiagnosticCode.LineContentTextEmpty })
   }
   diagnostics.push(...validateWords(content?.words ?? [], time, contentPath, timing))
   return diagnostics

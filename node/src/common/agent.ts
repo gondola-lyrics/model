@@ -6,7 +6,7 @@ import { AgentSchema, AgentType, AgentTypeSchema, TextSchema } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
 import { canonicalizeList, childPath, findDuplicates, isUnresolved, lowerTag } from '@root/utils'
-import { canonicalizeText } from './text'
+import { canonicalizeText, validateText } from './text'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -34,6 +34,7 @@ export const validateAgent = (agent: Agent, path = ''): Diagnostic[] => {
   findDuplicates(agent.names, (name) => lowerTag(name.language) ?? '').forEach((i) => {
     diagnostics.push({ path: childPath(path, `names[${i}]`), code: DiagnosticCode.AgentNamesLanguageDuplicate })
   })
+  agent.names.forEach((name, i) => diagnostics.push(...validateText(name, childPath(path, `names[${i}]`))))
   return diagnostics
 }
 

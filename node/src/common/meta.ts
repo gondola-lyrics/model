@@ -6,7 +6,7 @@ import { CreditRole, CreditRoleSchema, MetaCreditSchema, MetaReferenceSchema, Me
 import { DiagnosticCode } from './diagnostic'
 
 import { canonicalizeList, checkNumberDomain, childPath, findDuplicates, isUnresolved, lowerTag } from '@root/utils'
-import { canonicalizeText } from './text'
+import { canonicalizeText, validateText } from './text'
 
 import { create } from '@bufbuild/protobuf'
 
@@ -53,6 +53,7 @@ export const validateMetaCredit = (credit: MetaCredit, path = ''): Diagnostic[] 
   } else if (credit.role === CreditRole.OTHER && credit.raw === undefined) {
     diagnostics.push({ path, code: DiagnosticCode.MetaCreditRawMissing })
   }
+  credit.names.forEach((name, i) => diagnostics.push(...validateText(name, childPath(path, `names[${i}]`))))
   return diagnostics
 }
 
@@ -101,6 +102,10 @@ export const validateMeta = (meta: Meta, path = ''): Diagnostic[] => {
   // Titles and albums are one per language, while artists, authors and credited names are one per person, so only the first two are checked.
   checkDuplicates(meta.titles, byLanguage, 'titles', DiagnosticCode.MetaTitlesLanguageDuplicate)
   checkDuplicates(meta.albums, byLanguage, 'albums', DiagnosticCode.MetaAlbumsLanguageDuplicate)
+  // Every list of text names something, whatever it is keyed by, so each entry is asked for its own text.
+  for (const field of ['titles', 'artists', 'albums', 'authors'] as const) {
+    meta[field].forEach((text, i) => diagnostics.push(...validateText(text, childPath(path, `${field}[${i}]`))))
+  }
   meta.credits.forEach((credit, i) => diagnostics.push(...validateMetaCredit(credit, childPath(path, `credits[${i}]`))))
   checkDuplicates(meta.references, (reference) => reference.platform.toLowerCase(), 'references', DiagnosticCode.MetaReferencesPlatformDuplicate)
   meta.references.forEach((reference, i) => diagnostics.push(...validateMetaReference(reference, childPath(path, `references[${i}]`))))

@@ -2,6 +2,7 @@
  * An error code `validate*` can report.
  */
 export enum DiagnosticCode {
+  TextTextEmpty = 'text.text.empty',
   TimeRangeEndBeforeStart = 'time.range.end.before_start',
   TimeRangeStartInvalid = 'time.range.start.invalid',
   TimeRangeEndInvalid = 'time.range.end.invalid',
@@ -46,6 +47,7 @@ export enum DiagnosticCode {
   LineContentMissing = 'line.content.missing',
   LineContentAmbiguous = 'line.content.ambiguous',
   LineContentUnexpected = 'line.content.unexpected',
+  LineContentTextEmpty = 'line.content.text.empty',
   LineWordTimeMissing = 'line.word.time.missing',
   LineWordTimeUncovered = 'line.word.time.uncovered',
   LineWordTimeUnexpected = 'line.word.time.unexpected',
