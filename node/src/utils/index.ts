@@ -7,6 +7,7 @@ import { TimeRangeSchema } from '@root/common/proto'
  * The user-settable init fields `create` accepts, narrowed from MessageInitShape's plain-object variant.
  * Its `$`-prefixed fields (`$typeName`, `$unknown`) are stripped.
  * Nothing in it is deep-copied, so editing a message or array it carries afterwards can reach the message built from it.
+ * Every `make*` stores what it is given: canonical form is `canonicalize*`'s to produce and `validate*` reports nothing about it, so a lyric built by hand is as the producer wrote it until it is canonicalized.
  */
 export type MakeInit<Desc extends DescMessage> = Omit<Extract<MessageInitShape<Desc>, { $typeName?: undefined }>, `$${string}`>
 

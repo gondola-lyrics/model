@@ -53,7 +53,7 @@ message MetaCredit {
 
 // Identifiers this song carries on one external platform.
 message MetaReference {
-  // Platform name in lower case, non-empty.
+  // Platform name, non-empty and compared case-insensitively; canonical form is lower case.
   string platform = 1;
 
   // Identifiers on that platform, exactly as the platform writes them, non-empty.
@@ -89,7 +89,7 @@ message Meta {
   // Authors or transcribers of the lyric file, not of the song, one entry per author rather than one per language.
   repeated Text authors = 8;
 
-  // International Standard Recording Codes, in upper case and without separators.
+  // International Standard Recording Codes, compared without case or separators; canonical form is upper case with none.
   repeated string isrcs = 9;
 
   // Song credits such as lyricist or composer.

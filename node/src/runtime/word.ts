@@ -10,14 +10,14 @@ import { canonicalizeWordShared } from '@root/common'
 import { create } from '@bufbuild/protobuf'
 
 /**
- * Creates a normal word, stamping WORD_TYPE_NORMAL so the discriminant can never be set from outside; its language tag is lowercased.
+ * Creates a normal word, stamping WORD_TYPE_NORMAL so the discriminant can never be set from outside.
  */
 export const makeWordNormal = (init: Omit<MakeInit<typeof WordSchema>, 'type'>): Word => {
   return create(WordSchema, {
     type: WordType.NORMAL,
     time: init.time,
     text: init.text,
-    language: init.language?.toLowerCase(),
+    language: init.language,
     annotation: init.annotation,
     emphasis: init.emphasis,
   })

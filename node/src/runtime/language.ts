@@ -16,10 +16,10 @@ import { create } from '@bufbuild/protobuf'
 const MAX_COUNT = 2 ** 32 - 1
 
 /**
- * Creates a LanguageUsage, counting the normal lines declaring one language; the tag is lowercased.
+ * Creates a LanguageUsage, counting the normal lines declaring one language.
  */
 export const makeLanguageUsage = (init?: MakeInit<typeof LanguageUsageSchema>): LanguageUsage => {
-  return create(LanguageUsageSchema, { ...init, tag: init?.tag?.toLowerCase() })
+  return create(LanguageUsageSchema, init)
 }
 
 /**

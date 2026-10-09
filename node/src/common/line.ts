@@ -100,17 +100,17 @@ export const validateLineAnnotation = (annotation: LineAnnotation, path = ''): D
 }
 
 /**
- * Creates a LineAnnotationRoman, a romanized transliteration of a whole line; its language tag is lowercased.
+ * Creates a LineAnnotationRoman, a romanized transliteration of a whole line.
  */
 export const makeLineAnnotationRoman = (init?: MakeInit<typeof LineAnnotationRomanSchema>): LineAnnotationRoman => {
-  return create(LineAnnotationRomanSchema, { ...init, language: init?.language?.toLowerCase() })
+  return create(LineAnnotationRomanSchema, init)
 }
 
 /**
- * Creates a LineAnnotationTranslation, a translation of a whole line; its language tag is lowercased.
+ * Creates a LineAnnotationTranslation, a translation of a whole line.
  */
 export const makeLineAnnotationTranslation = (init?: MakeInit<typeof LineAnnotationTranslationSchema>): LineAnnotationTranslation => {
-  return create(LineAnnotationTranslationSchema, { ...init, language: init?.language?.toLowerCase() })
+  return create(LineAnnotationTranslationSchema, init)
 }
 
 /**

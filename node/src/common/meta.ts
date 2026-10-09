@@ -22,10 +22,23 @@ const MIN_OFFSET = -(2 ** 31)
 const MAX_OFFSET = 2 ** 31 - 1
 
 /**
- * Creates a Meta, the lyric's metadata; its language tag is lowercased.
+ * An ISRC names a recording as two letters for the country, three for the registrant, then seven digits for the year and the designation.
+ * It is read without case or separators, since those are the canonical form rather than part of the identifier, and a string outside this shape names no recording at all.
+ */
+const ISRC_PATTERN = /^[A-Z]{2}[0-9A-Z]{3}[0-9]{7}$/
+
+/**
+ * Reports whether a string names a recording, reading it without case or separators.
+ */
+const isIsrc = (isrc: string): boolean => {
+  return ISRC_PATTERN.test(isrc.replace(/[^0-9a-zA-Z]/g, '').toUpperCase())
+}
+
+/**
+ * Creates a Meta, the lyric's metadata.
  */
 export const makeMeta = (init?: MakeInit<typeof MetaSchema>): Meta => {
-  return create(MetaSchema, { ...init, language: init?.language?.toLowerCase() })
+  return create(MetaSchema, init)
 }
 
 /**
@@ -106,6 +119,12 @@ export const validateMeta = (meta: Meta, path = ''): Diagnostic[] => {
   for (const field of ['titles', 'artists', 'albums', 'authors'] as const) {
     meta[field].forEach((text, i) => diagnostics.push(...validateText(text, childPath(path, `${field}[${i}]`))))
   }
+  // An ISRC is read by other catalogues, so one outside the shape they read names no recording; which case and separators it is written with is canonical form rather than shape.
+  meta.isrcs.forEach((isrc, i) => {
+    if (isrc !== '' && !isIsrc(isrc)) {
+      diagnostics.push({ path: childPath(path, `isrcs[${i}]`), code: DiagnosticCode.MetaIsrcsMalformed })
+    }
+  })
   meta.credits.forEach((credit, i) => diagnostics.push(...validateMetaCredit(credit, childPath(path, `credits[${i}]`))))
   checkDuplicates(meta.references, (reference) => reference.platform.toLowerCase(), 'references', DiagnosticCode.MetaReferencesPlatformDuplicate)
   meta.references.forEach((reference, i) => diagnostics.push(...validateMetaReference(reference, childPath(path, `references[${i}]`))))

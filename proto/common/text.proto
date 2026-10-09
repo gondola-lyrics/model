@@ -9,7 +9,7 @@ option java_package = "gondola.lyric.model.common";
 // Text carrying an optional language tag.
 // A wanted language matches a tag when either extends the other on a subtag boundary, the longest shared prefix winning, and entries carrying no language are the fallback.
 message Text {
-  // BCP 47 language tag, in lower case and compared case-insensitively; unset means unspecified or default.
+  // BCP 47 language tag, compared case-insensitively; canonical form is lower case, and unset means unspecified or default.
   optional string language = 1;
 
   // The text itself, non-empty.

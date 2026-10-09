@@ -24,6 +24,7 @@ export enum DiagnosticCode {
   MetaOffsetOverflow = 'meta.offset.overflow',
   MetaDurationInvalid = 'meta.duration.invalid',
   MetaDurationOverflow = 'meta.duration.overflow',
+  MetaIsrcsMalformed = 'meta.isrcs.malformed',
   MetaTitlesLanguageDuplicate = 'meta.titles.language.duplicate',
   MetaAlbumsLanguageDuplicate = 'meta.albums.language.duplicate',
   MetaReferencesPlatformDuplicate = 'meta.references.platform.duplicate',

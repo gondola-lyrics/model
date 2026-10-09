@@ -55,24 +55,24 @@ export const makeWordAnnotationToken = (init?: MakeInit<typeof WordAnnotationTok
 }
 
 /**
- * Creates a WordAnnotationRoman, a romanized transliteration of a single word; its language tag is lowercased.
+ * Creates a WordAnnotationRoman, a romanized transliteration of a single word.
  */
 export const makeWordAnnotationRoman = (init?: MakeInit<typeof WordAnnotationRomanSchema>): WordAnnotationRoman => {
-  return create(WordAnnotationRomanSchema, { ...init, language: init?.language?.toLowerCase() })
+  return create(WordAnnotationRomanSchema, init)
 }
 
 /**
- * Creates a WordAnnotationTranslation, a translation of a single word; its language tag is lowercased.
+ * Creates a WordAnnotationTranslation, a translation of a single word.
  */
 export const makeWordAnnotationTranslation = (init?: MakeInit<typeof WordAnnotationTranslationSchema>): WordAnnotationTranslation => {
-  return create(WordAnnotationTranslationSchema, { ...init, language: init?.language?.toLowerCase() })
+  return create(WordAnnotationTranslationSchema, init)
 }
 
 /**
- * Creates a WordAnnotationRuby, a ruby annotation of a single word such as furigana; its language tag is lowercased.
+ * Creates a WordAnnotationRuby, a ruby annotation of a single word such as furigana.
  */
 export const makeWordAnnotationRuby = (init?: MakeInit<typeof WordAnnotationRubySchema>): WordAnnotationRuby => {
-  return create(WordAnnotationRubySchema, { ...init, language: init?.language?.toLowerCase() })
+  return create(WordAnnotationRubySchema, init)
 }
 
 /**

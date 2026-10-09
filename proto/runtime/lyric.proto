@@ -29,13 +29,13 @@ enum LyricStatus {
 // A repeated field likewise never holds an entry that is all default, and preserves source order unless its own comment says otherwise.
 // Every agent id a line references, background lines included, must exist in `agents`.
 // Every non-empty line id, background lines included, is unique within the lyric.
-// Every non-empty BCP 47 language tag is well formed and stored in lower case.
+// Every non-empty BCP 47 language tag is well formed and compared case-insensitively; canonical form is lower case.
 message Lyric {
   // Schema version of this data model, always set and formatted as a semantic version.
   // Consumers sharing the same major version can read each other's output.
   string version = 1;
 
-  // Format this lyric was parsed from, named by the parser and in lower case; empty means unknown.
+  // Format this lyric was parsed from, named by the parser and compared case-insensitively; canonical form is lower case, and empty means unknown.
   string format = 2;
 
   // Parse validity of the lyric.
