@@ -10,6 +10,8 @@ export enum DiagnosticCode {
   TimeRangeEndOverflow = 'time.range.end.overflow',
   WordTypeUnspecified = 'word.type.unspecified',
   WordTextEmpty = 'word.text.empty',
+  WordTextSeparator = 'word.text.separator',
+  WordTextNotSeparator = 'word.text.not_separator',
   AgentIdEmpty = 'agent.id.empty',
   AgentRawMissing = 'agent.raw.missing',
   AgentTypeUnspecified = 'agent.type.unspecified',

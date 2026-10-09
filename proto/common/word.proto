@@ -13,10 +13,10 @@ enum WordType {
   // The field was not set; treat it as missing rather than as a resolved kind, as is every value this enum does not declare.
   WORD_TYPE_UNSPECIFIED = 0;
 
-  // A sung word, carrying non-empty content that never includes the separators around it.
+  // A sung word, carrying non-empty content that never includes the separators around it, so no character of it has the Unicode White_Space property.
   WORD_TYPE_NORMAL = 1;
 
-  // Whitespace between two words, carrying the separator as its content and nothing else.
+  // Whitespace between two words, carrying the separator as its content and nothing else, so every character of it has the Unicode White_Space property and there is at least one.
   WORD_TYPE_SPACE = 2;
 }
 

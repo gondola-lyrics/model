@@ -40,6 +40,14 @@ export type AnyWord = {
 }
 
 /**
+ * A separator between two words, which the schema defines as the Unicode White_Space property.
+ * The property is named rather than listed, so every language reads the same set from its own standard library; what each language calls whitespace does not agree.
+ * `U+200B` is a format character rather than a space, so it stays part of a sung word.
+ */
+const ANY_SEPARATOR = /\p{White_Space}/u
+const ONLY_SEPARATORS = /^\p{White_Space}+$/u
+
+/**
  * Creates a WordAnnotationToken, one timed piece of a ruby or roman annotation.
  */
 export const makeWordAnnotationToken = (init?: MakeInit<typeof WordAnnotationTokenSchema>): WordAnnotationToken => {
@@ -113,7 +121,7 @@ export const validateWordAnnotation = (annotation: WordAnnotation, path = ''): D
 }
 
 /**
- * Validates a Word: its kind must be resolved, a NORMAL word must carry non-empty text, a SPACE word must carry nothing but its text, and any time and annotation it does carry must be valid.
+ * Validates a Word: its kind must be resolved, a NORMAL word must carry non-empty text holding no separator, a SPACE word must carry a separator and nothing else, and any time and annotation it does carry must be valid.
  */
 export const validateWord = (word: AnyWord, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -123,8 +131,15 @@ export const validateWord = (word: AnyWord, path = ''): Diagnostic[] => {
   }
   if (word.type === WordType.NORMAL && word.text === '') {
     diagnostics.push({ path, code: DiagnosticCode.WordTextEmpty })
+  } else if (word.type === WordType.NORMAL && ANY_SEPARATOR.test(word.text)) {
+    // The separators around a word belong to the SPACE words beside it, so a sung word holding one has swallowed a boundary that words are split on.
+    diagnostics.push({ path: childPath(path, 'text'), code: DiagnosticCode.WordTextSeparator })
   }
   if (word.type === WordType.SPACE) {
+    // A SPACE word is the separator, so its text is what the rule is about; an empty one separates nothing and is reported the same way.
+    if (!ONLY_SEPARATORS.test(word.text)) {
+      diagnostics.push({ path: childPath(path, 'text'), code: DiagnosticCode.WordTextNotSeparator })
+    }
     // A SPACE word carries the separator and nothing else; a field holding an all-default value still counts as carried, and a forbidden one is never descended into.
     if (word.time !== undefined) {
       diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LineWordTimeUnexpected })
