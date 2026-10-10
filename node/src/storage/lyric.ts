@@ -82,6 +82,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   /**
    * Reports the whole-tree rules for one line or background line: agent references resolving to no agent, and whatever the declared timing asks of it.
    * It walks every node whatever the line's kind, since a whole-tree invariant holds regardless; an instrumental line's agents and own range validateLine already rules on, and a background line is read as the sung line it always is.
+   * `forbidden` marks a node its parent's kind does not allow at all: what it carries is still held to the rules it breaks by carrying it, but nothing further is asked of it, since the node as a whole is already reported.
    */
   const checkReferences = (
     agents: string[],
@@ -89,6 +90,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
     content: LineContent | undefined,
     path: string,
     type = LineType.NORMAL,
+    forbidden = false,
   ): void => {
     const words = content?.words ?? []
     // A kind outside the enum turns out to need no range as readily as the zero value, so both are left unasked.
@@ -106,8 +108,8 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
       if (lineTimed && words.length > 0) {
         diagnostics.push({ path: `${path}.content.words`, code: DiagnosticCode.LyricTimingLineWords })
       }
-      // Only a kind known to sing is asked for a range, since an unresolved one may turn out to need none.
-      if (lineTimed && time === undefined && !unresolvedType) {
+      // Only a kind known to sing is asked for a range, since an unresolved one may turn out to need none, and a node that is not allowed in the first place is asked for nothing.
+      if (lineTimed && time === undefined && !unresolvedType && !forbidden) {
         diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingLineTimeMissing })
       }
     } else if (untimed) {
@@ -135,7 +137,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
     line.backgrounds.forEach((background, j) => {
       const backgroundPath = `${path}.backgrounds[${j}]`
       claimLineId(background.id, backgroundPath)
-      checkReferences(background.agents, background.time, background.content, backgroundPath)
+      checkReferences(background.agents, background.time, background.content, backgroundPath, LineType.NORMAL, line.type === LineType.INSTRUMENTAL)
     })
     diagnostics.push(...validateLine(line, path, lyric.timing))
   })
