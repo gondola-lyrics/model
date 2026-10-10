@@ -18,6 +18,7 @@ import {
   canonicalizeField,
   canonicalizeList,
   childPath,
+  copyMessage,
   findDuplicates,
   getTimeRangeEnd,
   isTimeRangeOrdered,
@@ -197,7 +198,7 @@ export const validateWords = (words: AnyWord[], time: TimeRange | undefined, pat
  * Returns a copy of the annotation token, which holds only a time and its text and so has nothing to normalize.
  */
 export const canonicalizeWordAnnotationToken = (token: WordAnnotationToken): WordAnnotationToken => {
-  return { ...token }
+  return { ...token, time: copyMessage(token.time) }
 }
 
 /**
@@ -206,6 +207,7 @@ export const canonicalizeWordAnnotationToken = (token: WordAnnotationToken): Wor
 export const canonicalizeWordAnnotationRoman = (roman: WordAnnotationRoman): WordAnnotationRoman => {
   return {
     ...roman,
+    time: copyMessage(roman.time),
     language: lowerTag(roman.language),
     tokens: canonicalizeList(WordAnnotationTokenSchema, roman.tokens, canonicalizeWordAnnotationToken),
   }
@@ -217,6 +219,7 @@ export const canonicalizeWordAnnotationRoman = (roman: WordAnnotationRoman): Wor
 export const canonicalizeWordAnnotationRuby = (ruby: WordAnnotationRuby): WordAnnotationRuby => {
   return {
     ...ruby,
+    time: copyMessage(ruby.time),
     language: lowerTag(ruby.language),
     tokens: canonicalizeList(WordAnnotationTokenSchema, ruby.tokens, canonicalizeWordAnnotationToken),
   }
@@ -248,6 +251,7 @@ export const canonicalizeWordAnnotation = (annotation: WordAnnotation): WordAnno
 export const canonicalizeWordShared = <T extends AnyWord>(word: T): T => {
   return {
     ...word,
+    time: copyMessage(word.time),
     language: lowerTag(word.language),
     annotation: canonicalizeField(WordAnnotationSchema, word.annotation, canonicalizeWordAnnotation),
   }

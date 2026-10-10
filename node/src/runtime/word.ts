@@ -4,7 +4,7 @@ import type { Word, WordEmphasis } from './proto'
 import { WordType } from '@root/common/proto'
 import { WordEmphasisSchema, WordSchema } from './proto'
 
-import { dropDefault } from '@root/utils'
+import { copyMessage, dropDefault } from '@root/utils'
 import { canonicalizeWordShared } from '@root/common'
 
 import { create } from '@bufbuild/protobuf'
@@ -41,5 +41,5 @@ export const makeWordEmphasis = (init?: MakeInit<typeof WordEmphasisSchema>): Wo
  * Returns a copy of the word canonicalized, with its emphasis dropped when all-default.
  */
 export const canonicalizeWord = (word: Word): Word => {
-  return { ...canonicalizeWordShared(word), emphasis: dropDefault(WordEmphasisSchema, word.emphasis) }
+  return { ...canonicalizeWordShared(word), emphasis: dropDefault(WordEmphasisSchema, copyMessage(word.emphasis)) }
 }

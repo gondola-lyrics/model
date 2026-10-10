@@ -11,6 +11,7 @@ import {
   canonicalizeField,
   canonicalizeList,
   childPath,
+  copyMessage,
   dropDefault,
   findDuplicates,
   findUnordered,
@@ -186,6 +187,7 @@ export const orderLine = (line: Line): Line => {
 export const canonicalizeLineBackground = (background: LineBackground): LineBackground => {
   return {
     ...background,
+    time: copyMessage(background.time),
     agents: background.agents.filter((id) => id !== ''),
     languages: [...new Set(background.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
     content: canonicalizeField(LineContentSchema, background.content, canonicalizeLineContent),
@@ -199,7 +201,8 @@ export const canonicalizeLineBackground = (background: LineBackground): LineBack
 export const canonicalizeLine = (line: Line): Line => {
   return {
     ...line,
-    part: dropDefault(PartSchema, line.part),
+    time: copyMessage(line.time),
+    part: dropDefault(PartSchema, copyMessage(line.part)),
     agents: line.agents.filter((id) => id !== ''),
     languages: [...new Set(line.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
     content: canonicalizeField(LineContentSchema, line.content, canonicalizeLineContent),

@@ -204,12 +204,14 @@ export const orderLyric = (lyric: Lyric): Lyric => {
 
 /**
  * Returns a canonical copy of the runtime lyric: format lowercased, meta/agents/lines canonicalized, languages canonicalized then ordered, lines ordered.
+ * The copy shares no part of the tree with the lyric it was given, so editing either leaves the other as it was.
  */
 export const canonicalizeLyric = (lyric: Lyric): Lyric => {
   return {
     ...lyric,
     format: lyric.format.toLowerCase(),
     meta: canonicalizeField(MetaSchema, lyric.meta, canonicalizeMeta),
+    extra: { ...lyric.extra },
     languages: canonicalizeLanguageUsages(lyric.languages),
     agents: canonicalizeList(AgentSchema, lyric.agents, canonicalizeAgent),
     lines: canonicalizeList(LineSchema, lyric.lines, canonicalizeLine).sort(byTime((line) => line.time)),

@@ -151,7 +151,7 @@ export const canonicalizeMetaReference = (reference: MetaReference): MetaReferen
 export const canonicalizeMeta = (meta: Meta): Meta => {
   return {
     ...meta,
-    unknowns: canonicalizeList(UnknownEntrySchema, meta.unknowns, (entry) => entry),
+    unknowns: canonicalizeList(UnknownEntrySchema, meta.unknowns, (entry) => ({ ...entry })),
     language: lowerTag(meta.language),
     titles: canonicalizeList(TextSchema, meta.titles, canonicalizeText),
     artists: canonicalizeList(TextSchema, meta.artists, canonicalizeText),

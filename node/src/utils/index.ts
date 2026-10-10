@@ -175,6 +175,14 @@ export const dropDefault = <Desc extends DescMessage>(schema: Desc, message: Mes
 }
 
 /**
+ * Copies an optional submessage a canonicalizing helper carries over unchanged, since handing back the one it was given would share it with the caller's input.
+ * Every submessage canonicalization leaves as it is holds scalars alone, so copying its own fields copies all of it.
+ */
+export const copyMessage = <T extends object>(message: T | undefined): T | undefined => {
+  return message === undefined ? undefined : { ...message }
+}
+
+/**
  * Canonicalizes an optional submessage through a callback, then drops it when the result is all-default.
  */
 export const canonicalizeField = <Desc extends DescMessage>(
