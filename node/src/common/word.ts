@@ -20,8 +20,7 @@ import {
   childPath,
   copyMessage,
   findDuplicates,
-  getTimeRangeEnd,
-  isTimeRangeOrdered,
+  isTimeRangeUncovered,
   isUnresolved,
   lowerTag,
 } from '@root/utils'
@@ -47,6 +46,14 @@ export type AnyWord = {
  */
 const ANY_SEPARATOR = /\p{White_Space}/u
 const ONLY_SEPARATORS = /^\p{White_Space}+$/u
+
+/**
+ * Reports whether a declared precision puts timing on the words themselves, which is what makes a word's own range mean anything.
+ * Under NONE and LINE the lyric reports the word list as a whole, so no range inside it is held to another.
+ */
+const ownsWordTimes = (timing: Timing): boolean => {
+  return timing !== Timing.NONE && timing !== Timing.LINE
+}
 
 /**
  * Creates a WordAnnotationToken, one timed piece of a ruby or roman annotation.
@@ -86,8 +93,9 @@ export const makeWordAnnotation = (init?: MakeInit<typeof WordAnnotationSchema>)
 /**
  * Validates a WordAnnotation: each of its lists holds one entry per language, and every ruby and roman item, and every token within them, must carry a valid time when it carries one at all.
  * An item or token without a time inherits one, so its absence is never a problem here.
+ * `time` is the range the items inherit, i.e. the annotated word's where the lyric's precision puts one on it at all; an item carrying its own falls within it, while a token falls within whichever range its item resolves to and so is held to one either way.
  */
-export const validateWordAnnotation = (annotation: WordAnnotation, path = ''): Diagnostic[] => {
+export const validateWordAnnotation = (annotation: WordAnnotation, path = '', time?: TimeRange): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   /**
    * Reports every entry of one list whose language an earlier entry already took, treating an unset and an empty tag as the same default language.
@@ -98,7 +106,7 @@ export const validateWordAnnotation = (annotation: WordAnnotation, path = ''): D
     })
   }
   /**
-   * Validates the time of every item in one timed annotation list, and of every token those items hold.
+   * Validates the time of every item in one timed annotation list, and of every token those items hold, against both its own domain and the range containing it.
    */
   const validateItems = (items: (WordAnnotationRuby | WordAnnotationRoman)[], field: string): void => {
     items.forEach((item, i) => {
@@ -106,9 +114,19 @@ export const validateWordAnnotation = (annotation: WordAnnotation, path = ''): D
       if (item.time) {
         diagnostics.push(...validateTimeRange(item.time, childPath(itemPath, 'time')))
       }
+      // An item is the annotated word's own stretch of sound respelled rather than a second voice, so it falls within the range it would otherwise inherit instead of beside it.
+      if (isTimeRangeUncovered(item.time, time)) {
+        diagnostics.push({ path: childPath(itemPath, 'time'), code: DiagnosticCode.LineWordAnnotationTimeUncovered })
+      }
+      // A token follows its item's range, or the word's where the item states none, which is the one `resolveAnnotationTokenTime` hands back and so the one containing it.
+      const inherited = item.time ?? time
       item.tokens.forEach((token, j) => {
+        const tokenPath = childPath(itemPath, `tokens[${j}].time`)
         if (token.time) {
-          diagnostics.push(...validateTimeRange(token.time, childPath(itemPath, `tokens[${j}].time`)))
+          diagnostics.push(...validateTimeRange(token.time, tokenPath))
+        }
+        if (isTimeRangeUncovered(token.time, inherited)) {
+          diagnostics.push({ path: tokenPath, code: DiagnosticCode.LineWordAnnotationTimeUncovered })
         }
       })
     })
@@ -123,8 +141,9 @@ export const validateWordAnnotation = (annotation: WordAnnotation, path = ''): D
 
 /**
  * Validates a Word: its kind must be resolved, a NORMAL word must carry non-empty text holding no separator, a SPACE word must carry a separator and nothing else, and any time and annotation it does carry must be valid.
+ * `timing` is the lyric's declared precision, which says whether the word owns the range its annotation items inherit.
  */
-export const validateWord = (word: AnyWord, path = ''): Diagnostic[] => {
+export const validateWord = (word: AnyWord, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   // A kind outside the enum reads as unresolved too, since a value this schema does not know cannot be held to any of its kind's rules.
   if (isUnresolved(WordTypeSchema, word.type)) {
@@ -161,7 +180,8 @@ export const validateWord = (word: AnyWord, path = ''): Diagnostic[] => {
     diagnostics.push(...validateTimeRange(word.time, childPath(path, 'time')))
   }
   if (word.annotation) {
-    diagnostics.push(...validateWordAnnotation(word.annotation, childPath(path, 'annotation')))
+    // The range an item inherits is the word's own, so it is passed down only where the precision puts timing on the words at all.
+    diagnostics.push(...validateWordAnnotation(word.annotation, childPath(path, 'annotation'), ownsWordTimes(timing) ? word.time : undefined))
   }
   return diagnostics
 }
@@ -172,22 +192,15 @@ export const validateWord = (word: AnyWord, path = ''): Diagnostic[] => {
  */
 export const validateWords = (words: AnyWord[], time: TimeRange | undefined, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
-  const ownTimes = timing !== Timing.NONE && timing !== Timing.LINE
+  const ownTimes = ownsWordTimes(timing)
   words.forEach((word, i) => {
     const wordPath = childPath(path, `words[${i}]`)
-    diagnostics.push(...validateWord(word, wordPath))
+    diagnostics.push(...validateWord(word, wordPath, timing))
     if (ownTimes && word.type === WordType.NORMAL && word.time === undefined) {
       diagnostics.push({ path: wordPath, code: DiagnosticCode.LineWordTimeMissing })
     }
-    // A range reported for its own numbers or order never joins this comparison, on either side, and an absent one has nothing to compare.
-    // A SPACE word was already told to carry no time at all, so its range stays out of it too.
-    if (
-      ownTimes &&
-      word.type !== WordType.SPACE &&
-      isTimeRangeOrdered(time) &&
-      isTimeRangeOrdered(word.time) &&
-      (word.time.start < time.start || getTimeRangeEnd(word.time) > getTimeRangeEnd(time))
-    ) {
+    // A SPACE word was already told to carry no time at all, so its range stays out of the comparison.
+    if (ownTimes && word.type !== WordType.SPACE && isTimeRangeUncovered(word.time, time)) {
       diagnostics.push({ path: childPath(wordPath, 'time'), code: DiagnosticCode.LineWordTimeUncovered })
     }
   })

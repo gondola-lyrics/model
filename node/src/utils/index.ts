@@ -84,6 +84,17 @@ export const getTimeRangeEnd = (range: TimeRangeBounds | undefined): number => {
 }
 
 /**
+ * Reports whether a range reaches past either bound of the one containing it.
+ * Relating two ranges needs both to run the right way, so a range already reported for its own numbers joins no comparison on either side, and an unset one has nothing to fall outside of.
+ */
+export const isTimeRangeUncovered = (range: TimeRangeBounds | undefined, parent: TimeRangeBounds | undefined): boolean => {
+  if (!isTimeRangeOrdered(range) || !isTimeRangeOrdered(parent)) {
+    return false
+  }
+  return range.start < parent.start || getTimeRangeEnd(range) > getTimeRangeEnd(parent)
+}
+
+/**
  * Collects the indexes of entries whose key an earlier entry already took, so a list holding one entry per key can report every repeat without reordering or merging anything.
  */
 export const findDuplicates = <T>(items: T[], key: (item: T) => string): number[] => {

@@ -23,6 +23,7 @@ enum WordType {
 // One timed piece of a ruby or roman annotation.
 message WordAnnotationToken {
   // Time range of the token; unset means it follows the time of the item it belongs to.
+  // A set one falls within the range it would otherwise follow.
   TimeRange time = 1;
 
   // Text of the token.
@@ -41,6 +42,7 @@ message WordAnnotationTranslation {
 // Romanized transliteration of a single word.
 message WordAnnotationRoman {
   // Time range of the item; unset means it follows the time of the annotated word.
+  // A set one falls within the range it would otherwise follow.
   TimeRange time = 1;
 
   // Language (BCP 47 tag) or transliteration scheme of this item.
@@ -53,6 +55,7 @@ message WordAnnotationRoman {
 // Ruby annotation of a single word, such as furigana.
 message WordAnnotationRuby {
   // Time range of the item; unset means it follows the time of the annotated word.
+  // A set one falls within the range it would otherwise follow.
   TimeRange time = 1;
 
   // Language (BCP 47 tag) or transliteration scheme of this item.

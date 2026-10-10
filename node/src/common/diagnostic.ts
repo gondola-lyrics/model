@@ -56,6 +56,7 @@ export enum DiagnosticCode {
   LineWordTimeUnexpected = 'line.word.time.unexpected',
   LineWordLanguageUnexpected = 'line.word.language.unexpected',
   LineWordAnnotationUnexpected = 'line.word.annotation.unexpected',
+  LineWordAnnotationTimeUncovered = 'line.word.annotation.time.uncovered',
   LineWordAnnotationRubiesLanguageDuplicate = 'line.word.annotation.rubies.language.duplicate',
   LineWordAnnotationRomansLanguageDuplicate = 'line.word.annotation.romans.language.duplicate',
   LineWordAnnotationTranslationsLanguageDuplicate = 'line.word.annotation.translations.language.duplicate',
