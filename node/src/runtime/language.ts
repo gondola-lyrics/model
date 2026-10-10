@@ -90,14 +90,18 @@ export const canonicalizeLanguageUsage = (usage: LanguageUsage): LanguageUsage =
 }
 
 /**
- * Canonicalizes a list of usages: tags lowercased, entries sharing a tag merged by summing their counts, all-default entries dropped, then ordered.
+ * Canonicalizes a list of usages: tags lowercased, entries sharing a tag merged by summing their counts, entries naming no language dropped, then ordered.
+ * A count past the field's bound is capped at it, since summing two entries is how one arises; a value that is no count at all is left as it stands for validate to report.
  */
 export const canonicalizeLanguageUsages = (languages: LanguageUsage[]): LanguageUsage[] => {
   const counts = new Map<string, number>()
   for (const usage of languages) {
-    const tag = usage.tag.toLowerCase()
-    counts.set(tag, (counts.get(tag) ?? 0) + usage.count)
+    const tag = lowerTag(usage.tag)
+    // An empty tag names no language, so its count counts nothing, and every other list drops an empty entry the same way.
+    if (tag === undefined) {
+      continue
+    }
+    counts.set(tag, Math.min((counts.get(tag) ?? 0) + usage.count, MAX_COUNT))
   }
-  const merged = [...counts].filter(([tag, count]) => tag !== '' || count !== 0).map(([tag, count]) => makeLanguageUsage({ tag, count }))
-  return orderLanguageUsages(merged)
+  return orderLanguageUsages([...counts].map(([tag, count]) => makeLanguageUsage({ tag, count })))
 }
