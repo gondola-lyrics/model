@@ -6,7 +6,7 @@ import { LineType, WordType } from '@root/common/proto'
 import { DiagnosticCode } from '@root/common'
 import { LanguageUsageSchema } from './proto'
 
-import { checkNumberDomain, childPath, lowerTag } from '@root/utils'
+import { checkNumberDomain, childPath, compareTags, lowerTag } from '@root/utils'
 import { isLanguageTag } from '@root/common'
 import { create } from '@bufbuild/protobuf'
 
@@ -42,10 +42,10 @@ export const validateLanguageUsage = (usage: LanguageUsage, path = ''): Diagnost
 }
 
 /**
- * Orders language usages into canonical order: descending count, then ascending tag.
+ * Orders language usages into canonical order: descending count, then ascending tag read without case.
  */
 export const orderLanguageUsages = (languages: LanguageUsage[]): LanguageUsage[] => {
-  return [...languages].sort((a, b) => b.count - a.count || (a.tag < b.tag ? -1 : a.tag > b.tag ? 1 : 0))
+  return [...languages].sort((a, b) => b.count - a.count || compareTags(a.tag, b.tag))
 }
 
 /**

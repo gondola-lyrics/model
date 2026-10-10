@@ -71,10 +71,16 @@ export const isTimeRangeOrdered = (range: TimeRangeBounds | undefined): range is
 }
 
 /**
+ * Stands in for an end left unknown, which is open above and so ranks past every bound.
+ * It lies outside the domain the schema allows, so no end a range may actually hold can equal it.
+ */
+const OPEN_END = Number.MAX_SAFE_INTEGER
+
+/**
  * Returns a time range's end as a number two ranges can be compared on, where an unknown end is open above and so ranks past every value a bound may hold.
  */
 export const getTimeRangeEnd = (range: TimeRangeBounds | undefined): number => {
-  return range?.end ?? MAX_TIME + 1
+  return range?.end ?? OPEN_END
 }
 
 /**
@@ -128,6 +134,15 @@ export const lowerTag = (tag: string | undefined): string | undefined => {
 }
 
 /**
+ * Compares two language tags the way the schema reads them, which is without case, so an order by tag never turns on how one was spelled.
+ */
+export const compareTags = (a: string, b: string): number => {
+  const x = a.toLowerCase()
+  const y = b.toLowerCase()
+  return x < y ? -1 : x > y ? 1 : 0
+}
+
+/**
  * Scores a lowercased tag against a lowercased range as the length they share when either extends the other on a subtag boundary, so `ja` never matches `jav`.
  * An exact match scores one more, outranking a tag that only extends the range, and anything else scores 0.
  */
@@ -147,12 +162,19 @@ export const scoreTag = (tag: string, range: string): number => {
 /**
  * Builds a comparator ordering items by start ascending then end ascending, reading each item's bounds through a callback.
  * An unknown end is open above, so among equal starts it orders after every known one.
+ * An item whose range cannot be related to another's claims no place among those that can, so it keeps its own order after all of them; `findUnordered` passes over exactly those items, so ordering and validating never contradict each other.
  */
 export const byTime = <T>(bounds: (item: T) => TimeRangeBounds | undefined) => {
   return (a: T, b: T): number => {
     const x = bounds(a)
     const y = bounds(b)
-    return (x?.start ?? 0) - (y?.start ?? 0) || getTimeRangeEnd(x) - getTimeRangeEnd(y)
+    if (!isTimeRangeOrdered(x)) {
+      return isTimeRangeOrdered(y) ? 1 : 0
+    }
+    if (!isTimeRangeOrdered(y)) {
+      return -1
+    }
+    return x.start - y.start || getTimeRangeEnd(x) - getTimeRangeEnd(y)
   }
 }
 
