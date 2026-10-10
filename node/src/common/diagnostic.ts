@@ -97,7 +97,8 @@ export const resolveDiagnosticPath = (root: unknown, path: string): unknown => {
   }
   let node: unknown = root
   for (const segment of path.split('.')) {
-    const match = /^([a-z]+)(?:\[(\d+)\])?$/.exec(segment)
+    // A field is named by the identifier the generated code gives it, which is the schema's own name in lower camel case, so a name of more than one word resolves like any other.
+    const match = /^([$A-Za-z_][$\w]*)(?:\[(\d+)\])?$/.exec(segment)
     if (match === null || node === null || typeof node !== 'object') {
       return undefined
     }
