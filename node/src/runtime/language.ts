@@ -83,13 +83,6 @@ export const deriveLanguageUsages = (lines: { type: LineType; languages?: string
 }
 
 /**
- * Returns a copy of the usage with its tag lowercased.
- */
-export const canonicalizeLanguageUsage = (usage: LanguageUsage): LanguageUsage => {
-  return { ...usage, tag: usage.tag.toLowerCase() }
-}
-
-/**
  * Canonicalizes a list of usages: tags lowercased, entries sharing a tag merged by summing their counts, entries naming no language dropped, then ordered.
  * A count past the field's bound is capped at it, since summing two entries is how one arises; a value that is no count at all is left as it stands for validate to report.
  */
