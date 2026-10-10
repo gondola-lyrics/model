@@ -70,9 +70,6 @@ Testing/
 # Test coverage reports
 coverage/
 
-# Compiled Go generator
-script/proto-gen/proto-gen
-
 # Gradle state and local SDK paths
 .gradle/
 .kotlin/
