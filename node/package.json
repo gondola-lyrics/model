@@ -54,6 +54,10 @@
       "types": "./dist/storage.d.ts",
       "default": "./dist/storage.js"
     },
+    "./version": {
+      "types": "./dist/version.d.ts",
+      "default": "./dist/version.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

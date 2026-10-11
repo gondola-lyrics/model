@@ -39,6 +39,7 @@ export default defineConfig({
         common: resolve(src, 'common/index.ts'),
         runtime: resolve(runtimeSrc, 'index.ts'),
         storage: resolve(storageSrc, 'index.ts'),
+        version: resolve(src, 'version.ts'),
       },
       formats: ['es'],
     },
