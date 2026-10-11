@@ -34,39 +34,21 @@
     "format": "prettier --write ."
   },
   "sideEffects": false,
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.mjs"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./runtime": {
-      "import": {
-        "types": "./dist/runtime.d.ts",
-        "default": "./dist/runtime.mjs"
-      },
-      "require": {
-        "types": "./dist/runtime.d.cts",
-        "default": "./dist/runtime.cjs"
-      }
+      "types": "./dist/runtime.d.ts",
+      "default": "./dist/runtime.js"
     },
     "./storage": {
-      "import": {
-        "types": "./dist/storage.d.ts",
-        "default": "./dist/storage.mjs"
-      },
-      "require": {
-        "types": "./dist/storage.d.cts",
-        "default": "./dist/storage.cjs"
-      }
+      "types": "./dist/storage.d.ts",
+      "default": "./dist/storage.js"
     },
     "./package.json": "./package.json"
   },

@@ -23,8 +23,7 @@ export default defineConfig({
       tsconfigPath: resolve(root, 'tsconfig.json'),
       include: ['src', 'gen'],
       bundleTypes: true,
-      // The same directory listed twice, so the second pass rewrites every declaration with the CommonJS extension.
-      outDirs: [{ dir: out }, { dir: out, moduleFormat: 'cjs' }],
+      outDirs: [{ dir: out }],
     }),
   ],
   build: {
@@ -41,26 +40,17 @@ export default defineConfig({
         runtime: resolve(runtimeSrc, 'index.ts'),
         storage: resolve(storageSrc, 'index.ts'),
       },
-      formats: ['es', 'cjs'],
+      formats: ['es'],
     },
     rollupOptions: {
       external: [/^@bufbuild\/protobuf/, './runtime', './storage'],
       // Lets an entry chunk absorb the modules it shares, so no hashed chunk is emitted beside it.
       preserveEntrySignatures: 'allow-extension',
-      output: [
-        {
-          format: 'es',
-          entryFileNames: '[name].mjs',
-          chunkFileNames: '[name].mjs',
-          paths: { [runtimeSrc]: './runtime.mjs', [storageSrc]: './storage.mjs' },
-        },
-        {
-          format: 'cjs',
-          entryFileNames: '[name].cjs',
-          chunkFileNames: '[name].cjs',
-          paths: { [runtimeSrc]: './runtime.cjs', [storageSrc]: './storage.cjs' },
-        },
-      ],
+      output: {
+        entryFileNames: '[name].js',
+        chunkFileNames: '[name].js',
+        paths: { [runtimeSrc]: './runtime.js', [storageSrc]: './storage.js' },
+      },
     },
   },
 })
