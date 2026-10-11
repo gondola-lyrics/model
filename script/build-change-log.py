@@ -1,9 +1,12 @@
 """
-Builds the changelog section of one binding release.
+Builds the changelog section of one module release.
+
+Each module keeps its own CHANGELOG.md. A commit lands in a module's changelog when its scope names
+that module, and a scopeless commit is a global change that lands in every module.
 
 Usage:
-  python script/build-change-log.py <node|kotlin|cpp> <version> [--dry-run]
-  python script/build-change-log.py <node|kotlin|cpp> <version> --extract
+  python script/build-change-log.py <node|proto|kotlin|cpp> <version> [--dry-run]
+  python script/build-change-log.py <node|proto|kotlin|cpp> <version> --extract
 """
 
 import os
@@ -19,9 +22,7 @@ sys.dont_write_bytecode = True
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-TARGETS = ("node", "kotlin", "cpp")
-
-SHARED_PATHS = ("proto/", "script/")
+TARGETS = ("proto", "node")
 
 CHANGE_LOG_FILE = "CHANGELOG.md"
 
@@ -105,9 +106,9 @@ def previous_tag(target: str, version: str) -> str | None:
     return f"{target}/v{max(lower, key=version_key)}" if lower else None
 
 
-def collect_commits(since: str | None, paths: list[str]) -> list[Commit]:
+def collect_commits(since: str | None) -> list[Commit]:
     revision = f"{since}..HEAD" if since else "HEAD"
-    output = git("log", revision, "--format=%H%x1f%h%x1f%s%x1f%b%x1e", "--", *paths)
+    output = git("log", revision, "--format=%H%x1f%h%x1f%s%x1f%b%x1e")
     commits = []
     for record in output.split("\x1e"):
         record = record.strip("\n")
@@ -130,24 +131,23 @@ def format_commit(commit: Commit, url: str | None) -> str:
 
 
 def build_section(target: str, version: str, schema: str, commits: list[Commit], url: str | None, day: date) -> str:
+    # A commit belongs here when its scope names this module, or when it has no module scope (a global change).
+    selected = [commit for commit in commits if commit.scope == target or commit.scope not in TARGETS]
     lines = [f"## v{version} ({day.isoformat()})", "", f"Schema: proto {schema}"]
 
-    breaking = [text for commit in commits for text in commit.breaking]
+    breaking = [text for commit in selected for text in commit.breaking]
     if breaking:
         lines += ["", "### Breaking", ""]
         lines += [f"- {text}" for text in breaking]
 
     for kind, title in TYPE_TITLES.items():
-        group = [commit for commit in commits if commit.kind == kind]
+        group = [commit for commit in selected if commit.kind == kind]
         if not group:
             continue
         lines += ["", f"### {title}", ""]
-        lines += [f"- {format_commit(commit, url)}" for commit in group if commit.scope in (None, target)]
-        for scope in sorted({commit.scope for commit in group} - {None, target}):
-            lines.append(f"- `{scope}`")
-            lines += [f"  - {format_commit(commit, url)}" for commit in group if commit.scope == scope]
+        lines += [f"- {format_commit(commit, url)}" for commit in group]
 
-    if not commits:
+    if not selected:
         lines += ["", "No notable changes."]
     return "\n".join(lines) + "\n"
 
@@ -188,7 +188,7 @@ def main() -> None:
 
     since = previous_tag(args.target, args.version)
     schema = (read_file(SCHEMA_VERSION_FILE) or "").strip() or "unknown"
-    commits = collect_commits(since, [f"{args.target}/", *SHARED_PATHS])
+    commits = collect_commits(since)
     section = build_section(args.target, args.version, schema, commits, repo_url(), date.today())
 
     if args.dry_run:
