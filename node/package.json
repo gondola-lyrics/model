@@ -30,7 +30,7 @@
     "generate:proto": "buf generate",
     "generate:version": "tsx script/version.ts",
     "build": "vite build",
-    "release": "tsx script/publish.ts",
+    "release": "tsx script/release.ts",
     "format": "prettier --write ."
   },
   "sideEffects": false,
