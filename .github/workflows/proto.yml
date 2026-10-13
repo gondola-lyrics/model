@@ -1,0 +1,54 @@
+name: Release Proto
+
+on:
+  push:
+    tags:
+      - 'proto/v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Check version
+        run: |
+          version="${GITHUB_REF_NAME#proto/v}"
+          declared="$(tr -d '[:space:]' < proto/VERSION.txt)"
+          if [ "$declared" != "$version" ]; then
+            echo "tag $GITHUB_REF_NAME does not match the declared schema version $declared" >&2
+            exit 1
+          fi
+
+      - name: Setup buf
+        uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+          version: 1.72.0
+
+      - name: Check the schema
+        run: |
+          buf build -o /dev/null
+          buf lint
+          buf format --diff --exit-code
+        working-directory: proto
+
+      - name: Prepare the release
+        id: release
+        run: |
+          version="${GITHUB_REF_NAME#proto/v}"
+          python3 script/build-change-log.py proto "$version" --extract > "$RUNNER_TEMP/notes.md"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Proto ${{ steps.release.outputs.version }}
+          body_path: ${{ runner.temp }}/notes.md
+          make_latest: false
