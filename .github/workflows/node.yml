@@ -1,0 +1,68 @@
+name: Release Node
+
+on:
+  push:
+    tags:
+      - 'node/v*'
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          cache: npm
+          cache-dependency-path: node/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: node
+
+      - name: Check version
+        run: |
+          version="${GITHUB_REF_NAME#node/v}"
+          declared="$(node -p 'require("./node/package.json").version')"
+          if [ "$declared" != "$version" ]; then
+            echo "tag $GITHUB_REF_NAME does not match the package version $declared" >&2
+            exit 1
+          fi
+
+      - name: Check code
+        run: |
+          npm run release -- publish --only-check
+          npm run check
+        working-directory: node
+
+      - name: Test code
+        run: npm run test
+        working-directory: node
+
+      - name: Publish to npm
+        run: npm run release -- publish
+        working-directory: node
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+
+      - name: Prepare release
+        id: release
+        run: |
+          version="${GITHUB_REF_NAME#node/v}"
+          python3 script/build-change-log.py node "$version" --extract > "$RUNNER_TEMP/notes.md"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Node ${{ steps.release.outputs.version }}
+          body_path: ${{ runner.temp }}/notes.md
