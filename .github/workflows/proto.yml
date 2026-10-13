@@ -30,7 +30,7 @@ jobs:
         uses: bufbuild/buf-action@v1
         with:
           setup_only: true
-          version: 1.72.0
+          version: '1.72.0'
 
       - name: Check the schema
         run: |
