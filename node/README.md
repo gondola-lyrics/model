@@ -195,8 +195,14 @@ npm run build
 **Check**
 
 ```bash
-npx tsc --noEmit
+npm run check
 npm run format
+```
+
+**Test**
+
+```bash
+npm run test
 ```
 
 ## License

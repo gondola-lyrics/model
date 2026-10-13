@@ -17,5 +17,5 @@
       "@gen/*": ["./gen/*"]
     }
   },
-  "include": ["src", "gen", "script", "vite.config.ts"]
+  "include": ["src", "gen", "script", "test", "vite.config.ts"]
 }
