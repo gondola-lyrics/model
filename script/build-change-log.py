@@ -1,12 +1,9 @@
 """
 Builds the changelog section of one module release.
 
-Each module keeps its own CHANGELOG.md. A commit lands in a module's changelog when its scope names
-that module, and a scopeless commit is a global change that lands in every module.
-
 Usage:
-  python script/build-change-log.py <node|proto|kotlin|cpp> <version> [--dry-run]
-  python script/build-change-log.py <node|proto|kotlin|cpp> <version> --extract
+    python script/build-change-log.py <proto|node> <version> [--dry-run]
+    python script/build-change-log.py <proto|node> <version> --extract
 """
 
 import os
@@ -22,7 +19,9 @@ sys.dont_write_bytecode = True
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-TARGETS = ("proto", "node")
+BINDINGS = ("node",)
+
+TARGETS = ("proto", *BINDINGS)
 
 CHANGE_LOG_FILE = "CHANGELOG.md"
 
@@ -100,6 +99,13 @@ def repo_url() -> str | None:
     return f'https://github.com/{match["owner"]}/{match["name"]}' if match else None
 
 
+def read_schema_version() -> str:
+    version = (read_file(SCHEMA_VERSION_FILE) or "").strip()
+    if not SEMVER_PATTERN.match(version):
+        fail(f"{SCHEMA_VERSION_FILE} does not hold a semantic version: {version!r}")
+    return version
+
+
 def previous_tag(target: str, version: str) -> str | None:
     versions = [tag.removeprefix(f"{target}/v") for tag in git("tag", "--list", f"{target}/v*").split()]
     lower = [found for found in versions if SEMVER_PATTERN.match(found) and version_key(found) < version_key(version)]
@@ -130,10 +136,15 @@ def format_commit(commit: Commit, url: str | None) -> str:
     return f"{commit.message} ({link})"
 
 
-def build_section(target: str, version: str, schema: str, commits: list[Commit], url: str | None, day: date) -> str:
-    # A commit belongs here when its scope names this module, or when it has no module scope (a global change).
-    selected = [commit for commit in commits if commit.scope == target or commit.scope not in TARGETS]
-    lines = [f"## v{version} ({day.isoformat()})", "", f"Schema: proto {schema}"]
+def build_section(
+    target: str, version: str, schema: str | None, commits: list[Commit], url: str | None, day: date
+) -> str:
+    # A commit belongs here when its scope names this module, or when it names no single binding.
+    selected = [commit for commit in commits if commit.scope == target or commit.scope not in BINDINGS]
+    lines = [f"## v{version} ({day.isoformat()})"]
+
+    if schema:
+        lines += ["", f"> Proto Version: {schema}"]
 
     breaking = [text for commit in selected for text in commit.breaking]
     if breaking:
@@ -178,16 +189,20 @@ def main() -> None:
 
     relative = f"{args.target}/{CHANGE_LOG_FILE}"
     existing = read_file(relative)
+    recorded = extract_section(existing, args.version) if existing is not None else None
 
     if args.extract:
-        section = extract_section(existing, args.version) if existing is not None else None
-        if section is None:
+        if recorded is None:
             fail(f"{relative} has no section for v{args.version}")
-        print(section, end="")
+        print(recorded, end="")
         return
 
+    # Writing a version twice would leave two sections, and extraction only ever reaches the first.
+    if recorded is not None and not args.dry_run:
+        fail(f"{relative} already has a section for v{args.version}")
+
+    schema = read_schema_version() if args.target in BINDINGS else None
     since = previous_tag(args.target, args.version)
-    schema = (read_file(SCHEMA_VERSION_FILE) or "").strip() or "unknown"
     commits = collect_commits(since)
     section = build_section(args.target, args.version, schema, commits, repo_url(), date.today())
 
