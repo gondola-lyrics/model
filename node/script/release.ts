@@ -17,6 +17,10 @@ const TAG_PREFIX = 'node/v'
 
 const MANIFEST = resolve(PACKAGE_ROOT, 'package.json')
 
+const CHANGE_LOG = resolve(PACKAGE_ROOT, 'CHANGELOG.md')
+
+const CHANGE_LOG_BUILDER = resolve(REPO_ROOT, 'script', 'build-change-log.py')
+
 const run = (command: string, args: string[], cwd = PACKAGE_ROOT) => {
   try {
     execFileSync(command, args, { cwd, stdio: 'inherit' })
@@ -141,7 +145,7 @@ const commandPublish = (onlyCheck: boolean, skipCheckCi: boolean) => {
 }
 
 /**
- * Sets the package version, then cuts the release commit and tag together so the tag and the published version never drift.
+ * Sets the package version and records the release in the changelog, then cuts the release commit and tag together so the tag and the published version never drift.
  * Meant to run locally; it does not push, leaving that to the author.
  */
 const commandBump = (version: string | undefined) => {
@@ -158,6 +162,10 @@ const commandBump = (version: string | undefined) => {
   if (runGit(['tag', '--list', tag]) !== '') {
     fail(`tag ${tag} already exists`)
   }
+  // The builder refuses to write a version twice, so its section is checked here to leave nothing half written.
+  if (existsSync(CHANGE_LOG) && readFileSync(CHANGE_LOG, 'utf8').includes(`## v${version} (`)) {
+    fail(`CHANGELOG.md already has a section for ${version}`)
+  }
   checkWorktree()
 
   const text = readFileSync(MANIFEST, 'utf8')
@@ -165,10 +173,11 @@ const commandBump = (version: string | undefined) => {
     fail(`package.json is already ${version}`)
   }
   writeFileSync(MANIFEST, text.replace(/("version":\s*)"[^"]*"/, `$1"${version}"`))
+  run('python3', [CHANGE_LOG_BUILDER, 'node', version])
 
-  run('git', ['add', 'package.json'], REPO_ROOT)
-  run('git', ['commit', '-m', `release(node): v${version}`], REPO_ROOT)
-  run('git', ['tag', tag], REPO_ROOT)
+  run('git', ['add', 'package.json', 'CHANGELOG.md'])
+  run('git', ['commit', '-m', `release(node): v${version}`])
+  run('git', ['tag', tag])
   console.log(`release: tagged ${tag}; push the commit and the tag to publish`)
 }
 
