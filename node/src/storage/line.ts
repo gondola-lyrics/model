@@ -49,17 +49,17 @@ export const canonicalizeLineContent = (content: LineContent): LineContent => {
 /**
  * Creates a normal line, stamping LINE_TYPE_NORMAL so the discriminant can never be set from outside.
  */
-export const makeLineNormal = (init: Omit<MakeInit<typeof LineSchema>, 'type'>): Line => {
+export const makeLineNormal = (init?: Omit<MakeInit<typeof LineSchema>, 'type'>): Line => {
   return create(LineSchema, {
-    id: init.id,
+    id: init?.id,
     type: LineType.NORMAL,
-    time: init.time,
-    part: init.part,
-    agents: init.agents,
-    languages: init.languages,
-    content: init.content,
-    annotation: init.annotation,
-    backgrounds: init.backgrounds,
+    time: init?.time,
+    part: init?.part,
+    agents: init?.agents,
+    languages: init?.languages,
+    content: init?.content,
+    annotation: init?.annotation,
+    backgrounds: init?.backgrounds,
   })
 }
 
