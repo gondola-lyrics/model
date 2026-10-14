@@ -4,6 +4,7 @@ Builds the changelog section of one module release.
 Usage:
     python script/build-change-log.py <proto|node> <version> [--dry-run]
     python script/build-change-log.py <proto|node> <version> --extract
+    python script/build-change-log.py <proto|node> <version> --check-bump
 """
 
 import os
@@ -25,7 +26,7 @@ TARGETS = ("proto", *BINDINGS)
 
 CHANGE_LOG_FILE = "CHANGELOG.md"
 
-SCHEMA_VERSION_FILE = os.path.join("proto", "VERSION.txt")
+SCHEMA_VERSION_FILE = "proto/VERSION.txt"
 
 TYPE_TITLES = {
     "feat": "Feature",
@@ -39,6 +40,8 @@ TYPE_TITLES = {
 SUBJECT_PATTERN = re.compile(r"^(?P<kind>[a-z]+)(?:\((?P<scope>[\w-]+)\))?: (?P<message>.+)$")
 BREAKING_PATTERN = re.compile(r"^breaking:\s*(?P<text>.+)$", re.IGNORECASE)
 GITHUB_PATTERN = re.compile(r"github\.com[:/](?P<owner>[^/]+)/(?P<name>[^/]+?)(?:\.git)?/?$")
+RECORDED_PATTERN = re.compile(r"^## v(?P<version>\S+) \(")
+SCHEMA_LINE_PATTERN = re.compile(r"^> Proto Version:\s*(?P<version>\S+)\s*$", re.MULTILINE)
 SEMVER_PATTERN = re.compile(
     r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
     r"(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
@@ -173,6 +176,52 @@ def extract_section(text: str, version: str) -> str | None:
     return "\n".join(lines[start + 1 : end]).strip() + "\n"
 
 
+# Sections are prepended, so the first heading is the newest release.
+def previous_release(text: str) -> tuple[str, str | None] | None:
+    for line in text.splitlines():
+        match = RECORDED_PATTERN.match(line)
+        if not match:
+            continue
+        if not SEMVER_PATTERN.match(match["version"]):
+            fail(f"{CHANGE_LOG_FILE} records a heading that is not a semantic version: {match['version']!r}")
+        found = SCHEMA_LINE_PATTERN.search(extract_section(text, match["version"]) or "")
+        return match["version"], found["version"] if found else None
+    return None
+
+
+def required_bump(schema: str, shipped: str) -> str:
+    now, before = version_key(schema)[0], version_key(shipped)[0]
+    if now[0] > before[0]:
+        return "major"
+    if now[1] > before[1]:
+        return "minor"
+    return "patch"
+
+
+# The schema version a release shipped with is read back from the changelog, since the working tree
+# only ever holds the current one.
+def check_bump(target: str, version: str, schema: str | None, existing: str | None) -> None:
+    previous = previous_release(existing) if existing else None
+    if previous is None:
+        return
+    name, shipped = previous
+
+    if version_key(version) <= version_key(name):
+        fail(f"{version} does not come after {name}, the newest release {target}/{CHANGE_LOG_FILE} records")
+    if schema is None or shipped is None:
+        return
+    if version_key(schema) < version_key(shipped):
+        fail(f"{SCHEMA_VERSION_FILE} holds {schema}, behind the {shipped} that {name} shipped with")
+
+    bump = required_bump(schema, shipped)
+    core, before = version_key(version)[0], version_key(name)[0]
+    moved = f"the schema went {shipped} -> {schema}"
+    if bump == "major" and core[0] == before[0]:
+        fail(f"{moved}, a breaking move, so {version} has to advance its major past {before[0]}")
+    if bump == "minor" and core[:2] == before[:2]:
+        fail(f"{moved}, a compatible move, so {version} has to advance at least its minor past {before[1]}")
+
+
 def main() -> None:
     sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="Build the changelog section of one binding release.")
@@ -181,6 +230,7 @@ def main() -> None:
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument("--dry-run", action="store_true", help="print the section without writing it")
     modes.add_argument("--extract", action="store_true", help="print the version's existing section, for release notes")
+    modes.add_argument("--check-bump", action="store_true", help="run only the version check, for a caller's guard")
     args = parser.parse_args()
 
     if not os.path.isdir(os.path.join(ROOT, args.target)):
@@ -197,11 +247,21 @@ def main() -> None:
         print(recorded, end="")
         return
 
+    schema = read_schema_version() if args.target in BINDINGS else None
+
+    # A caller asks for this before writing anything of its own, so nothing is half done when the
+    # version turns out to be too small.
+    if args.check_bump:
+        check_bump(args.target, args.version, schema, existing)
+        return
+
     # Writing a version twice would leave two sections, and extraction only ever reaches the first.
     if recorded is not None and not args.dry_run:
         fail(f"{relative} already has a section for v{args.version}")
+    # A dry run previews rather than gates, so it is held to neither of these.
+    if not args.dry_run:
+        check_bump(args.target, args.version, schema, existing)
 
-    schema = read_schema_version() if args.target in BINDINGS else None
     since = previous_tag(args.target, args.version)
     commits = collect_commits(since)
     section = build_section(args.target, args.version, schema, commits, repo_url(), date.today())

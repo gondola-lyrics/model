@@ -167,6 +167,8 @@ const commandBump = (version: string | undefined) => {
     fail(`CHANGELOG.md already has a section for ${version}`)
   }
   checkWorktree()
+  // The builder owns the propagation rule, since every binding's release script has to apply the same one.
+  run('python3', [CHANGE_LOG_BUILDER, 'node', version, '--check-bump'])
 
   const text = readFileSync(MANIFEST, 'utf8')
   if ((JSON.parse(text) as Manifest).version === version) {

@@ -88,6 +88,9 @@ def main() -> None:
     if status != "":
         fail(f"the worktree has uncommitted changes:\n{status}")
 
+    # The builder owns the rule about how far a version may advance, so it is asked before anything is written.
+    run(sys.executable, os.path.join(ROOT, CHANGE_LOG_BUILDER), "proto", version, "--check-bump")
+
     if args.dry_run:
         print(f"update-proto-version: {version} is ready; stopped before writing")
         return
