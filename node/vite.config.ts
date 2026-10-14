@@ -31,7 +31,7 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     minify: false,
-    sourcemap: false,
+    sourcemap: true,
     reportCompressedSize: false,
     lib: {
       entry: {
