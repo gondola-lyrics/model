@@ -20,9 +20,11 @@ sys.dont_write_bytecode = True
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+SCHEMA = "proto"
+
 BINDINGS = ("node",)
 
-TARGETS = ("proto", *BINDINGS)
+TARGETS = (SCHEMA, *BINDINGS)
 
 CHANGE_LOG_FILE = "CHANGELOG.md"
 
@@ -139,17 +141,27 @@ def format_commit(commit: Commit, url: str | None) -> str:
     return f"{commit.message} ({link})"
 
 
+# The link is absolute, since a relative one resolves against a different base in the file and in a release body.
+def schema_reference(schema: str, url: str | None) -> str:
+    if url is None:
+        return schema
+    return f"[{schema}]({url}/blob/{SCHEMA}/v{schema}/{SCHEMA}/{CHANGE_LOG_FILE})"
+
+
 def build_section(
     target: str, version: str, schema: str | None, commits: list[Commit], url: str | None, day: date
 ) -> str:
-    # A commit belongs here when its scope names this module, or when it names no single binding.
-    selected = [commit for commit in commits if commit.scope == target or commit.scope not in BINDINGS]
+    # A binding records its own changes and the global ones; the schema's changes stay in the schema's own changelog.
+    selected = [commit for commit in commits if commit.scope == target or commit.scope not in TARGETS]
+    # A schema break warns here anyway, since it leaves a binding consumer with work to do
+    # even though the schema keeps its own entries.
+    reached = [commit for commit in commits if commit.scope == target or commit.scope not in BINDINGS]
     lines = [f"## v{version} ({day.isoformat()})"]
 
     if schema:
-        lines += ["", f"> Proto Version: {schema}"]
+        lines += ["", f"> Proto Version: {schema_reference(schema, url)}"]
 
-    breaking = [text for commit in selected for text in commit.breaking]
+    breaking = [text for commit in reached for text in commit.breaking]
     if breaking:
         lines += ["", "### Breaking", ""]
         lines += [f"- {text}" for text in breaking]
@@ -161,7 +173,7 @@ def build_section(
         lines += ["", f"### {title}", ""]
         lines += [f"- {format_commit(commit, url)}" for commit in group]
 
-    if not selected:
+    if not breaking and not selected:
         lines += ["", "No notable changes."]
     return "\n".join(lines) + "\n"
 
