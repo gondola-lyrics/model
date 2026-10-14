@@ -144,7 +144,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
         diagnostics.push({ path: `${path}.content.words`, code: DiagnosticCode.LyricTimingLineWords })
       }
       // Only a kind known to sing is asked for a range, since an unresolved one may turn out to need none, and a node that is not allowed in the first place is asked for nothing.
-      if (lineTimed && time === undefined && !unresolvedType && !forbidden) {
+      if (timed && time === undefined && !unresolvedType && !forbidden) {
         diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingLineTimeMissing })
       }
       // A sung line is shown for as long as its range runs, so the range has to end somewhere.

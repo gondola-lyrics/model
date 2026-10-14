@@ -111,4 +111,15 @@ describe('validate', () => {
     })
     deepStrictEqual(storage.validateLyric(lyric), [{ path: 'lines[0].time.end', code: 'lyric.line.time.end.missing' }])
   })
+
+  // Word-level timing still marks out each line, and a line carrying no range leaves its words with nothing to fall inside.
+  it('reports a word-level line with no range', () => {
+    const lines = [
+      runtime.makeLineNormal({
+        content: runtime.makeLineContentWords([runtime.makeWordNormal({ text: 'x', time: runtime.makeTimeRange({ start: 1000, end: 2000 }) })]),
+      }),
+    ]
+    const lyric = runtime.makeLyric({ format: 'lrc', timing: runtime.Timing.WORD, status: runtime.LyricStatus.VALID, lines })
+    deepStrictEqual(runtime.validateLyric(lyric), [{ path: 'lines[0].time', code: 'lyric.timing.line.time_missing' }])
+  })
 })
