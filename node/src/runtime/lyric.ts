@@ -96,6 +96,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
 
   const untimed = lyric.timing === Timing.NONE
   const lineTimed = lyric.timing === Timing.LINE
+  const timed = lineTimed || lyric.timing === Timing.WORD
   let anyContent = false
   let anyWords = false
   const lineIds = new Set<string>()
@@ -115,6 +116,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
    * Reports the whole-tree rules for one line or background line: agent references resolving to no agent, and whatever the declared timing asks of it.
    * It walks every node whatever the line's kind, since a whole-tree invariant holds regardless; an instrumental line's agents and own range validateLine already rules on, and a background line is read as the sung line it always is.
    * `forbidden` marks a node its parent's kind does not allow at all: what it carries is still held to the rules it breaks by carrying it, but nothing further is asked of it, since the node as a whole is already reported.
+   * `open` marks a node whose range may stay open above: the last line, which nothing in the lyric bounds, and every background line, which the line it attaches to already bounds.
    */
   const checkReferences = (
     agents: string[],
@@ -123,6 +125,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
     path: string,
     type = LineType.NORMAL,
     forbidden = false,
+    open = false,
   ): void => {
     const words = content?.words ?? []
     // A kind outside the enum turns out to need no range as readily as the zero value, so both are left unasked.
@@ -144,6 +147,10 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
       if (lineTimed && time === undefined && !unresolvedType && !forbidden) {
         diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingLineTimeMissing })
       }
+      // A sung line is shown for as long as its range runs, so the range has to end somewhere.
+      if (timed && time !== undefined && time.end === undefined && !unresolvedType && !forbidden && !open) {
+        diagnostics.push({ path: childPath(path, 'time.end'), code: DiagnosticCode.LyricLineTimeEndMissing })
+      }
     } else if (untimed) {
       // An untimed lyric marks out no stretches, so it carries no instrumental line at all.
       diagnostics.push({ path: childPath(path, 'type'), code: DiagnosticCode.LyricTimingNoneInstrumental })
@@ -164,12 +171,13 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   }
   lyric.lines.forEach((line, i) => {
     const path = `lines[${i}]`
+    const forbidden = line.type === LineType.INSTRUMENTAL
     claimLineId(line.id, path)
-    checkReferences(line.agents, line.time, line.content, path, line.type)
+    checkReferences(line.agents, line.time, line.content, path, line.type, false, i === lyric.lines.length - 1)
     line.backgrounds.forEach((background, j) => {
       const backgroundPath = `${path}.backgrounds[${j}]`
       claimLineId(background.id, backgroundPath)
-      checkReferences(background.agents, background.time, background.content, backgroundPath, LineType.NORMAL, line.type === LineType.INSTRUMENTAL)
+      checkReferences(background.agents, background.time, background.content, backgroundPath, LineType.NORMAL, forbidden, true)
     })
     diagnostics.push(...validateLine(line, path, lyric.timing))
   })

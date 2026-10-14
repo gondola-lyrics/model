@@ -3,6 +3,14 @@ import { runtime, storage } from '@root/index'
 import { describe, it } from 'node:test'
 import { deepStrictEqual } from 'node:assert/strict'
 
+const textLine = (start: number, end?: number): runtime.Line => {
+  return runtime.makeLineNormal({ time: runtime.makeTimeRange({ start, end }), content: runtime.makeLineContentText('x') })
+}
+
+const lineTimed = (...lines: runtime.Line[]): runtime.Lyric => {
+  return runtime.makeLyric({ format: 'lrc', timing: runtime.Timing.LINE, status: runtime.LyricStatus.VALID, lines })
+}
+
 describe('validate', () => {
   it('accepts a word-level lyric', () => {
     const lines = [
@@ -71,5 +79,36 @@ describe('validate', () => {
       lines: [runtime.makeLineInstrumental()],
     })
     deepStrictEqual(runtime.validateLyric(lyric), [{ path: 'lines[0].type', code: 'lyric.timing.none.instrumental' }])
+  })
+
+  // A line other than the last ends where the timeline moves on, so one left open would be shown for the rest of the song.
+  it('reports a line left open above', () => {
+    const lyric = lineTimed(textLine(0, 1000), textLine(1000), textLine(2000, 3000))
+    deepStrictEqual(runtime.validateLyric(lyric), [{ path: 'lines[1].time.end', code: 'lyric.line.time.end.missing' }])
+  })
+
+  // Nothing in a lyric states where it stops, so the last line is the one line whose end the data cannot carry.
+  it('accepts the last line left open above', () => {
+    const lyric = lineTimed(textLine(0, 1000), textLine(1000, 2000), textLine(2000))
+    deepStrictEqual(runtime.validateLyric(lyric), [])
+  })
+
+  // A line carrying no range at all is already reported for that, so it is not asked for an end on top.
+  it('reports a line with no range once', () => {
+    const lyric = lineTimed(runtime.makeLineNormal({ content: runtime.makeLineContentText('x') }), textLine(1000, 2000))
+    deepStrictEqual(runtime.validateLyric(lyric), [{ path: 'lines[0].time', code: 'lyric.timing.line.time_missing' }])
+  })
+
+  // The two layers hold the same rule in two implementations, so the storage one is checked against the same case.
+  it('reports a line left open above in the storage layer', () => {
+    const lyric = storage.makeLyric({
+      format: 'lrc',
+      timing: storage.Timing.LINE,
+      lines: [
+        storage.makeLineNormal({ time: storage.makeTimeRange({ start: 0 }), content: storage.makeLineContentText('x') }),
+        storage.makeLineNormal({ time: storage.makeTimeRange({ start: 1000, end: 2000 }), content: storage.makeLineContentText('y') }),
+      ],
+    })
+    deepStrictEqual(storage.validateLyric(lyric), [{ path: 'lines[0].time.end', code: 'lyric.line.time.end.missing' }])
   })
 })
