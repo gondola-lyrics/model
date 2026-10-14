@@ -47,12 +47,10 @@ jobs:
         run: npm run test
         working-directory: node
 
-      # npm mints an OIDC token first and only falls back to NODE_AUTH_TOKEN when no trusted publisher answers.
       - name: Publish to npm
         run: npm run release -- publish
         working-directory: node
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
 
       - name: Prepare release
