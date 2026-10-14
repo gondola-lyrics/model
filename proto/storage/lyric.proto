@@ -39,6 +39,6 @@ message Lyric {
   repeated lyric.common.Agent agents = 6;
 
   // Lyric lines, ordered by TimeRange.start ascending.
-  // Every line's range has a known end, except the last line's, since nothing here states where the lyric stops.
+  // Every line's range has a known end except the last line's, and an instrumental line's always has one.
   repeated Line lines = 7;
 }
