@@ -7,9 +7,9 @@ option java_outer_classname = "TimeProto";
 option java_package = "gondola.lyric.model.common";
 
 // A half-open time range in milliseconds: a time t falls inside when start <= t < end.
-// An unknown end leaves the range open above, so every time from the start on falls inside and the range has no length.
+// An unknown end leaves the range open above, so it has no length.
 // An unset TimeRange means no timing at all.
-// Unlike every other message, an all-default TimeRange is a range of its own, the one starting at 0 with an unknown end, so it is never dropped for being all default.
+// An all-default TimeRange is a range of its own, never dropped for being all default.
 // Times exclude Meta.offset.
 // Values above 2^31-1 are invalid.
 message TimeRange {

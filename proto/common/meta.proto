@@ -65,8 +65,7 @@ message Meta {
   // Unrecognized meta preserved by their original key.
   repeated UnknownEntry unknowns = 1;
 
-  // Timeline offset in milliseconds, added to the playback clock before it is compared against a stored time.
-  // A positive value therefore makes the lyric appear earlier.
+  // Timeline offset in milliseconds, added to the playback clock before it is compared against a stored time; a positive value therefore makes the lyric appear earlier.
   sint32 offset = 2;
 
   // Song duration in milliseconds; unset means unknown.

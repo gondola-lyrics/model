@@ -13,6 +13,6 @@ message LanguageUsage {
   string tag = 1;
 
   // Number of normal lines declaring this tag on the line or any normal word, with each line contributing at most once.
-  // Counts measure line coverage rather than text length, so a multilingual line contributes to several languages.
+  // Counts measure line coverage rather than text length.
   uint32 count = 2;
 }
