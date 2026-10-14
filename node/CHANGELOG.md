@@ -1,3 +1,16 @@
+## v1.1.0 (2026-10-14)
+
+> Proto Version: [1.1.0](https://github.com/gondola-lyrics/model/blob/proto/v1.1.0/proto/CHANGELOG.md)
+
+### Feature
+
+- make the constructor arguments optional ([0f1beec](https://github.com/gondola-lyrics/model/commit/0f1beece2e7bca5a768951c7bf0fbdf5a614e31b))
+- check sung line end in validators ([1768a26](https://github.com/gondola-lyrics/model/commit/1768a2691aacccd50c8822267e8c54cd9ff271a2))
+
+### Fix
+
+- check line time under word timing in validators ([2b219dd](https://github.com/gondola-lyrics/model/commit/2b219ddc4e6658da032ff8c49088ef7ddc9d42b6))
+
 ## v1.0.0 (2026-10-13)
 
 > Proto Version: 1.0.0
