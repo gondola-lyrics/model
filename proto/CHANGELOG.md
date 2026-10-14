@@ -1,3 +1,17 @@
+## v1.1.0 (2026-10-14)
+
+### Feature
+
+- require a known end on every sung line but the last ([e30eb6a](https://github.com/gondola-lyrics/model/commit/e30eb6ac57ae47d81d610e62b38e960c01c3e583))
+
+### Fix
+
+- correct the last line end rule ([e4ab422](https://github.com/gondola-lyrics/model/commit/e4ab422d67ae420eb4e8187cc959abd1d521ec10))
+
+### Document
+
+- optimize comments ([a45c927](https://github.com/gondola-lyrics/model/commit/a45c927c4b0556b642b8a5ba0c136e15032b2d1e))
+
 ## v1.0.0 (2026-10-13)
 
 ### Feature
