@@ -43,7 +43,8 @@ SUBJECT_PATTERN = re.compile(r"^(?P<kind>[a-z]+)(?:\((?P<scope>[\w-]+)\))?: (?P<
 BREAKING_PATTERN = re.compile(r"^breaking:\s*(?P<text>.+)$", re.IGNORECASE)
 GITHUB_PATTERN = re.compile(r"github\.com[:/](?P<owner>[^/]+)/(?P<name>[^/]+?)(?:\.git)?/?$")
 RECORDED_PATTERN = re.compile(r"^## v(?P<version>\S+) \(")
-SCHEMA_LINE_PATTERN = re.compile(r"^> Proto Version:\s*(?P<version>\S+)\s*$", re.MULTILINE)
+SCHEMA_LINE_PATTERN = re.compile(r"^> Proto Version:(?P<reference>[^\r\n]*)", re.MULTILINE)
+SCHEMA_LINK_PATTERN = re.compile(r"\[(?P<version>[^\]]+)\]\([^\s()]+\)")
 SEMVER_PATTERN = re.compile(
     r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
     r"(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
@@ -197,7 +198,15 @@ def previous_release(text: str) -> tuple[str, str | None] | None:
         if not SEMVER_PATTERN.match(match["version"]):
             fail(f"{CHANGE_LOG_FILE} records a heading that is not a semantic version: {match['version']!r}")
         found = SCHEMA_LINE_PATTERN.search(extract_section(text, match["version"]) or "")
-        return match["version"], found["version"] if found else None
+        if found is None:
+            return match["version"], None
+        reference = found["reference"].strip()
+        # Older releases recorded bare versions; newer ones link to the schema's changelog.
+        link = SCHEMA_LINK_PATTERN.fullmatch(reference)
+        schema = link["version"] if link else reference
+        if not SEMVER_PATTERN.fullmatch(schema):
+            fail(f"{CHANGE_LOG_FILE} records a Proto version that is not a semantic version: {reference!r}")
+        return match["version"], schema
     return None
 
 
