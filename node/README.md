@@ -50,7 +50,8 @@ storage.validateLyric(persisted) // => []
 ```ts
 import { runtime } from '@gondola-lyrics/model'
 
-// Only runtime can explicitly represent an interlude; just insert it between two lines, and it must have a complete time range
+// Both storage and runtime support interludes with a complete, non-empty time range.
+// Storage preserves interludes stated by the source; runtime can also carry interludes derived from timeline gaps.
 const interlude = runtime.makeLineInstrumental({
   time: runtime.makeTimeRange({ start: 176883, end: 178550 }),
 })
