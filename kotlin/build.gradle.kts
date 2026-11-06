@@ -195,7 +195,7 @@ mavenPublishing {
     )
     coordinates(group.toString(), "gondola-model", version.toString())
     if (providers.gradleProperty("centralRelease").map { it.toBoolean() }.getOrElse(false)) {
-        publishToMavenCentral(automaticRelease = true, validateDeployment = DeploymentValidation.PUBLISHED)
+        publishToMavenCentral(automaticRelease = true, validateDeployment = DeploymentValidation.VALIDATED)
         signAllPublications()
     }
     pom {
