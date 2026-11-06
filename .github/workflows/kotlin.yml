@@ -1,0 +1,82 @@
+name: Release Kotlin
+
+on:
+  push:
+    tags:
+      - 'kotlin/v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-kotlin
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Check version
+        id: version
+        run: |
+          version="${GITHUB_REF_NAME#kotlin/v}"
+          declared="$(sed -n 's/^version = "\([^"]*\)"$/\1/p' kotlin/build.gradle.kts)"
+          if [ "$declared" != "$version" ]; then
+            echo "tag $GITHUB_REF_NAME does not match the package version $declared" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Check release notes
+        run: |
+          version="${GITHUB_REF_NAME#kotlin/v}"
+          python3 script/build-change-log.py kotlin "$version" --extract > /dev/null
+
+      - name: Setup java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: false
+
+      - name: Build
+        run: bash ./gradlew --no-daemon build dokkaJavadocJar checkPomFileForMavenPublication
+        working-directory: kotlin
+
+      - name: Publish
+        run: bash ./gradlew --no-daemon -PcentralRelease=true publishAndReleaseToMavenCentral
+        working-directory: kotlin
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.MAVEN_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.MAVEN_SIGNING_PASSWORD }}
+
+  release:
+    needs: publish
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_VERSION: ${{ needs.publish.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Prepare
+        run: python3 script/build-change-log.py kotlin "$RELEASE_VERSION" --extract > "$RUNNER_TEMP/notes.md"
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Kotlin ${{ env.RELEASE_VERSION }}
+          body_path: ${{ runner.temp }}/notes.md
+          make_latest: false
