@@ -208,8 +208,11 @@ mavenPublishing {
         developers {
             developer {
                 id.set("folltoshe")
-                name.set("Folltoshe")
+                name.set("folltoshe")
                 url.set("https://github.com/folltoshe")
+                email.set("folltoshe@foxmail.com")
+                organization.set("gondola-lyrics")
+                organizationUrl.set("https://github.com/gondola-lyrics")
             }
         }
         scm {
