@@ -9,7 +9,7 @@ import "storage/word.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "LineProto";
-option java_package = "gondola.lyric.model.storage";
+option java_package = "gondola.lyrics.model.storage";
 
 // The content of a normal line: either the words it is decomposed into, or its plain text. Exactly one is set.
 message LineContent {

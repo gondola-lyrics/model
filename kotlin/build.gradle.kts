@@ -93,12 +93,12 @@ abstract class GenerateSchemaVersion : DefaultTask() {
             "proto/VERSION.txt must contain a semantic version"
         }
 
-        val output = outputDirectory.file("gondola/lyric/model/Version.kt").get().asFile
+        val output = outputDirectory.file("gondola/lyrics/model/Version.kt").get().asFile
         output.parentFile.mkdirs()
         output.writeText(
             """
             |// Generated from proto/VERSION.txt; do not edit.
-            |package gondola.lyric.model
+            |package gondola.lyrics.model
             |
             |/**
             | * Version of the Protobuf schema used to generate these bindings.
@@ -143,7 +143,7 @@ tasks.jar {
     exclude("**/*.proto")
     includeEmptyDirs = false
     manifest {
-        attributes("Automatic-Module-Name" to "gondola.lyric.model")
+        attributes("Automatic-Module-Name" to "gondola.lyrics.model")
     }
 }
 

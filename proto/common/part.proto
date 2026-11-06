@@ -4,7 +4,7 @@ package lyric.common;
 
 option java_multiple_files = true;
 option java_outer_classname = "PartProto";
-option java_package = "gondola.lyric.model.common";
+option java_package = "gondola.lyrics.model.common";
 
 // Structural type of a part.
 enum PartType {

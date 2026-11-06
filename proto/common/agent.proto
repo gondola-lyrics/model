@@ -6,7 +6,7 @@ import "common/text.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "AgentProto";
-option java_package = "gondola.lyric.model.common";
+option java_package = "gondola.lyrics.model.common";
 
 // Performing type of an agent.
 enum AgentType {

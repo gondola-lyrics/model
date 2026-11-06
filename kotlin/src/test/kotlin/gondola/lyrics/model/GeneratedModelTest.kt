@@ -1,9 +1,9 @@
-package gondola.lyric.model
+package gondola.lyrics.model
 
-import gondola.lyric.model.common.Timing
-import gondola.lyric.model.common.timeRange
-import gondola.lyric.model.storage.Lyric
-import gondola.lyric.model.storage.lyric
+import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.timeRange
+import gondola.lyrics.model.storage.Lyric
+import gondola.lyrics.model.storage.lyric
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -16,11 +16,11 @@ class GeneratedModelTest {
             version = SCHEMA_VERSION
             timing = Timing.TIMING_LINE
             lines +=
-                gondola.lyric.model.storage.line {
+                gondola.lyrics.model.storage.line {
                     time = timeRange { start = 1000 }
                 }
             lines +=
-                gondola.lyric.model.storage.line {
+                gondola.lyrics.model.storage.line {
                     time = timeRange { end = 0 }
                 }
         }

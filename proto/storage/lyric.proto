@@ -9,7 +9,7 @@ import "storage/line.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "LyricProto";
-option java_package = "gondola.lyric.model.storage";
+option java_package = "gondola.lyrics.model.storage";
 
 // A lyric as persisted, carrying only what a source file actually stated.
 // An empty submessage means the same as an unset one, except for TimeRange, which is a range even when all default.

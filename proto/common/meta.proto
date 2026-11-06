@@ -7,7 +7,7 @@ import "common/unknown.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "MetaProto";
-option java_package = "gondola.lyric.model.common";
+option java_package = "gondola.lyrics.model.common";
 
 // Role someone is credited for.
 enum CreditRole {

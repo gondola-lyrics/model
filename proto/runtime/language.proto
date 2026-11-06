@@ -4,7 +4,7 @@ package lyric.runtime;
 
 option java_multiple_files = true;
 option java_outer_classname = "LanguageProto";
-option java_package = "gondola.lyric.model.runtime";
+option java_package = "gondola.lyrics.model.runtime";
 
 // How many normal lines declare one language.
 message LanguageUsage {

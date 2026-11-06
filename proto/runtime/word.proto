@@ -7,7 +7,7 @@ import "common/word.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "WordProto";
-option java_package = "gondola.lyric.model.runtime";
+option java_package = "gondola.lyrics.model.runtime";
 
 // Whether a word is emphasized, and whether that was stated by the source or derived from the data.
 // Emphasis asks for a swell when the word is sung, such as a syllable held longer than usual; it is not linguistic stress.
