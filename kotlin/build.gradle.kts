@@ -1,4 +1,5 @@
 import com.diffplug.spotless.LineEnding
+import com.vanniktech.maven.publish.DeploymentValidation
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.SourcesJar
@@ -194,6 +195,10 @@ mavenPublishing {
         ),
     )
     coordinates(group.toString(), "gondola-model", version.toString())
+    if (providers.gradleProperty("centralRelease").map { it.toBoolean() }.getOrElse(false)) {
+        publishToMavenCentral(automaticRelease = true, validateDeployment = DeploymentValidation.PUBLISHED)
+        signAllPublications()
+    }
     pom {
         name.set("Gondola Lyric Model")
         description.set(project.description)
