@@ -179,7 +179,6 @@ spotless {
             "gradlew",
             "gradlew.bat",
             "gradle/*.toml",
-            "gradle/verification-metadata.xml",
             "gradle/wrapper/*.properties",
         )
         trimTrailingWhitespace()
