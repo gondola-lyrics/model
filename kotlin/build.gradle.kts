@@ -3,6 +3,7 @@ import com.vanniktech.maven.publish.DeploymentValidation
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.SourcesJar
+import org.gradle.jvm.tasks.Jar
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
@@ -16,7 +17,6 @@ plugins {
     `java-library`
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.protobuf)
-    alias(libs.plugins.dokka)
     alias(libs.plugins.spotless)
     alias(libs.plugins.maven.publish)
 }
@@ -148,19 +148,6 @@ tasks.jar {
     }
 }
 
-dokka {
-    dokkaSourceSets.configureEach {
-        suppressGeneratedFiles.set(false)
-        jdkVersion.set(8)
-    }
-}
-
-tasks
-    .matching { it.name.startsWith("dokkaGenerate") }
-    .configureEach {
-        dependsOn("generateProto", generateSchemaVersion)
-    }
-
 spotless {
     lineEndings = LineEnding.UNIX
     kotlin {
@@ -189,7 +176,7 @@ spotless {
 mavenPublishing {
     configure(
         KotlinJvm(
-            javadocJar = JavadocJar.Dokka("dokkaGeneratePublicationHtml"),
+            javadocJar = JavadocJar.Empty(),
             sourcesJar = SourcesJar.Sources(),
         ),
     )
@@ -225,6 +212,10 @@ mavenPublishing {
             developerConnection.set("scm:git:ssh://git@github.com/gondola-lyrics/model.git")
         }
     }
+}
+
+tasks.named<Jar>("emptyJavadocJar") {
+    from(layout.projectDirectory.file("README.md"))
 }
 
 tasks.wrapper {

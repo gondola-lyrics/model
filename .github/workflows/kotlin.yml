@@ -49,7 +49,7 @@ jobs:
           cache-read-only: false
 
       - name: Build
-        run: bash ./gradlew --no-daemon build dokkaJavadocJar checkPomFileForMavenPublication
+        run: bash ./gradlew --no-daemon build emptyJavadocJar checkPomFileForMavenPublication
         working-directory: kotlin
 
       - name: Publish

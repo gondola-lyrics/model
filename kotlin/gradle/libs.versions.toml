@@ -3,7 +3,6 @@ kotlin = "2.4.21"
 kotlin-stdlib = "2.2.21"
 protobuf = "4.36.2"
 protobuf-plugin = "0.10.0"
-dokka = "2.2.0"
 spotless = "8.11.0"
 ktlint = "1.8.0"
 maven-publish = "0.37.0"
@@ -20,6 +19,5 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }
-dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
