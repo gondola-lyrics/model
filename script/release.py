@@ -15,7 +15,7 @@ import sys
 sys.dont_write_bytecode = True
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CHANGE_LOG_BUILDER = os.path.join(ROOT, "script", "build-change-log.py")
+CHANGE_LOG_GENERATOR = os.path.join(ROOT, "script", "generate-change-log.py")
 
 VERSION_FILES = {
     "proto": "proto/VERSION.txt",
@@ -167,9 +167,9 @@ def prepare_release(
     if any(line.startswith(f"## v{version} (") for line in existing.splitlines()):
         fail(f"{changelog} already has a section for v{version}")
     changed = check_worktree(scope, version, update_version)
-    # The shared builder owns schema propagation and release ordering, including during a dry run.
-    command(sys.executable, CHANGE_LOG_BUILDER, scope, version, "--check-bump")
-    section = command(sys.executable, CHANGE_LOG_BUILDER, scope, version, "--dry-run", capture=True).stdout
+    # The shared generator owns schema propagation and release ordering, including during a dry run.
+    command(sys.executable, CHANGE_LOG_GENERATOR, scope, version, "--check-bump")
+    section = command(sys.executable, CHANGE_LOG_GENERATOR, scope, version, "--dry-run", capture=True).stdout
     updates = {}
     if update_version:
         version_paths = [version_file, NODE_LOCK_FILE] if scope == "node" else [version_file]

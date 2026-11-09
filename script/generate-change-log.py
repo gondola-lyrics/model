@@ -2,9 +2,9 @@
 Builds the changelog section of one module release.
 
 Usage:
-    python script/build-change-log.py <proto|node|kotlin> <version> [--dry-run]
-    python script/build-change-log.py <proto|node|kotlin> <version> --extract
-    python script/build-change-log.py <proto|node|kotlin> <version> --check-bump
+    python script/generate-change-log.py <proto|node|kotlin> <version> [--dry-run]
+    python script/generate-change-log.py <proto|node|kotlin> <version> --extract
+    python script/generate-change-log.py <proto|node|kotlin> <version> --check-bump
 """
 
 import os

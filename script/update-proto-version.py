@@ -19,7 +19,7 @@ VERSION_FILE = "proto/VERSION.txt"
 
 CHANGE_LOG_FILE = "proto/CHANGELOG.md"
 
-CHANGE_LOG_BUILDER = "script/build-change-log.py"
+CHANGE_LOG_GENERATOR = "script/generate-change-log.py"
 
 TAG_PREFIX = "proto/v"
 
@@ -79,7 +79,7 @@ def main() -> None:
     if (read_file(VERSION_FILE) or "").strip() == version:
         fail(f"{VERSION_FILE} is already {version}")
 
-    # The builder refuses to write a version twice, so the section is checked here to leave nothing half written.
+    # The generator refuses to write a version twice, so the section is checked here to leave nothing half written.
     existing = read_file(CHANGE_LOG_FILE)
     if existing is not None and f"## v{version} (" in existing:
         fail(f"{CHANGE_LOG_FILE} already has a section for v{version}")
@@ -88,15 +88,15 @@ def main() -> None:
     if status != "":
         fail(f"the worktree has uncommitted changes:\n{status}")
 
-    # The builder owns the rule about how far a version may advance, so it is asked before anything is written.
-    run(sys.executable, os.path.join(ROOT, CHANGE_LOG_BUILDER), "proto", version, "--check-bump")
+    # The generator owns the rule about how far a version may advance, so it is asked before anything is written.
+    run(sys.executable, os.path.join(ROOT, CHANGE_LOG_GENERATOR), "proto", version, "--check-bump")
 
     if args.dry_run:
         print(f"update-proto-version: {version} is ready; stopped before writing")
         return
 
     write_file(VERSION_FILE, f"{version}\n")
-    run(sys.executable, os.path.join(ROOT, CHANGE_LOG_BUILDER), "proto", version)
+    run(sys.executable, os.path.join(ROOT, CHANGE_LOG_GENERATOR), "proto", version)
 
     run("git", "add", VERSION_FILE, CHANGE_LOG_FILE)
     run("git", "commit", "-m", f"release(proto): v{version}")

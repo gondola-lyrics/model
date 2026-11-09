@@ -43,7 +43,7 @@ jobs:
         id: release
         run: |
           version="${GITHUB_REF_NAME#proto/v}"
-          python3 script/build-change-log.py proto "$version" --extract > "$RUNNER_TEMP/notes.md"
+          python3 script/generate-change-log.py proto "$version" --extract > "$RUNNER_TEMP/notes.md"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Release
