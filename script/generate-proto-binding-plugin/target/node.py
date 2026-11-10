@@ -13,7 +13,7 @@ from .common import HEADER, block, camel, function_name, option
 SCALARS = {"string": "string", "bool": "boolean", "uint32": "number", "sint32": "number"}
 ZEROS = {"string": "''", "bool": "false", "uint32": "0", "sint32": "0"}
 
-# The methods the generated functions call, declared here so internal.gen.ts imports nothing handwritten.
+# The methods the generated functions call, declared here so codec.gen.ts imports nothing handwritten.
 WIRE_TYPES = """\
 /**
  * What the generated encoders write through.
@@ -171,13 +171,12 @@ def render_field_info(item: Field) -> str:
     return f"    {{ name: '{camel(item.name)}', shape: '{item.shape}'{message} }},\n"
 
 
-def render_internal(model: Schema) -> tuple[str, str]:
+def render_detail(model: Schema) -> tuple[str, str]:
     out = f"// {HEADER}\n\n"
     for group in model.packages:
         out += f"import type * as {group.name} from './{group.name}/index.gen'\n"
     out += "\n"
 
-    out += WIRE_TYPES
     out += block(["One field of a structure, for the helpers that walk a structure without naming its fields."])
     out += "export type FieldInfo =\n"
     out += "  | { readonly name: string; readonly shape: 'scalar' | 'enum' | 'optional' | 'list-scalar' | 'map' }\n"
@@ -195,6 +194,29 @@ def render_internal(model: Schema) -> tuple[str, str]:
         out += "  ],\n}\n\n"
         out += f"export const {function_name('create', message)} = (): {type_name} => {{\n"
         out += f"  return {{ {initial} }}\n}}\n\n"
+    return ("detail.gen.ts", out.rstrip() + "\n")
+
+
+def render_codec(model: Schema) -> tuple[str, str]:
+    out = f"// {HEADER}\n\n"
+    for group in model.packages:
+        out += f"import type * as {group.name} from './{group.name}/index.gen'\n"
+    out += "\n"
+
+    creates = sorted(
+        {
+            function_name("create", item.ref)
+            for message in model.messages
+            for item in message.fields
+            if item.shape in ("message", "list-message")
+        }
+    )
+    if creates:
+        out += "import {\n" + "".join(f"  {name},\n" for name in creates) + "} from './detail.gen'\n\n"
+    out += WIRE_TYPES
+
+    for message in model.messages:
+        type_name = f"{message.pkg}.{message.name}"
         out += f"export const {function_name('encode', message)} = (w: WireWriter, v: {type_name}): void => {{\n"
         out += "".join(render_encode(item) for item in message.by_number)
         out += "}\n\n"
@@ -202,7 +224,7 @@ def render_internal(model: Schema) -> tuple[str, str]:
         out += "  while (r.more()) {\n    switch (r.tag()) {\n"
         out += "".join(render_decode(item) for item in message.by_number)
         out += "      default:\n        r.skip()\n    }\n  }\n}\n\n"
-    return ("internal.gen.ts", out.rstrip() + "\n")
+    return ("codec.gen.ts", out.rstrip() + "\n")
 
 
 def render_version(version: str) -> tuple[str, str]:
@@ -219,6 +241,7 @@ def generate(model: Schema, options: dict[str, str]) -> list[tuple[str, str]]:
     return [
         *(render_model(proto_file) for proto_file in model.files),
         *(render_index(model, group.name) for group in model.packages),
-        render_internal(model),
+        render_detail(model),
+        render_codec(model),
         render_version(option(options, "version")),
     ]

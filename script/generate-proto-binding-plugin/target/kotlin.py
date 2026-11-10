@@ -144,11 +144,11 @@ def render_case(item: Field) -> str:
     )
 
 
-def render_wire(model: Schema, package: str) -> tuple[str, str]:
+def render_codec(model: Schema, package: str) -> tuple[str, str]:
     imports = sorted(
         f"import {package}.{item.pkg}.{item.name} as {alias(item)}" for item in [*model.messages, *model.enums]
     )
-    out = f'// {HEADER}\n@file:JvmName("WireGen")\n\npackage {package}.protobuf\n\n'
+    out = f'// {HEADER}\n@file:JvmName("CodecGen")\n\npackage {package}.protobuf\n\n'
     out += "\n".join(imports) + "\n\n"
     for message in model.messages:
         out += f"internal fun {function_name('encode', message)}(w: Writer, src: {alias(message)}) {{\n"
@@ -162,7 +162,13 @@ def render_wire(model: Schema, package: str) -> tuple[str, str]:
         out += f"            else -> r.skip()\n        }}\n    }}\n    return {alias(message)}(\n"
         out += "".join(f"        {camel(item.name)} = {local(item)},\n" for item in message.by_number)
         out += "    )\n}\n\n"
-    return (posixpath.join(*package.split("."), "protobuf", "Wire.gen.kt"), out.rstrip() + "\n")
+    return (posixpath.join(*package.split("."), "protobuf", "Codec.gen.kt"), out.rstrip() + "\n")
+
+
+def render_detail(package: str) -> tuple[str, str]:
+    # Field access is added when the native helpers are migrated.
+    out = f'// {HEADER}\n@file:JvmName("DetailGen")\n\npackage {package}.protobuf\n'
+    return (posixpath.join(*package.split("."), "protobuf", "Detail.gen.kt"), out)
 
 
 def render_version(package: str, version: str) -> tuple[str, str]:
@@ -182,4 +188,9 @@ def render_version(package: str, version: str) -> tuple[str, str]:
 def generate(model: Schema, options: dict[str, str]) -> list[tuple[str, str]]:
     package = option(options, "package")
     version = option(options, "version")
-    return [render_version(package, version), *render_models(model, package), render_wire(model, package)]
+    return [
+        render_version(package, version),
+        *render_models(model, package),
+        render_codec(model, package),
+        render_detail(package),
+    ]

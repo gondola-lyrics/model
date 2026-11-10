@@ -80,4 +80,6 @@ def render_model(group: Package, version: str) -> tuple[str, str]:
 
 def generate(model: Schema, options: dict[str, str]) -> list[tuple[str, str]]:
     version = option(options, "version")
-    return [render_model(group, version) for group in model.packages]
+    # The codec and detail headers are populated during the C++ binding migration.
+    internal = [(header_name(name), f"// {HEADER}\n#pragma once\n") for name in ("codec", "detail")]
+    return [*(render_model(group, version) for group in model.packages), *internal]

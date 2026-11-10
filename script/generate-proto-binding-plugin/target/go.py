@@ -107,7 +107,7 @@ def render_decode(item: Field) -> str:
     return out + f"\t\t\tend := r.enter()\n\t\t\t{decode}(r, &{name}[len({name})-1])\n\t\t\tr.leave(end)\n"
 
 
-def render_wire(model: Schema, module: str) -> tuple[str, str]:
+def render_codec(model: Schema, module: str) -> tuple[str, str]:
     used = {message.pkg for message in model.messages}
     used |= {item.ref.pkg for message in model.messages for item in message.fields if item.shape == "enum"}
     out = f"// {HEADER}\n\npackage protobuf\n\n"
@@ -121,10 +121,19 @@ def render_wire(model: Schema, module: str) -> tuple[str, str]:
         out += "\tfor r.more() {\n\t\tswitch r.tag() {\n"
         out += "".join(render_decode(item) for item in message.by_number)
         out += "\t\tdefault:\n\t\t\tr.skip()\n\t\t}\n\t}\n}\n\n"
-    return (posixpath.join("protobuf", "wire.gen.go"), out.rstrip() + "\n")
+    return (posixpath.join("protobuf", "codec.gen.go"), out.rstrip() + "\n")
+
+
+def render_detail() -> tuple[str, str]:
+    # Field access is added when the native helpers are migrated.
+    return (posixpath.join("protobuf", "detail.gen.go"), f"// {HEADER}\n\npackage protobuf\n")
 
 
 def generate(model: Schema, options: dict[str, str]) -> list[tuple[str, str]]:
     module = option(options, "module")
     version = option(options, "version")
-    return [*(render_model(group, module, version) for group in model.packages), render_wire(model, module)]
+    return [
+        *(render_model(group, module, version) for group in model.packages),
+        render_codec(model, module),
+        render_detail(),
+    ]
