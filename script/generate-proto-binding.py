@@ -40,7 +40,7 @@ class Binding:
 BINDINGS = {
     "node": Binding(("node", "src", "generated"), ("**", "*.gen.ts")),
     "kotlin": Binding(("kotlin", "src", "main", "kotlin"), ("**", "*.gen.kt"), ("package=gondola.lyrics.model",)),
-    "go": Binding(("go",), ("**", "*_gen.go"), ("module=github.com/gondola-lyrics/model/go",)),
+    "go": Binding(("go",), ("**", "*.gen.go"), ("module=github.com/gondola-lyrics/model/go",)),
     "cpp": Binding(("cpp", "include"), ("**", "*.gen.hpp")),
 }
 

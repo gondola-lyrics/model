@@ -62,7 +62,7 @@ def render_model(group: Package, module: str, version: str) -> tuple[str, str]:
         for item in message.fields:
             out += f"{slashes(item.comment, TAB)}\t{go_name(item.name)} {field_type(item)}\n"
         out += "}\n\n"
-    return (posixpath.join(group.name, "model_gen.go"), out.rstrip() + "\n")
+    return (posixpath.join(group.name, "model.gen.go"), out.rstrip() + "\n")
 
 
 def render_encode(item: Field) -> str:
@@ -121,7 +121,7 @@ def render_wire(model: Schema, module: str) -> tuple[str, str]:
         out += "\tfor r.more() {\n\t\tswitch r.tag() {\n"
         out += "".join(render_decode(item) for item in message.by_number)
         out += "\t\tdefault:\n\t\t\tr.skip()\n\t\t}\n\t}\n}\n\n"
-    return (posixpath.join("protobuf", "wire_gen.go"), out.rstrip() + "\n")
+    return (posixpath.join("protobuf", "wire.gen.go"), out.rstrip() + "\n")
 
 
 def generate(model: Schema, options: dict[str, str]) -> list[tuple[str, str]]:
