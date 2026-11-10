@@ -19,7 +19,7 @@ CHANGE_LOG_GENERATOR = os.path.join(ROOT, "script", "generate-change-log.py")
 BINDING_GENERATOR = os.path.join(ROOT, "script", "generate-proto-binding.py")
 
 # The scopes whose generated files are committed, so a tag has to carry exactly what the generator writes from proto/.
-GENERATED_SCOPES = ("node",)
+GENERATED_SCOPES = ("node", "kotlin")
 
 VERSION_FILES = {
     "proto": "proto/VERSION.txt",
