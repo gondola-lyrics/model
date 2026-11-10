@@ -16,6 +16,10 @@ sys.dont_write_bytecode = True
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CHANGE_LOG_GENERATOR = os.path.join(ROOT, "script", "generate-change-log.py")
+BINDING_GENERATOR = os.path.join(ROOT, "script", "generate-proto-binding.py")
+
+# The scopes whose generated files are committed, so a tag has to carry exactly what the generator writes from proto/.
+GENERATED_SCOPES = ("node",)
 
 VERSION_FILES = {
     "proto": "proto/VERSION.txt",
@@ -167,6 +171,8 @@ def prepare_release(
     if any(line.startswith(f"## v{version} (") for line in existing.splitlines()):
         fail(f"{changelog} already has a section for v{version}")
     changed = check_worktree(scope, version, update_version)
+    if scope in GENERATED_SCOPES:
+        command(sys.executable, BINDING_GENERATOR, scope, "--check")
     # The shared generator owns schema propagation and release ordering, including during a dry run.
     command(sys.executable, CHANGE_LOG_GENERATOR, scope, version, "--check-bump")
     section = command(sys.executable, CHANGE_LOG_GENERATOR, scope, version, "--dry-run", capture=True).stdout
