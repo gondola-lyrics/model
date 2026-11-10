@@ -1,3 +1,4 @@
+import com.diffplug.gradle.spotless.KotlinExtension
 import com.diffplug.spotless.LineEnding
 import com.vanniktech.maven.publish.DeploymentValidation
 import com.vanniktech.maven.publish.JavadocJar
@@ -16,7 +17,6 @@ description = "Gondola lyrics data model for Kotlin and Java"
 plugins {
     `java-library`
     alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.protobuf)
     alias(libs.plugins.spotless)
     alias(libs.plugins.maven.publish)
 }
@@ -45,88 +45,37 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 dependencies {
-    api(libs.protobuf.java)
-    api(libs.protobuf.kotlin)
+    testImplementation(libs.protobuf.java)
     testImplementation(kotlin("test-junit5"))
     testImplementation(platform(libs.junit.bom))
     testRuntimeOnly(libs.junit.jupiter.engine)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 
-sourceSets {
-    main {
-        proto {
-            srcDir("../proto")
-        }
-    }
-}
-
-protobuf {
-    protoc {
-        artifact = libs.protobuf.protoc.get().toString()
-    }
-    generateProtoTasks {
-        all().configureEach {
-            builtins {
-                create("kotlin")
-            }
-        }
-    }
-}
-
-abstract class GenerateSchemaVersion : DefaultTask() {
-    @get:InputFile
-    @get:PathSensitive(PathSensitivity.NONE)
-    abstract val schemaVersionFile: RegularFileProperty
-
-    @get:OutputDirectory abstract val outputDirectory: DirectoryProperty
-
-    @TaskAction
-    fun generate() {
-        val schemaVersion = schemaVersionFile.get().asFile.readText().trim()
-        val semver =
-            Regex(
-                "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)" +
-                    "(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?" +
-                    "(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-            )
-        require(semver.matches(schemaVersion)) {
-            "proto/VERSION.txt must contain a semantic version"
-        }
-
-        val output = outputDirectory.file("gondola/lyrics/model/Version.kt").get().asFile
-        output.parentFile.mkdirs()
-        output.writeText(
-            """
-            |// Generated from proto/VERSION.txt; do not edit.
-            |package gondola.lyrics.model
-            |
-            |/**
-            | * Version of the Protobuf schema used to generate these bindings.
-            | *
-            | * Producers write this value into the lyric's version field.
-            | */
-            |public const val SCHEMA_VERSION: String = "$schemaVersion"
-            |
-            """
-                .trimMargin(),
-        )
-    }
-}
-
-val generateSchemaVersion =
-    tasks.register<GenerateSchemaVersion>("generateSchemaVersion") {
-        group = "build"
-        description = "Generates the schema version carried by the bindings."
-        schemaVersionFile.set(layout.projectDirectory.file("../proto/VERSION.txt"))
-        outputDirectory.set(layout.buildDirectory.dir("generated/sources/version/main/kotlin"))
-    }
-
-val generatedProtoKotlin = files(layout.buildDirectory.dir("generated/sources/proto/main/kotlin")).builtBy("generateProto")
-
 kotlin.sourceSets.named("main") {
-    kotlin.srcDir(generatedProtoKotlin)
-    kotlin.srcDir(generateSchemaVersion.flatMap { it.outputDirectory })
+    kotlin.srcDir("src/generated/kotlin")
+}
+
+val testSchemaDirectory = layout.buildDirectory.dir("generated/test-schema")
+val generateTestSchema = tasks.register<Exec>("generateTestSchema") {
+    inputs.files(fileTree("../proto") { include("**/*.proto", "buf.yaml") }).withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.file(testSchemaDirectory.map { it.file("schema.gen.bin") })
+    commandLine(
+        "buf",
+        "build",
+        "../proto",
+        "--as-file-descriptor-set",
+        "--exclude-source-info",
+        "-o",
+        testSchemaDirectory.get().file("schema.gen.bin").asFile.absolutePath,
+    )
+    doFirst {
+        testSchemaDirectory.get().asFile.mkdirs()
+    }
+}
+
+sourceSets.test {
+    resources.srcDir(files(testSchemaDirectory).builtBy(generateTestSchema))
 }
 
 tasks.test {
@@ -140,8 +89,6 @@ tasks.withType<Jar>().configureEach {
 }
 
 tasks.jar {
-    // Schema paths such as common/time.proto are too generic to share the classpath root.
-    exclude("**/*.proto")
     includeEmptyDirs = false
     manifest {
         attributes("Automatic-Module-Name" to "gondola.lyrics.model")
@@ -152,7 +99,15 @@ spotless {
     lineEndings = LineEnding.UNIX
     kotlin {
         target("src/**/*.kt")
+        targetExclude("src/generated/**")
         ktlint(libs.versions.ktlint.get()).setEditorConfigPath(".editorconfig")
+    }
+    format("kotlinGenerated", KotlinExtension::class.java) {
+        target("src/generated/kotlin/**/*.gen.kt")
+        // Generated filenames follow the proto layout rather than individual class names.
+        ktlint(libs.versions.ktlint.get())
+            .setEditorConfigPath(".editorconfig")
+            .editorConfigOverride(mapOf("ktlint_standard_filename" to "disabled"))
     }
     kotlinGradle {
         target("*.gradle.kts")

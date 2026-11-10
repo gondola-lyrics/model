@@ -7,6 +7,7 @@ import gondola.lyrics.model.utils.canonicalizeList
 import gondola.lyrics.model.utils.childPath
 import gondola.lyrics.model.utils.findDuplicates
 import gondola.lyrics.model.utils.isTimeRangeUncovered
+import gondola.lyrics.model.utils.isUnresolved
 import gondola.lyrics.model.utils.lowerTag
 import gondola.lyrics.model.runtime.Word as RuntimeWord
 import gondola.lyrics.model.storage.Word as StorageWord
@@ -23,27 +24,27 @@ internal data class WordView(
     val hasEmphasis: Boolean,
 )
 
-internal fun StorageWord.asWordView(): WordView = WordView(
-    type,
-    time.takeIf {
-        hasTime()
-    },
-    text,
-    language.takeIf { hasLanguage() },
-    annotation.takeIf { hasAnnotation() },
-    hasEmphasis(),
-)
+internal fun StorageWord.asWordView(): WordView {
+    return WordView(
+        type,
+        time,
+        text,
+        language,
+        annotation,
+        emphasis != null,
+    )
+}
 
-internal fun RuntimeWord.asWordView(): WordView = WordView(
-    type,
-    time.takeIf {
-        hasTime()
-    },
-    text,
-    language.takeIf { hasLanguage() },
-    annotation.takeIf { hasAnnotation() },
-    hasEmphasis(),
-)
+internal fun RuntimeWord.asWordView(): WordView {
+    return WordView(
+        type,
+        time,
+        text,
+        language,
+        annotation,
+        emphasis != null,
+    )
+}
 
 /**
  * A separator between two words, which the schema defines as the Unicode White_Space property.
@@ -57,17 +58,16 @@ private val onlySeparators = Regex("${separator.pattern}+")
  * Reports whether a declared precision puts timing on the words themselves, which is what makes a word's own range mean anything.
  * Under NONE and LINE the lyric reports the word list as a whole, so no range inside it is held to another.
  */
-private fun ownsWordTimes(timing: Timing): Boolean = timing != Timing.TIMING_NONE && timing != Timing.TIMING_LINE
+private fun ownsWordTimes(timing: Timing): Boolean {
+    return timing != Timing.TIMING_NONE && timing != Timing.TIMING_LINE
+}
 
 /**
  * Creates a WordAnnotationToken, one timed piece of a ruby or roman annotation.
  */
-public fun makeWordAnnotationToken(time: TimeRange? = null, text: String = ""): WordAnnotationToken = WordAnnotationToken.newBuilder().apply {
-    if (time != null) {
-        setTime(time)
-    }
-    setText(text)
-}.build()
+public fun makeWordAnnotationToken(time: TimeRange? = null, text: String = ""): WordAnnotationToken {
+    return WordAnnotationToken(time = time, text = text)
+}
 
 /**
  * Creates a WordAnnotationRoman, a romanized transliteration of a single word.
@@ -76,26 +76,16 @@ public fun makeWordAnnotationRoman(
     time: TimeRange? = null,
     language: String? = null,
     tokens: List<WordAnnotationToken> = emptyList(),
-): WordAnnotationRoman = WordAnnotationRoman.newBuilder().apply {
-    if (time != null) {
-        setTime(time)
-    }
-    if (language != null) {
-        setLanguage(language)
-    }
-    addAllTokens(tokens)
-}.build()
+): WordAnnotationRoman {
+    return WordAnnotationRoman(time = time, language = language, tokens = tokens)
+}
 
 /**
  * Creates a WordAnnotationTranslation, a translation of a single word.
  */
-public fun makeWordAnnotationTranslation(language: String? = null, text: String = ""): WordAnnotationTranslation =
-    WordAnnotationTranslation.newBuilder().apply {
-        if (language != null) {
-            setLanguage(language)
-        }
-        setText(text)
-    }.build()
+public fun makeWordAnnotationTranslation(language: String? = null, text: String = ""): WordAnnotationTranslation {
+    return WordAnnotationTranslation(language = language, text = text)
+}
 
 /**
  * Creates a WordAnnotationRuby, a ruby annotation of a single word such as furigana.
@@ -104,15 +94,9 @@ public fun makeWordAnnotationRuby(
     time: TimeRange? = null,
     language: String? = null,
     tokens: List<WordAnnotationToken> = emptyList(),
-): WordAnnotationRuby = WordAnnotationRuby.newBuilder().apply {
-    if (time != null) {
-        setTime(time)
-    }
-    if (language != null) {
-        setLanguage(language)
-    }
-    addAllTokens(tokens)
-}.build()
+): WordAnnotationRuby {
+    return WordAnnotationRuby(time = time, language = language, tokens = tokens)
+}
 
 /**
  * Creates a WordAnnotation, the per-word annotation container.
@@ -121,7 +105,9 @@ public fun makeWordAnnotation(
     rubies: List<WordAnnotationRuby> = emptyList(),
     romans: List<WordAnnotationRoman> = emptyList(),
     translations: List<WordAnnotationTranslation> = emptyList(),
-): WordAnnotation = WordAnnotation.newBuilder().addAllRubies(rubies).addAllRomans(romans).addAllTranslations(translations).build()
+): WordAnnotation {
+    return WordAnnotation(rubies = rubies, romans = romans, translations = translations)
+}
 
 /**
  * Validates a WordAnnotation: each of its lists holds one entry per language, and every ruby and roman item, and every token within them, must carry a valid time when it carries one at all.
@@ -155,7 +141,7 @@ public fun validateWordAnnotation(annotation: WordAnnotation, path: String = "",
         val inherited = itemTime ?: time
         tokens.forEachIndexed { index, token ->
             val tokenPath = childPath(itemPath, "tokens[$index].time")
-            val tokenTime = token.time.takeIf { token.hasTime() }
+            val tokenTime = token.time
             if (tokenTime != null) {
                 diagnostics.addAll(validateTimeRange(tokenTime, tokenPath))
             }
@@ -164,14 +150,14 @@ public fun validateWordAnnotation(annotation: WordAnnotation, path: String = "",
             }
         }
     }
-    checkLanguages(annotation.rubiesList, "rubies", DiagnosticCode.LineWordAnnotationRubiesLanguageDuplicate) { it.language }
-    checkLanguages(annotation.romansList, "romans", DiagnosticCode.LineWordAnnotationRomansLanguageDuplicate) { it.language }
-    checkLanguages(annotation.translationsList, "translations", DiagnosticCode.LineWordAnnotationTranslationsLanguageDuplicate) { it.language }
-    annotation.rubiesList.forEachIndexed { index, item ->
-        validateItem(item.time.takeIf { item.hasTime() }, item.tokensList, childPath(path, "rubies[$index]"))
+    checkLanguages(annotation.rubies, "rubies", DiagnosticCode.LineWordAnnotationRubiesLanguageDuplicate) { it.language }
+    checkLanguages(annotation.romans, "romans", DiagnosticCode.LineWordAnnotationRomansLanguageDuplicate) { it.language }
+    checkLanguages(annotation.translations, "translations", DiagnosticCode.LineWordAnnotationTranslationsLanguageDuplicate) { it.language }
+    annotation.rubies.forEachIndexed { index, item ->
+        validateItem(item.time, item.tokens, childPath(path, "rubies[$index]"))
     }
-    annotation.romansList.forEachIndexed { index, item ->
-        validateItem(item.time.takeIf { item.hasTime() }, item.tokensList, childPath(path, "romans[$index]"))
+    annotation.romans.forEachIndexed { index, item ->
+        validateItem(item.time, item.tokens, childPath(path, "romans[$index]"))
     }
     return diagnostics
 }
@@ -179,7 +165,7 @@ public fun validateWordAnnotation(annotation: WordAnnotation, path: String = "",
 private fun validateWordView(word: WordView, path: String, timing: Timing): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
     // A kind outside the enum reads as unresolved too, since a value this schema does not know cannot be held to any of its kind's rules.
-    if (word.type == WordType.WORD_TYPE_UNSPECIFIED || word.type == WordType.UNRECOGNIZED) {
+    if (isUnresolved(word.type)) {
         diagnostics.add(Diagnostic(path, DiagnosticCode.WordTypeUnspecified))
     }
     if (word.type == WordType.WORD_TYPE_NORMAL && word.text.isEmpty()) {
@@ -223,15 +209,17 @@ private fun validateWordView(word: WordView, path: String, timing: Timing): List
  * Validates a Word: its kind must be resolved, a NORMAL word must carry non-empty text holding no separator, a SPACE word must carry a separator and nothing else, and any time and annotation it does carry must be valid.
  * `timing` is the lyric's declared precision, which says whether the word owns the range its annotation items inherit.
  */
-public fun validateWord(word: StorageWord, path: String = "", timing: Timing = Timing.TIMING_UNSPECIFIED): List<Diagnostic> =
-    validateWordView(word.asWordView(), path, timing)
+public fun validateWord(word: StorageWord, path: String = "", timing: Timing = Timing.TIMING_UNSPECIFIED): List<Diagnostic> {
+    return validateWordView(word.asWordView(), path, timing)
+}
 
 /**
  * Validates a Word: its kind must be resolved, a NORMAL word must carry non-empty text holding no separator, a SPACE word must carry a separator and nothing else, and any time and annotation it does carry must be valid.
  * `timing` is the lyric's declared precision, which says whether the word owns the range its annotation items inherit.
  */
-public fun validateWord(word: RuntimeWord, path: String = "", timing: Timing = Timing.TIMING_UNSPECIFIED): List<Diagnostic> =
-    validateWordView(word.asWordView(), path, timing)
+public fun validateWord(word: RuntimeWord, path: String = "", timing: Timing = Timing.TIMING_UNSPECIFIED): List<Diagnostic> {
+    return validateWordView(word.asWordView(), path, timing)
+}
 
 private fun validateWordViews(words: List<WordView>, time: TimeRange?, path: String, timing: Timing): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
@@ -260,7 +248,9 @@ public fun validateWords(
     time: TimeRange?,
     path: String = "",
     timing: Timing = Timing.TIMING_UNSPECIFIED,
-): List<Diagnostic> = validateWordViews(words.map { it.asWordView() }, time, path, timing)
+): List<Diagnostic> {
+    return validateWordViews(words.map { it.asWordView() }, time, path, timing)
+}
 
 /**
  * Validates the words of a line or background line: each word must be valid, each sung word must carry a time, and each timed word must fall within `time` when it is set.
@@ -272,155 +262,175 @@ public fun validateWords(
     time: TimeRange?,
     path: String = "",
     timing: Timing = Timing.TIMING_UNSPECIFIED,
-): List<Diagnostic> = validateWordViews(words.map { it.asWordView() }, time, path, timing)
+): List<Diagnostic> {
+    return validateWordViews(words.map { it.asWordView() }, time, path, timing)
+}
 
 /**
- * Returns the immutable annotation token unchanged, which holds only a time and its text and so has nothing to normalize.
+ * Returns the annotation token unchanged, since its time and text are immutable and have nothing to normalize.
  */
-public fun canonicalizeWordAnnotationToken(token: WordAnnotationToken): WordAnnotationToken = token
+public fun canonicalizeWordAnnotationToken(token: WordAnnotationToken): WordAnnotationToken {
+    return token
+}
 
 /**
  * Returns a copy of the roman annotation with its language lowercased and its tokens canonicalized.
  */
-public fun canonicalizeWordAnnotationRoman(roman: WordAnnotationRoman): WordAnnotationRoman = roman.toBuilder().apply {
-    clearLanguage()
-    lowerTag(roman.language)?.let { setLanguage(it) }
-    clearTokens()
-    addAllTokens(canonicalizeList(roman.tokensList, ::canonicalizeWordAnnotationToken))
-}.build()
+public fun canonicalizeWordAnnotationRoman(roman: WordAnnotationRoman): WordAnnotationRoman {
+    return roman.copy(
+        language = lowerTag(roman.language),
+        tokens = canonicalizeList(roman.tokens, ::canonicalizeWordAnnotationToken),
+    )
+}
 
 /**
  * Returns a copy of the ruby annotation with its language lowercased and its tokens canonicalized.
  */
-public fun canonicalizeWordAnnotationRuby(ruby: WordAnnotationRuby): WordAnnotationRuby = ruby.toBuilder().apply {
-    clearLanguage()
-    lowerTag(ruby.language)?.let { setLanguage(it) }
-    clearTokens()
-    addAllTokens(canonicalizeList(ruby.tokensList, ::canonicalizeWordAnnotationToken))
-}.build()
+public fun canonicalizeWordAnnotationRuby(ruby: WordAnnotationRuby): WordAnnotationRuby {
+    return ruby.copy(
+        language = lowerTag(ruby.language),
+        tokens = canonicalizeList(ruby.tokens, ::canonicalizeWordAnnotationToken),
+    )
+}
 
 /**
  * Returns a copy of the translation annotation with its language lowercased.
  */
-public fun canonicalizeWordAnnotationTranslation(translation: WordAnnotationTranslation): WordAnnotationTranslation = translation.toBuilder().apply {
-    clearLanguage()
-    lowerTag(translation.language)?.let { setLanguage(it) }
-}.build()
+public fun canonicalizeWordAnnotationTranslation(translation: WordAnnotationTranslation): WordAnnotationTranslation {
+    return translation.copy(language = lowerTag(translation.language))
+}
 
 /**
  * Returns a copy of the annotation with each of its lists canonicalized and all-default entries dropped.
  */
-public fun canonicalizeWordAnnotation(annotation: WordAnnotation): WordAnnotation = annotation.toBuilder().apply {
-    clearRubies()
-    addAllRubies(canonicalizeList(annotation.rubiesList, ::canonicalizeWordAnnotationRuby))
-    clearRomans()
-    addAllRomans(canonicalizeList(annotation.romansList, ::canonicalizeWordAnnotationRoman))
-    clearTranslations()
-    addAllTranslations(canonicalizeList(annotation.translationsList, ::canonicalizeWordAnnotationTranslation))
-}.build()
+public fun canonicalizeWordAnnotation(annotation: WordAnnotation): WordAnnotation {
+    return annotation.copy(
+        rubies = canonicalizeList(annotation.rubies, ::canonicalizeWordAnnotationRuby),
+        romans = canonicalizeList(annotation.romans, ::canonicalizeWordAnnotationRoman),
+        translations = canonicalizeList(annotation.translations, ::canonicalizeWordAnnotationTranslation),
+    )
+}
 
 /**
  * Returns a copy of the word with the fields every layer shares canonicalized: its language lowercased, and its annotation canonicalized then dropped when empty.
  * Each layer's `canonicalizeWord` builds on this to handle its own fields.
  */
-public fun canonicalizeWordShared(word: StorageWord): StorageWord = word.toBuilder().apply {
-    clearLanguage()
-    lowerTag(word.language)?.let { setLanguage(it) }
-    clearAnnotation()
-    canonicalizeField(word.annotation.takeIf { word.hasAnnotation() }, ::canonicalizeWordAnnotation)?.let { setAnnotation(it) }
-}.build()
+public fun canonicalizeWordShared(word: StorageWord): StorageWord {
+    return word.copy(
+        language = lowerTag(word.language),
+        annotation = canonicalizeField(word.annotation, ::canonicalizeWordAnnotation),
+    )
+}
 
 /**
  * Returns a copy of the word with the fields every layer shares canonicalized: its language lowercased, and its annotation canonicalized then dropped when empty.
  * Each layer's `canonicalizeWord` builds on this to handle its own fields.
  */
-public fun canonicalizeWordShared(word: RuntimeWord): RuntimeWord = word.toBuilder().apply {
-    clearLanguage()
-    lowerTag(word.language)?.let { setLanguage(it) }
-    clearAnnotation()
-    canonicalizeField(word.annotation.takeIf { word.hasAnnotation() }, ::canonicalizeWordAnnotation)?.let { setAnnotation(it) }
-}.build()
+public fun canonicalizeWordShared(word: RuntimeWord): RuntimeWord {
+    return word.copy(
+        language = lowerTag(word.language),
+        annotation = canonicalizeField(word.annotation, ::canonicalizeWordAnnotation),
+    )
+}
 
 /**
  * Resolves an annotation item's effective time, following the inheritance chain: its own time, else the annotated word's.
  */
-public fun resolveAnnotationItemTime(item: WordAnnotationRoman, word: StorageWord): TimeRange? =
-    item.time.takeIf { item.hasTime() } ?: word.time.takeIf { word.hasTime() }
+public fun resolveAnnotationItemTime(item: WordAnnotationRoman, word: StorageWord): TimeRange? {
+    return item.time ?: word.time
+}
 
 /**
  * Resolves an annotation item's effective time, following the inheritance chain: its own time, else the annotated word's.
  */
-public fun resolveAnnotationItemTime(item: WordAnnotationRoman, word: RuntimeWord): TimeRange? =
-    item.time.takeIf { item.hasTime() } ?: word.time.takeIf { word.hasTime() }
+public fun resolveAnnotationItemTime(item: WordAnnotationRoman, word: RuntimeWord): TimeRange? {
+    return item.time ?: word.time
+}
 
 /**
  * Resolves an annotation item's effective time, following the inheritance chain: its own time, else the annotated word's.
  */
-public fun resolveAnnotationItemTime(item: WordAnnotationRuby, word: StorageWord): TimeRange? =
-    item.time.takeIf { item.hasTime() } ?: word.time.takeIf { word.hasTime() }
+public fun resolveAnnotationItemTime(item: WordAnnotationRuby, word: StorageWord): TimeRange? {
+    return item.time ?: word.time
+}
 
 /**
  * Resolves an annotation item's effective time, following the inheritance chain: its own time, else the annotated word's.
  */
-public fun resolveAnnotationItemTime(item: WordAnnotationRuby, word: RuntimeWord): TimeRange? =
-    item.time.takeIf { item.hasTime() } ?: word.time.takeIf { word.hasTime() }
+public fun resolveAnnotationItemTime(item: WordAnnotationRuby, word: RuntimeWord): TimeRange? {
+    return item.time ?: word.time
+}
 
 /**
  * Resolves an annotation token's effective time, following the inheritance chain: its own time, else its item's, else the annotated word's.
  */
-public fun resolveAnnotationTokenTime(token: WordAnnotationToken, item: WordAnnotationRoman, word: StorageWord): TimeRange? =
-    token.time.takeIf { token.hasTime() } ?: resolveAnnotationItemTime(item, word)
+public fun resolveAnnotationTokenTime(token: WordAnnotationToken, item: WordAnnotationRoman, word: StorageWord): TimeRange? {
+    return token.time ?: resolveAnnotationItemTime(item, word)
+}
 
 /**
  * Resolves an annotation token's effective time, following the inheritance chain: its own time, else its item's, else the annotated word's.
  */
-public fun resolveAnnotationTokenTime(token: WordAnnotationToken, item: WordAnnotationRoman, word: RuntimeWord): TimeRange? =
-    token.time.takeIf { token.hasTime() } ?: resolveAnnotationItemTime(item, word)
+public fun resolveAnnotationTokenTime(token: WordAnnotationToken, item: WordAnnotationRoman, word: RuntimeWord): TimeRange? {
+    return token.time ?: resolveAnnotationItemTime(item, word)
+}
 
 /**
  * Resolves an annotation token's effective time, following the inheritance chain: its own time, else its item's, else the annotated word's.
  */
-public fun resolveAnnotationTokenTime(token: WordAnnotationToken, item: WordAnnotationRuby, word: StorageWord): TimeRange? =
-    token.time.takeIf { token.hasTime() } ?: resolveAnnotationItemTime(item, word)
+public fun resolveAnnotationTokenTime(token: WordAnnotationToken, item: WordAnnotationRuby, word: StorageWord): TimeRange? {
+    return token.time ?: resolveAnnotationItemTime(item, word)
+}
 
 /**
  * Resolves an annotation token's effective time, following the inheritance chain: its own time, else its item's, else the annotated word's.
  */
-public fun resolveAnnotationTokenTime(token: WordAnnotationToken, item: WordAnnotationRuby, word: RuntimeWord): TimeRange? =
-    token.time.takeIf { token.hasTime() } ?: resolveAnnotationItemTime(item, word)
+public fun resolveAnnotationTokenTime(token: WordAnnotationToken, item: WordAnnotationRuby, word: RuntimeWord): TimeRange? {
+    return token.time ?: resolveAnnotationItemTime(item, word)
+}
 
 /**
  * Joins the text of words in order, which restores the source text since separators are words of their own.
  */
 @JvmName("getStorageWordsText")
-public fun getWordsText(words: List<StorageWord>): String = words.joinToString("") { it.text }
+public fun getWordsText(words: List<StorageWord>): String {
+    return words.joinToString("") { it.text }
+}
 
 /**
  * Joins the text of words in order, which restores the source text since separators are words of their own.
  */
 @JvmName("getRuntimeWordsText")
-public fun getWordsText(words: List<RuntimeWord>): String = words.joinToString("") { it.text }
+public fun getWordsText(words: List<RuntimeWord>): String {
+    return words.joinToString("") { it.text }
+}
 
 /**
  * Collects the distinct lowercased language tags of normal words, in order of first appearance.
  */
 @JvmName("getStorageWordsLanguages")
-public fun getWordsLanguages(words: List<StorageWord>): List<String> =
-    words.filter { it.type == WordType.WORD_TYPE_NORMAL }.mapNotNull { lowerTag(it.language) }.distinct()
+public fun getWordsLanguages(words: List<StorageWord>): List<String> {
+    return words.filter { it.type == WordType.WORD_TYPE_NORMAL }.mapNotNull { lowerTag(it.language) }.distinct()
+}
 
 /**
  * Collects the distinct lowercased language tags of normal words, in order of first appearance.
  */
 @JvmName("getRuntimeWordsLanguages")
-public fun getWordsLanguages(words: List<RuntimeWord>): List<String> =
-    words.filter { it.type == WordType.WORD_TYPE_NORMAL }.mapNotNull { lowerTag(it.language) }.distinct()
+public fun getWordsLanguages(words: List<RuntimeWord>): List<String> {
+    return words.filter { it.type == WordType.WORD_TYPE_NORMAL }.mapNotNull { lowerTag(it.language) }.distinct()
+}
 
 /**
  * Joins the text of an annotation item's tokens with nothing in between, as they compose the item in order.
  */
-public fun getAnnotationItemText(item: WordAnnotationRoman): String = item.tokensList.joinToString("") { it.text }
+public fun getAnnotationItemText(item: WordAnnotationRoman): String {
+    return item.tokens.joinToString("") { it.text }
+}
 
 /**
  * Joins the text of an annotation item's tokens with nothing in between, as they compose the item in order.
  */
-public fun getAnnotationItemText(item: WordAnnotationRuby): String = item.tokensList.joinToString("") { it.text }
+public fun getAnnotationItemText(item: WordAnnotationRuby): String {
+    return item.tokens.joinToString("") { it.text }
+}

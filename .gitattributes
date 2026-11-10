@@ -22,3 +22,4 @@
 
 # Generated bindings
 node/src/generated/** linguist-generated=true
+kotlin/src/generated/** linguist-generated=true

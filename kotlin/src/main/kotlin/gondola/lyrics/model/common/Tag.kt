@@ -2,9 +2,9 @@
 
 package gondola.lyrics.model.common
 
-import com.google.protobuf.Descriptors
-import com.google.protobuf.Message
+import gondola.lyrics.model.utils.FieldShape
 import gondola.lyrics.model.utils.childPath
+import gondola.lyrics.model.utils.visitFields
 
 /**
  * A tag is written as subtags of letters and digits, one to eight each, the first naming the language and so letters alone.
@@ -37,27 +37,27 @@ fun isLanguageTag(tag: String): Boolean {
  * Only a malformed tag is reported, since an unset or empty one is what the rule demanding a tag is for.
  * `exempt` names the fields that may hold a scheme instead, and `sealed` the fields another validator reads, so a tag is never reported twice.
  */
-private fun collectTagDiagnostics(message: Message, exempt: List<String>, sealed: List<String>, path: String): List<Diagnostic> {
+private fun collectTagDiagnostics(message: Any, exempt: List<String>, sealed: List<String>, path: String): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
-    for (field in message.descriptorForType.fields) {
-        if (field.jsonName in sealed || field.isMapField) {
-            continue
+    visitFields(message) { name, shape, value ->
+        if (name in sealed) {
+            return@visitFields
         }
-        val child = childPath(path, field.jsonName)
-        if (field.isRepeated) {
-            val values = message.getField(field) as List<*>
-            values.forEachIndexed { index, value ->
-                if (value is Message) {
-                    diagnostics.addAll(collectTagDiagnostics(value, exempt, sealed, "$child[$index]"))
-                } else if (field.jsonName == "languages" && value is String && value.isNotEmpty() && !isLanguageTag(value)) {
+        val child = childPath(path, name)
+        if (shape == FieldShape.LIST_MESSAGE) {
+            (value as List<*>).forEachIndexed { index, item ->
+                diagnostics.addAll(collectTagDiagnostics(requireNotNull(item), exempt, sealed, "$child[$index]"))
+            }
+        } else if (shape == FieldShape.LIST_SCALAR && name == "languages") {
+            (value as List<*>).forEachIndexed { index, item ->
+                if (item is String && item.isNotEmpty() && !isLanguageTag(item)) {
                     diagnostics.add(Diagnostic("$child[$index]", DiagnosticCode.LanguageTagMalformed))
                 }
             }
-        } else if (field.javaType == Descriptors.FieldDescriptor.JavaType.MESSAGE && message.hasField(field)) {
-            diagnostics.addAll(collectTagDiagnostics(message.getField(field) as Message, exempt, sealed, child))
-        } else if (field.name == "language" && exempt.none { child.endsWith(it) }) {
-            val value = message.getField(field) as String
-            if (value.isNotEmpty() && !isLanguageTag(value)) {
+        } else if (shape == FieldShape.MESSAGE && value != null) {
+            diagnostics.addAll(collectTagDiagnostics(value, exempt, sealed, child))
+        } else if ((shape == FieldShape.SCALAR || shape == FieldShape.OPTIONAL) && name == "language" && exempt.none { child.endsWith(it) }) {
+            if (value is String && value.isNotEmpty() && !isLanguageTag(value)) {
                 diagnostics.add(Diagnostic(child, DiagnosticCode.LanguageTagMalformed))
             }
         }
@@ -69,7 +69,7 @@ private fun collectTagDiagnostics(message: Message, exempt: List<String>, sealed
  * Collects the malformed language tags of one line: its own list, its words and its annotations.
  * A line is validated on its own as well as under a lyric, so where it sits changes nothing and the path is the line's own.
  */
-fun validateLineTags(line: Message, path: String = ""): List<Diagnostic> {
+internal fun validateLineTags(line: Any, path: String = ""): List<Diagnostic> {
     // The fields holding a transliteration scheme rather than a tag, which no tag is written like; `romaji` and `Hepburn` name how a text is romanized.
     return collectTagDiagnostics(line, listOf("annotation.romans.language"), emptyList(), path)
 }
@@ -78,4 +78,6 @@ fun validateLineTags(line: Message, path: String = ""): List<Diagnostic> {
  * Collects the malformed language tags a lyric carries outside its lines: the language its metadata declares and the tags on every text it holds.
  * The lines are left to `validateLine`, which alone knows which fields a line's kind forbids.
  */
-fun validateLyricTags(lyric: Message): List<Diagnostic> = collectTagDiagnostics(lyric, emptyList(), listOf("lines"), "")
+internal fun validateLyricTags(lyric: Any): List<Diagnostic> {
+    return collectTagDiagnostics(lyric, emptyList(), listOf("lines"), "")
+}

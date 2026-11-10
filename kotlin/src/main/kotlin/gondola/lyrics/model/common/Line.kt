@@ -39,8 +39,10 @@ public fun validateContent(
     path: String = "",
     timing: Timing = Timing.TIMING_UNSPECIFIED,
     required: Boolean = true,
-): List<Diagnostic> = validateContentFields((content?.wordsCount ?: 0) > 0, content?.text?.takeIf { content.hasText() }, path, required) +
-    validateWords(content?.wordsList ?: emptyList(), time, childPath(path, "content"), timing)
+): List<Diagnostic> {
+    return validateContentFields(!content?.words.isNullOrEmpty(), content?.text, path, required) +
+        validateWords(content?.words.orEmpty(), time, childPath(path, "content"), timing)
+}
 
 /**
  * Validates a normal line's or background line's content: exactly one of `words` or `text` must be set, the text must be non-empty when it is the one set, and its words must be valid.
@@ -53,72 +55,88 @@ public fun validateContent(
     path: String = "",
     timing: Timing = Timing.TIMING_UNSPECIFIED,
     required: Boolean = true,
-): List<Diagnostic> = validateContentFields((content?.wordsCount ?: 0) > 0, content?.text?.takeIf { content.hasText() }, path, required) +
-    validateWords(content?.wordsList ?: emptyList(), time, childPath(path, "content"), timing)
+): List<Diagnostic> {
+    return validateContentFields(!content?.words.isNullOrEmpty(), content?.text, path, required) +
+        validateWords(content?.words.orEmpty(), time, childPath(path, "content"), timing)
+}
 
 /**
  * Returns a line's text: its plain text when it carries that, otherwise its words joined.
  */
-public fun getContentText(content: StorageLineContent?): String =
-    content?.text?.takeIf { content.hasText() } ?: getWordsText(content?.wordsList ?: emptyList())
+public fun getContentText(content: StorageLineContent?): String {
+    return content?.text ?: getWordsText(content?.words.orEmpty())
+}
 
 /**
  * Returns a line's text: its plain text when it carries that, otherwise its words joined.
  */
-public fun getContentText(content: RuntimeLineContent?): String =
-    content?.text?.takeIf { content.hasText() } ?: getWordsText(content?.wordsList ?: emptyList())
+public fun getContentText(content: RuntimeLineContent?): String {
+    return content?.text ?: getWordsText(content?.words.orEmpty())
+}
 
 /**
  * Reports whether a line is word-level, i.e. its content carries words rather than plain text; an instrumental or text line is not.
  */
-public fun isWordLevelLine(line: StorageLine): Boolean = line.content.wordsCount > 0
+public fun isWordLevelLine(line: StorageLine): Boolean {
+    return !line.content?.words.isNullOrEmpty()
+}
 
 /**
  * Reports whether a line is word-level, i.e. its content carries words rather than plain text; an instrumental or text line is not.
  */
-public fun isWordLevelLine(line: RuntimeLine): Boolean = line.content.wordsCount > 0
+public fun isWordLevelLine(line: RuntimeLine): Boolean {
+    return !line.content?.words.isNullOrEmpty()
+}
 
 /**
  * Reports whether a line is word-level, i.e. its content carries words rather than plain text; an instrumental or text line is not.
  */
-public fun isWordLevelLine(line: StorageLineBackground): Boolean = line.content.wordsCount > 0
+public fun isWordLevelLine(line: StorageLineBackground): Boolean {
+    return !line.content?.words.isNullOrEmpty()
+}
 
 /**
  * Reports whether a line is word-level, i.e. its content carries words rather than plain text; an instrumental or text line is not.
  */
-public fun isWordLevelLine(line: RuntimeLineBackground): Boolean = line.content.wordsCount > 0
+public fun isWordLevelLine(line: RuntimeLineBackground): Boolean {
+    return !line.content?.words.isNullOrEmpty()
+}
 
 /**
  * Derives the line's distinct lowercased language tags, falling back to those of its words when the line lists none.
  * Overloads serve a line and a background line of either layer.
  * It answers what one line shows, while `deriveLanguageUsages` unions line and word tags for the lyric-wide count.
  */
-public fun deriveLineLanguages(line: StorageLine): List<String> =
-    if (line.languagesCount == 0) getWordsLanguages(line.content.wordsList) else line.languagesList.mapNotNull(::lowerTag).distinct()
+public fun deriveLineLanguages(line: StorageLine): List<String> {
+    return if (line.languages.isEmpty()) getWordsLanguages(line.content?.words.orEmpty()) else line.languages.mapNotNull(::lowerTag).distinct()
+}
 
 /**
  * Derives the line's distinct lowercased language tags, falling back to those of its words when the line lists none.
  * Overloads serve a line and a background line of either layer.
  * It answers what one line shows, while `deriveLanguageUsages` unions line and word tags for the lyric-wide count.
  */
-public fun deriveLineLanguages(line: RuntimeLine): List<String> =
-    if (line.languagesCount == 0) getWordsLanguages(line.content.wordsList) else line.languagesList.mapNotNull(::lowerTag).distinct()
+public fun deriveLineLanguages(line: RuntimeLine): List<String> {
+    return if (line.languages.isEmpty()) getWordsLanguages(line.content?.words.orEmpty()) else line.languages.mapNotNull(::lowerTag).distinct()
+}
 
 /**
  * Derives the line's distinct lowercased language tags, falling back to those of its words when the line lists none.
  * Overloads serve a line and a background line of either layer.
  * It answers what one line shows, while `deriveLanguageUsages` unions line and word tags for the lyric-wide count.
  */
-public fun deriveLineLanguages(line: StorageLineBackground): List<String> =
-    if (line.languagesCount == 0) getWordsLanguages(line.content.wordsList) else line.languagesList.mapNotNull(::lowerTag).distinct()
+public fun deriveLineLanguages(line: StorageLineBackground): List<String> {
+    return if (line.languages.isEmpty()) getWordsLanguages(line.content?.words.orEmpty()) else line.languages.mapNotNull(::lowerTag).distinct()
+}
 
 /**
  * Derives the line's distinct lowercased language tags, falling back to those of its words when the line lists none.
  * Overloads serve a line and a background line of either layer.
  * It answers what one line shows, while `deriveLanguageUsages` unions line and word tags for the lyric-wide count.
  */
-public fun deriveLineLanguages(line: RuntimeLineBackground): List<String> =
-    if (line.languagesCount == 0) getWordsLanguages(line.content.wordsList) else line.languagesList.mapNotNull(::lowerTag).distinct()
+public fun deriveLineLanguages(line: RuntimeLineBackground): List<String> {
+    return if (line.languages.isEmpty()) getWordsLanguages(line.content?.words.orEmpty()) else line.languages.mapNotNull(::lowerTag).distinct()
+}
 
 /**
  * Creates a LineAnnotation, the per-line annotation container.
@@ -126,7 +144,9 @@ public fun deriveLineLanguages(line: RuntimeLineBackground): List<String> =
 public fun makeLineAnnotation(
     romans: List<LineAnnotationRoman> = emptyList(),
     translations: List<LineAnnotationTranslation> = emptyList(),
-): LineAnnotation = LineAnnotation.newBuilder().addAllRomans(romans).addAllTranslations(translations).build()
+): LineAnnotation {
+    return LineAnnotation(romans = romans, translations = translations)
+}
 
 /**
  * Validates a LineAnnotation: each of its lists holds one entry per language, so a language may not repeat within one.
@@ -134,10 +154,10 @@ public fun makeLineAnnotation(
 public fun validateLineAnnotation(annotation: LineAnnotation, path: String = ""): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
     // Reports every entry of one list whose language an earlier entry already took, treating an unset and an empty tag as the same default language.
-    findDuplicates(annotation.romansList) { lowerTag(it.language) ?: "" }.forEach { index ->
+    findDuplicates(annotation.romans) { lowerTag(it.language) ?: "" }.forEach { index ->
         diagnostics.add(Diagnostic(childPath(path, "romans[$index]"), DiagnosticCode.LineAnnotationRomansLanguageDuplicate))
     }
-    findDuplicates(annotation.translationsList) { lowerTag(it.language) ?: "" }.forEach { index ->
+    findDuplicates(annotation.translations) { lowerTag(it.language) ?: "" }.forEach { index ->
         diagnostics.add(Diagnostic(childPath(path, "translations[$index]"), DiagnosticCode.LineAnnotationTranslationsLanguageDuplicate))
     }
     return diagnostics
@@ -146,52 +166,43 @@ public fun validateLineAnnotation(annotation: LineAnnotation, path: String = "")
 /**
  * Creates a LineAnnotationRoman, a romanized transliteration of a whole line.
  */
-public fun makeLineAnnotationRoman(language: String? = null, text: String = ""): LineAnnotationRoman = LineAnnotationRoman.newBuilder().apply {
-    if (language != null) {
-        setLanguage(language)
-    }
-    setText(text)
-}.build()
+public fun makeLineAnnotationRoman(language: String? = null, text: String = ""): LineAnnotationRoman {
+    return LineAnnotationRoman(language = language, text = text)
+}
 
 /**
  * Creates a LineAnnotationTranslation, a translation of a whole line.
  */
-public fun makeLineAnnotationTranslation(language: String? = null, text: String = ""): LineAnnotationTranslation =
-    LineAnnotationTranslation.newBuilder().apply {
-        if (language != null) {
-            setLanguage(language)
-        }
-        setText(text)
-    }.build()
+public fun makeLineAnnotationTranslation(language: String? = null, text: String = ""): LineAnnotationTranslation {
+    return LineAnnotationTranslation(language = language, text = text)
+}
 
 /**
  * Returns a copy of the roman annotation with its language lowercased.
  */
-public fun canonicalizeLineAnnotationRoman(roman: LineAnnotationRoman): LineAnnotationRoman = roman.toBuilder().apply {
-    clearLanguage()
-    lowerTag(roman.language)?.let { setLanguage(it) }
-}.build()
+public fun canonicalizeLineAnnotationRoman(roman: LineAnnotationRoman): LineAnnotationRoman {
+    return roman.copy(language = lowerTag(roman.language))
+}
 
 /**
  * Returns a copy of the translation annotation with its language lowercased.
  */
-public fun canonicalizeLineAnnotationTranslation(translation: LineAnnotationTranslation): LineAnnotationTranslation = translation.toBuilder().apply {
-    clearLanguage()
-    lowerTag(translation.language)?.let { setLanguage(it) }
-}.build()
+public fun canonicalizeLineAnnotationTranslation(translation: LineAnnotationTranslation): LineAnnotationTranslation {
+    return translation.copy(language = lowerTag(translation.language))
+}
 
 /**
  * Returns a copy of the annotation with both its lists canonicalized and all-default entries dropped.
  */
-public fun canonicalizeLineAnnotation(annotation: LineAnnotation): LineAnnotation = annotation.toBuilder().apply {
-    clearRomans()
-    addAllRomans(canonicalizeList(annotation.romansList, ::canonicalizeLineAnnotationRoman))
-    clearTranslations()
-    addAllTranslations(canonicalizeList(annotation.translationsList, ::canonicalizeLineAnnotationTranslation))
-}.build()
+public fun canonicalizeLineAnnotation(annotation: LineAnnotation): LineAnnotation {
+    return annotation.copy(
+        romans = canonicalizeList(annotation.romans, ::canonicalizeLineAnnotationRoman),
+        translations = canonicalizeList(annotation.translations, ::canonicalizeLineAnnotationTranslation),
+    )
+}
 
 private fun deriveWordRomans(words: List<WordView>): List<LineAnnotationRoman> {
-    val languages = words.flatMap { word -> word.annotation?.romansList?.map { lowerTag(it.language) } ?: emptyList() }.distinct()
+    val languages = words.flatMap { word -> word.annotation?.romans?.map { lowerTag(it.language) } ?: emptyList() }.distinct()
     val romans = mutableListOf<LineAnnotationRoman>()
     for (language in languages) {
         val joined = StringBuilder()
@@ -201,7 +212,7 @@ private fun deriveWordRomans(words: List<WordView>): List<LineAnnotationRoman> {
                 spaced = true
                 continue
             }
-            val roman = word.annotation?.romansList?.firstOrNull { lowerTag(it.language) == language }
+            val roman = word.annotation?.romans?.firstOrNull { lowerTag(it.language) == language }
             val text = roman?.let(::getAnnotationItemText) ?: ""
             if (text.isNotEmpty()) {
                 if (joined.isNotEmpty() && spaced) {
@@ -222,12 +233,14 @@ private fun deriveWordRomans(words: List<WordView>): List<LineAnnotationRoman> {
  * Derives line-level romans from the content's words, one per language in order of first appearance; the result is for display and must never be stored on the line.
  * Words lacking a roman in that language are skipped, and any spaces between two romanized words collapse to a single U+0020.
  */
-public fun deriveLineRomans(content: StorageLineContent?): List<LineAnnotationRoman> =
-    deriveWordRomans(content?.wordsList?.map { it.asWordView() } ?: emptyList())
+public fun deriveLineRomans(content: StorageLineContent?): List<LineAnnotationRoman> {
+    return deriveWordRomans(content?.words?.map { it.asWordView() } ?: emptyList())
+}
 
 /**
  * Derives line-level romans from the content's words, one per language in order of first appearance; the result is for display and must never be stored on the line.
  * Words lacking a roman in that language are skipped, and any spaces between two romanized words collapse to a single U+0020.
  */
-public fun deriveLineRomans(content: RuntimeLineContent?): List<LineAnnotationRoman> =
-    deriveWordRomans(content?.wordsList?.map { it.asWordView() } ?: emptyList())
+public fun deriveLineRomans(content: RuntimeLineContent?): List<LineAnnotationRoman> {
+    return deriveWordRomans(content?.words?.map { it.asWordView() } ?: emptyList())
+}

@@ -1,13 +1,20 @@
 package gondola.lyrics.model
 
+import gondola.lyrics.model.common.LineType
+import gondola.lyrics.model.common.Meta
 import gondola.lyrics.model.common.PartType
 import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.WordType
 import gondola.lyrics.model.common.makePart
+import gondola.lyrics.model.common.makeText
 import gondola.lyrics.model.common.makeTimeRange
+import gondola.lyrics.model.common.makeUnknownEntry
+import gondola.lyrics.model.runtime.LineContent
 import gondola.lyrics.model.runtime.Lyric
 import gondola.lyrics.model.runtime.LyricStatus
 import gondola.lyrics.model.runtime.canonicalizeLyric
 import gondola.lyrics.model.runtime.deriveLanguageUsages
+import gondola.lyrics.model.runtime.encode
 import gondola.lyrics.model.runtime.makeLineContentWords
 import gondola.lyrics.model.runtime.makeLineNormal
 import gondola.lyrics.model.runtime.makeLyric
@@ -17,6 +24,13 @@ import gondola.lyrics.model.runtime.validateLyric
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import gondola.lyrics.model.storage.Line as StorageLine
+import gondola.lyrics.model.storage.LineContent as StorageLineContent
+import gondola.lyrics.model.storage.Lyric as StorageLyric
+import gondola.lyrics.model.storage.Word as StorageWord
+import gondola.lyrics.model.storage.canonicalizeLyric as canonicalizeStorageLyric
+import gondola.lyrics.model.storage.encode as encodeStorage
 
 class CanonicalizeTest {
     private fun buildLyric(): Lyric {
@@ -50,8 +64,8 @@ class CanonicalizeTest {
     fun lowercasesFormatAndTags() {
         val canonical = canonicalizeLyric(buildLyric())
         assertEquals("lrc", canonical.format)
-        assertEquals(listOf("en"), canonical.getLines(0).languagesList)
-        assertEquals("en", canonical.getLines(0).content.getWords(0).language)
+        assertEquals(listOf("en"), canonical.lines[0].languages)
+        assertEquals("en", assertNotNull(canonical.lines[0].content).words[0].language)
     }
 
     @Test
@@ -60,15 +74,45 @@ class CanonicalizeTest {
         assertEquals(once, canonicalizeLyric(once))
     }
 
-    // Generated messages are immutable, so the Node copy contract is checked through unchanged input rather than object identity.
     @Test
-    fun leavesInputUnchanged() {
-        val lyric = buildLyric()
-        val original = lyric.toByteArray()
+    fun keepsMutableContainersIsolatedFromBothLayers() {
+        val base = buildLyric()
+        val words = assertNotNull(base.lines[0].content).words.toMutableList()
+        val tags = mutableListOf("EN")
+        val agents = mutableListOf("a")
+        val extra = linkedMapOf("key" to "value")
+        val titles = mutableListOf(makeText(text = "title"))
+        val unknowns = mutableListOf(makeUnknownEntry(key = "x", value = "y"))
+        val meta = Meta(titles = titles, unknowns = unknowns)
+        val lines = mutableListOf(base.lines[0].copy(languages = tags, agents = agents, content = LineContent(words = words)))
+        val lyric = base.copy(extra = extra, meta = meta, lines = lines)
+        val storageWords = mutableListOf(StorageWord(type = WordType.WORD_TYPE_NORMAL, text = "x"))
+        val storageLines = mutableListOf(
+            StorageLine(type = LineType.LINE_TYPE_NORMAL, languages = tags, agents = agents, content = StorageLineContent(words = storageWords)),
+        )
+        val stored = StorageLyric(extra = extra, meta = meta, lines = storageLines)
+        val original = encode(lyric)
+        val originalStorage = encodeStorage(stored)
 
-        canonicalizeLyric(lyric)
+        val canonical = canonicalizeLyric(lyric)
+        val canonicalStorage = canonicalizeStorageLyric(stored)
+        assertContentEquals(original, encode(lyric))
+        assertContentEquals(originalStorage, encodeStorage(stored))
+        val snapshot = encode(canonical)
+        val storageSnapshot = encodeStorage(canonicalStorage)
 
-        assertContentEquals(original, lyric.toByteArray())
+        words.clear()
+        storageWords.clear()
+        tags.clear()
+        agents.clear()
+        extra["key"] = "changed"
+        titles.clear()
+        unknowns.clear()
+        lines.clear()
+        storageLines.clear()
+
+        assertContentEquals(snapshot, encode(canonical))
+        assertContentEquals(storageSnapshot, encodeStorage(canonicalStorage))
     }
 
     @Test

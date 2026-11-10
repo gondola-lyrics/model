@@ -1,8 +1,13 @@
 package gondola.lyrics.model
 
 import gondola.lyrics.model.common.Diagnostic
+import gondola.lyrics.model.common.Meta
+import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.Timing
 import gondola.lyrics.model.common.makeTimeRange
+import gondola.lyrics.model.common.validateMeta
+import gondola.lyrics.model.common.validateTimeRange
+import gondola.lyrics.model.runtime.LanguageUsage
 import gondola.lyrics.model.runtime.Line
 import gondola.lyrics.model.runtime.Lyric
 import gondola.lyrics.model.runtime.LyricStatus
@@ -14,6 +19,7 @@ import gondola.lyrics.model.runtime.makeLineNormal
 import gondola.lyrics.model.runtime.makeLyric
 import gondola.lyrics.model.runtime.makeWordNormal
 import gondola.lyrics.model.runtime.makeWordSpace
+import gondola.lyrics.model.runtime.validateLanguageUsage
 import gondola.lyrics.model.runtime.validateLyric
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,15 +28,49 @@ import gondola.lyrics.model.storage.makeLineNormal as makeStorageLineNormal
 import gondola.lyrics.model.storage.makeLyric as makeStorageLyric
 import gondola.lyrics.model.storage.validateLyric as validateStorageLyric
 
-private fun textLine(start: Long, end: Long? = null): Line =
-    makeLineNormal(time = makeTimeRange(start = start, end = end), content = makeLineContentText("x"))
+private fun textLine(start: Long, end: Long? = null): Line {
+    return makeLineNormal(time = makeTimeRange(start = start, end = end), content = makeLineContentText("x"))
+}
 
-private fun lineTimed(vararg lines: Line): Lyric =
-    makeLyric(format = "lrc", timing = Timing.TIMING_LINE, status = LyricStatus.LYRIC_STATUS_VALID, lines = lines.toList())
+private fun lineTimed(vararg lines: Line): Lyric {
+    return makeLyric(format = "lrc", timing = Timing.TIMING_LINE, status = LyricStatus.LYRIC_STATUS_VALID, lines = lines.toList())
+}
 
-private fun List<Diagnostic>.asPairs(): List<Pair<String, String>> = map { it.path to it.code.value }
+private fun List<Diagnostic>.asPairs(): List<Pair<String, String>> {
+    return map { it.path to it.code.value }
+}
 
 class ValidateTest {
+    @Test
+    fun reportsNativeTimeBoundsOutsideSchemaDomain() {
+        assertEquals(
+            listOf("time" to "time.range.start.invalid", "time" to "time.range.end.invalid"),
+            validateTimeRange(TimeRange(start = -1, end = -2), "time").asPairs(),
+        )
+        assertEquals(
+            listOf("time" to "time.range.start.overflow", "time" to "time.range.end.overflow"),
+            validateTimeRange(TimeRange(start = 2147483648L, end = Long.MAX_VALUE), "time").asPairs(),
+        )
+    }
+
+    @Test
+    fun reportsNativeCountsAlongsideTagErrors() {
+        assertEquals(
+            listOf("languages[0].tag" to "language.usage.tag.empty", "languages[0].count" to "language.usage.count.invalid"),
+            validateLanguageUsage(LanguageUsage(count = -1), "languages[0]").asPairs(),
+        )
+        assertEquals(
+            listOf("count" to "language.usage.count.overflow"),
+            validateLanguageUsage(LanguageUsage(tag = "en", count = 4294967296L)).asPairs(),
+        )
+    }
+
+    @Test
+    fun reportsNativeDurationBoundsOutsideSchemaDomain() {
+        assertEquals(listOf("duration" to "meta.duration.invalid"), validateMeta(Meta(duration = -1)).asPairs())
+        assertEquals(listOf("duration" to "meta.duration.overflow"), validateMeta(Meta(duration = Long.MAX_VALUE)).asPairs())
+    }
+
     @Test
     fun acceptsWordLevelLyric() {
         val lines = listOf(

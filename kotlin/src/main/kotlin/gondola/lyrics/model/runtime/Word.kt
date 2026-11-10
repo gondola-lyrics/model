@@ -18,42 +18,33 @@ public fun makeWordNormal(
     annotation: WordAnnotation? = null,
     emphasis: WordEmphasis? = null,
 ): Word {
-    val builder = Word.newBuilder().setType(WordType.WORD_TYPE_NORMAL).setText(text)
-    if (time != null) {
-        builder.time = time
-    }
-    if (language != null) {
-        builder.language = language
-    }
-    if (annotation != null) {
-        builder.annotation = annotation
-    }
-    if (emphasis != null) {
-        builder.emphasis = emphasis
-    }
-    return builder.build()
+    return Word(
+        type = WordType.WORD_TYPE_NORMAL,
+        time = time,
+        text = text,
+        language = language,
+        annotation = annotation,
+        emphasis = emphasis,
+    )
 }
 
 /**
  * Creates a whitespace word carrying the separator as its text, stamping WORD_TYPE_SPACE.
  */
-public fun makeWordSpace(text: String = ""): Word = Word.newBuilder().setType(WordType.WORD_TYPE_SPACE).setText(text).build()
+public fun makeWordSpace(text: String = ""): Word {
+    return Word(type = WordType.WORD_TYPE_SPACE, text = text)
+}
 
 /**
  * Creates a WordEmphasis, whether a word is emphasized and whether that was derived rather than stated.
  */
-public fun makeWordEmphasis(value: Boolean = false, derived: Boolean = false): WordEmphasis =
-    WordEmphasis.newBuilder().setValue(value).setDerived(derived).build()
+public fun makeWordEmphasis(value: Boolean = false, derived: Boolean = false): WordEmphasis {
+    return WordEmphasis(value = value, derived = derived)
+}
 
 /**
  * Returns a copy of the word canonicalized, with its emphasis dropped when all-default.
  */
 public fun canonicalizeWord(word: Word): Word {
-    val builder = canonicalizeWordShared(word).toBuilder()
-    val emphasis = dropDefault(word.emphasis.takeIf { word.hasEmphasis() })
-    builder.clearEmphasis()
-    if (emphasis != null) {
-        builder.emphasis = emphasis
-    }
-    return builder.build()
+    return canonicalizeWordShared(word).copy(emphasis = dropDefault(word.emphasis))
 }

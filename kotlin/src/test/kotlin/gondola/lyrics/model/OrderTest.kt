@@ -26,7 +26,7 @@ class OrderTest {
                 makeLineNormal(id = "untimed-second"),
             ),
         )
-        assertEquals(listOf("first", "second", "untimed-first", "untimed-second"), orderLyric(lyric).linesList.map { it.id })
+        assertEquals(listOf("first", "second", "untimed-first", "untimed-second"), orderLyric(lyric).lines.map { it.id })
     }
 
     // Comparing tags by codepoint sorted every capitalized tag ahead of every lowercase one.

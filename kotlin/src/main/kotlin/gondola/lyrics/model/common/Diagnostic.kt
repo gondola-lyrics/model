@@ -2,12 +2,10 @@
 
 package gondola.lyrics.model.common
 
-import com.google.protobuf.Descriptors
-import com.google.protobuf.Message
-import gondola.lyrics.model.utils.unsigned
+import gondola.lyrics.model.utils.readField
 
 /**
- * Stable error codes shared with the Node binding.
+ * An error code `validate*` can report.
  */
 enum class DiagnosticCode(val value: String) {
     TextTextEmpty("text.text.empty"),
@@ -91,48 +89,24 @@ enum class DiagnosticCode(val value: String) {
     /**
      * Returns the diagnostic's portable string code.
      */
-    override fun toString(): String = value
+    override fun toString(): String {
+        return value
+    }
 }
 
 /**
- * A broken schema rule and its path relative to the validated message.
+ * A problem `validate*` reports, with `path` locating the offending message such as `lines[3].words[0]` and `code` naming the broken rule.
  */
 data class Diagnostic(val path: String, val code: DiagnosticCode)
 
 private val PATH_SEGMENT = Regex("""^([${'$'}A-Za-z_][${'$'}\w]*)(?:\[(\d+)\])?$""")
-
-private fun diagnosticValue(field: Descriptors.FieldDescriptor, value: Any): Any = when {
-    value is Descriptors.EnumValueDescriptor -> value.number
-    field.type == Descriptors.FieldDescriptor.Type.UINT32 -> unsigned(value as Int)
-    else -> value
-}
-
-private fun messageField(message: Message, name: String): Any? {
-    val field = message.descriptorForType.fields.find { it.jsonName == name } ?: return null
-    if (field.isMapField) {
-        val entries = message.getField(field) as List<*>
-        return entries.associate { entry ->
-            val messageEntry = entry as Message
-            val key = messageEntry.descriptorForType.findFieldByName("key")
-            val value = messageEntry.descriptorForType.findFieldByName("value")
-            messageEntry.getField(key) to diagnosticValue(value, messageEntry.getField(value))
-        }
-    }
-    if (field.isRepeated) {
-        return (message.getField(field) as List<*>).map { diagnosticValue(field, it!!) }
-    }
-    if (field.hasPresence() && !message.hasField(field)) {
-        return null
-    }
-    return diagnosticValue(field, message.getField(field))
-}
 
 /**
  * Resolves a diagnostic path against the node it was reported from, returning the value located there.
  * The path locates by field name and list index only, each segment `field` or `field[n]` joined by dots, as `validate*` builds it.
  * It returns null when a segment names an unset field or runs past a list, so a diagnostic about an absent field yields null there.
  *
- * Generated messages, maps, and diagnostics are supported; uint32 fields return unsigned Longs.
+ * Generated structures, maps, and diagnostics are supported; enum fields return their raw numbers.
  */
 fun resolveDiagnosticPath(root: Any?, path: String): Any? {
     if (path.isEmpty()) {
@@ -144,8 +118,6 @@ fun resolveDiagnosticPath(root: Any?, path: String): Any? {
         val match = PATH_SEGMENT.matchEntire(segment) ?: return null
         val name = match.groupValues[1]
         node = when (val current = node) {
-            is Message -> messageField(current, name)
-
             is Map<*, *> -> current[name]
 
             is Diagnostic -> when (name) {
@@ -154,7 +126,7 @@ fun resolveDiagnosticPath(root: Any?, path: String): Any? {
                 else -> null
             }
 
-            else -> null
+            else -> current?.let { readField(it, name) }
         }
         val index = match.groups[2]?.value
         if (index != null) {

@@ -20,11 +20,16 @@ import gondola.lyrics.model.utils.byTime
 import gondola.lyrics.model.utils.canonicalizeField
 import gondola.lyrics.model.utils.canonicalizeList
 import gondola.lyrics.model.utils.childPath
+import gondola.lyrics.model.utils.decodeRuntimeLyric
+import gondola.lyrics.model.utils.encodeRuntimeLyric
 import gondola.lyrics.model.utils.findDefaultEntries
 import gondola.lyrics.model.utils.findUnordered
+import gondola.lyrics.model.utils.isUnresolved
+import gondola.lyrics.model.utils.read
+import gondola.lyrics.model.utils.write
 
 /**
- * Creates a runtime Lyric, stamping the current schema version on the immutable result.
+ * Creates a runtime Lyric, stamping the current schema version.
  * status must be LYRIC_STATUS_VALID or LYRIC_STATUS_INVALID; unresolved values are rejected by this constructor.
  */
 public fun makeLyric(
@@ -40,14 +45,17 @@ public fun makeLyric(
     require(status == LyricStatus.LYRIC_STATUS_VALID || status == LyricStatus.LYRIC_STATUS_INVALID) {
         "status must be LYRIC_STATUS_VALID or LYRIC_STATUS_INVALID"
     }
-    val builder = Lyric.newBuilder().setVersion(SCHEMA_VERSION).setFormat(format).setTiming(timing)
-        .putAllExtra(extra).addAllAgents(agents).addAllLines(lines)
-    builder.status = status
-    builder.addAllLanguages(languages)
-    if (meta != null) {
-        builder.meta = meta
-    }
-    return builder.build()
+    return Lyric(
+        version = SCHEMA_VERSION,
+        format = format,
+        status = status,
+        timing = timing,
+        meta = meta,
+        extra = extra,
+        languages = languages,
+        agents = agents,
+        lines = lines,
+    )
 }
 
 /**
@@ -58,15 +66,15 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
     if (!SEMVER_PATTERN.matches(lyric.version)) {
         diagnostics += Diagnostic("version", DiagnosticCode.LyricVersionMalformed)
     }
-    if (lyric.statusValue == 0) {
+    if (lyric.status.value == 0) {
         diagnostics += Diagnostic("status", DiagnosticCode.LyricStatusUnspecified)
     }
     // An unresolved precision leaves every timing rule with nothing to hold the lyric to, so a lyric that never stated one is reported rather than read as untimed.
-    if (lyric.timing == Timing.TIMING_UNSPECIFIED || lyric.timing == Timing.UNRECOGNIZED) {
+    if (isUnresolved(lyric.timing)) {
         diagnostics += Diagnostic("timing", DiagnosticCode.LyricTimingUnspecified)
     }
     val ids = mutableSetOf<String>()
-    lyric.agentsList.forEachIndexed { index, agent ->
+    lyric.agents.forEachIndexed { index, agent ->
         if (agent.id in ids) {
             diagnostics += Diagnostic("agents[$index]", DiagnosticCode.LyricAgentIdDuplicate)
         }
@@ -76,13 +84,13 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
         }
         diagnostics += validateAgent(agent, "agents[$index]")
     }
-    if (lyric.hasMeta()) {
+    if (lyric.meta != null) {
         diagnostics += validateMeta(lyric.meta, "meta")
     }
     // Every tag outside the lines is read here, since a line's own are read by validateLine, which knows the fields its kind forbids.
     diagnostics += validateLyricTags(lyric)
     val languageTags = mutableSetOf<String>()
-    lyric.languagesList.forEachIndexed { index, usage ->
+    lyric.languages.forEachIndexed { index, usage ->
         val path = "languages[$index]"
         if (!languageTags.add(usage.tag.lowercase())) {
             diagnostics += Diagnostic(path, DiagnosticCode.LyricLanguageTagDuplicate)
@@ -90,8 +98,8 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
         diagnostics += validateLanguageUsage(usage, path)
     }
     // The usages are derived from the lines, so the stored list must be exactly what deriving them yields, order included.
-    val derived = deriveLanguageUsages(lyric.linesList)
-    val sameLanguages = lyric.languagesCount == derived.size && lyric.languagesList.zip(derived).all { (usage, expected) ->
+    val derived = deriveLanguageUsages(lyric.lines)
+    val sameLanguages = lyric.languages.size == derived.size && lyric.languages.zip(derived).all { (usage, expected) ->
         usage.tag == expected.tag && usage.count == expected.count
     }
     if (!sameLanguages) {
@@ -131,9 +139,9 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
         forbidden: Boolean = false,
         open: Boolean = false,
     ) {
-        val words = content?.wordsList.orEmpty()
+        val words = content?.words.orEmpty()
         // A kind outside the enum turns out to need no range as readily as the zero value, so both are left unasked.
-        val unresolvedType = type == LineType.LINE_TYPE_UNSPECIFIED || type == LineType.UNRECOGNIZED
+        val unresolvedType = isUnresolved(type)
         if (type != LineType.LINE_TYPE_INSTRUMENTAL) {
             agents.forEachIndexed { index, id ->
                 if (id !in ids) {
@@ -141,7 +149,7 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
                 }
             }
             anyWords = anyWords || words.isNotEmpty()
-            anyContent = anyContent || words.isNotEmpty() || content?.hasText() == true
+            anyContent = anyContent || words.isNotEmpty() || content?.text != null
             // Line-level timing sits on the line itself, so a sung line needs its own range and may not be split into words.
             if (lineTimed && words.isNotEmpty()) {
                 diagnostics += Diagnostic("$path.content.words", DiagnosticCode.LyricTimingLineWords)
@@ -151,7 +159,7 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
                 diagnostics += Diagnostic(childPath(path, "time"), DiagnosticCode.LyricTimingLineTimeMissing)
             }
             // A sung line is shown for as long as its range runs, so the range has to end somewhere.
-            if (timed && time != null && !time.hasEnd() && !unresolvedType && !forbidden && !open) {
+            if (timed && time != null && time.end == null && !unresolvedType && !forbidden && !open) {
                 diagnostics += Diagnostic(childPath(path, "time.end"), DiagnosticCode.LyricLineTimeEndMissing)
             }
         } else if (untimed) {
@@ -166,32 +174,32 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
         }
         if (untimed) {
             words.forEachIndexed { index, word ->
-                if (word.hasTime()) {
+                if (word.time != null) {
                     diagnostics += Diagnostic("$path.content.words[$index].time", DiagnosticCode.LyricTimingNonePresent)
                 }
             }
         }
     }
 
-    lyric.linesList.forEachIndexed { index, line ->
+    lyric.lines.forEachIndexed { index, line ->
         val path = "lines[$index]"
         val forbidden = line.type == LineType.LINE_TYPE_INSTRUMENTAL
         claimLineId(line.id, path)
         checkReferences(
-            line.agentsList,
-            line.time.takeIf { line.hasTime() },
-            line.content.takeIf { line.hasContent() },
+            line.agents,
+            line.time,
+            line.content,
             path,
             line.type,
-            open = index == lyric.linesCount - 1,
+            open = index == lyric.lines.size - 1,
         )
-        line.backgroundsList.forEachIndexed { backgroundIndex, background ->
+        line.backgrounds.forEachIndexed { backgroundIndex, background ->
             val backgroundPath = "$path.backgrounds[$backgroundIndex]"
             claimLineId(background.id, backgroundPath)
             checkReferences(
-                background.agentsList,
-                background.time.takeIf { background.hasTime() },
-                background.content.takeIf { background.hasContent() },
+                background.agents,
+                background.time,
+                background.content,
                 backgroundPath,
                 forbidden = forbidden,
                 open = true,
@@ -204,11 +212,11 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
         diagnostics += Diagnostic("timing", DiagnosticCode.LyricTimingWordMissing)
     }
     // The schema declares the list ordered, so a line starting before the one it follows is out of place.
-    for (index in findUnordered(lyric.linesList) { line -> line.time.takeIf { line.hasTime() } }) {
+    for (index in findUnordered(lyric.lines) { line -> line.time }) {
         diagnostics += Diagnostic("lines[$index]", DiagnosticCode.LyricLinesUnordered)
     }
     // A rule that already spoke about a path keeps the sweep off it, and validateAgent reports an all-default agent at the agent rather than inside it.
-    val covered = diagnostics.map { it.path } + lyric.agentsList.indices.map { "agents[$it]" }
+    val covered = diagnostics.map { it.path } + lyric.agents.indices.map { "agents[$it]" }
     for (path in findDefaultEntries(lyric, covered)) {
         diagnostics += Diagnostic(path, DiagnosticCode.LyricListEntryEmpty)
     }
@@ -219,38 +227,39 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
  * Returns a copy of the lyric in canonical order: lines and their backgrounds by start time, languages by usage.
  */
 public fun orderLyric(lyric: Lyric): Lyric {
-    val builder = lyric.toBuilder().clearLines()
-        .addAllLines(lyric.linesList.sortedWith(byTime { line -> line.time.takeIf { line.hasTime() } }).map(::orderLine))
-    builder.clearLanguages().addAllLanguages(orderLanguageUsages(lyric.languagesList))
-    return builder.build()
+    return lyric.copy(
+        lines = lyric.lines.sortedWith(byTime { line -> line.time }).map(::orderLine),
+        languages = orderLanguageUsages(lyric.languages),
+    )
 }
 
 /**
  * Returns a canonical copy of the runtime lyric: format lowercased, meta/agents/lines canonicalized, languages canonicalized then ordered, lines ordered.
- * Generated messages are immutable, so unchanged submessages may be shared while the input remains unchanged.
+ * The copy shares no mutable containers with the lyric it was given, so editing either leaves the other as it was.
  */
 public fun canonicalizeLyric(lyric: Lyric): Lyric {
-    val builder = lyric.toBuilder().setFormat(lyric.format.lowercase()).clearMeta()
-        .clearAgents().addAllAgents(canonicalizeList(lyric.agentsList, ::canonicalizeAgent))
-        .clearLines().addAllLines(
-            canonicalizeList(lyric.linesList, ::canonicalizeLine)
-                .sortedWith(byTime { line -> line.time.takeIf { line.hasTime() } }),
-        )
-    val meta = canonicalizeField(lyric.meta.takeIf { lyric.hasMeta() }, ::canonicalizeMeta)
-    if (meta != null) {
-        builder.meta = meta
-    }
-    builder.clearLanguages().addAllLanguages(canonicalizeLanguageUsages(lyric.languagesList))
-    return builder.build()
+    return lyric.copy(
+        format = lyric.format.lowercase(),
+        meta = canonicalizeField(lyric.meta, ::canonicalizeMeta),
+        extra = lyric.extra.toMap(),
+        agents = canonicalizeList(lyric.agents, ::canonicalizeAgent),
+        lines = canonicalizeList(lyric.lines, ::canonicalizeLine).sortedWith(byTime { line -> line.time }),
+        languages = canonicalizeLanguageUsages(lyric.languages),
+    )
 }
 
 /**
- * Encodes a runtime Lyric to bytes.
+ * Encodes a runtime Lyric to bytes the official Protobuf libraries read.
+ * It throws on a number its field cannot hold and on a string that is not well-formed UTF-16.
  */
-public fun encode(lyric: Lyric): ByteArray = lyric.toByteArray()
+public fun encode(lyric: Lyric): ByteArray {
+    return write(::encodeRuntimeLyric, lyric)
+}
 
 /**
- * Decodes a runtime Lyric from bytes, keeping unknown fields so a round trip loses nothing.
+ * Decodes a runtime Lyric from bytes, dropping fields the schema does not define.
  * It throws on malformed bytes and leaves the schema's rules to validateLyric.
  */
-public fun decode(bytes: ByteArray): Lyric = Lyric.parseFrom(bytes)
+public fun decode(bytes: ByteArray): Lyric {
+    return read(::decodeRuntimeLyric, bytes)
+}

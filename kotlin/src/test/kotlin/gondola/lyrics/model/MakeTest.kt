@@ -39,7 +39,7 @@ class MakeTest {
         assertEquals("ja-jp", canonicalizeWord(word).language)
 
         val line = makeLineNormal(languages = listOf("JA-JP"))
-        assertEquals(listOf("JA-JP"), line.languagesList)
-        assertEquals(listOf("ja-jp"), canonicalizeLine(line).languagesList)
+        assertEquals(listOf("JA-JP"), line.languages)
+        assertEquals(listOf("ja-jp"), canonicalizeLine(line).languages)
     }
 }

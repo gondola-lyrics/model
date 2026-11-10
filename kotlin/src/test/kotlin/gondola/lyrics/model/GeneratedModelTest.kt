@@ -1,37 +1,31 @@
 package gondola.lyrics.model
 
+import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.Timing
-import gondola.lyrics.model.common.timeRange
+import gondola.lyrics.model.storage.Line
 import gondola.lyrics.model.storage.Lyric
-import gondola.lyrics.model.storage.lyric
+import gondola.lyrics.model.storage.decode
+import gondola.lyrics.model.storage.encode
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class GeneratedModelTest {
     @Test
     fun roundTripPreservesUnknownEndAndExplicitZeroEnd() {
-        val original = lyric {
-            version = SCHEMA_VERSION
-            timing = Timing.TIMING_LINE
-            lines +=
-                gondola.lyrics.model.storage.line {
-                    time = timeRange { start = 1000 }
-                }
-            lines +=
-                gondola.lyrics.model.storage.line {
-                    time = timeRange { end = 0 }
-                }
-        }
+        val original = Lyric(
+            version = SCHEMA_VERSION,
+            timing = Timing.TIMING_LINE,
+            lines = listOf(Line(time = TimeRange(start = 1000)), Line(time = TimeRange(end = 0))),
+        )
 
-        val decoded = Lyric.parseFrom(original.toByteArray())
+        val decoded = decode(encode(original))
 
         assertEquals(original, decoded)
-        assertTrue(decoded.getLines(0).hasTime())
-        assertEquals(1000, decoded.getLines(0).time.start)
-        assertFalse(decoded.getLines(0).time.hasEnd())
-        assertTrue(decoded.getLines(1).time.hasEnd())
-        assertEquals(0, decoded.getLines(1).time.end)
+        val open = assertNotNull(decoded.lines[0].time)
+        assertEquals(1000L, open.start)
+        assertNull(open.end)
+        assertEquals(0L, assertNotNull(decoded.lines[1].time).end)
     }
 }
