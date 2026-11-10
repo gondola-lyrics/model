@@ -183,8 +183,10 @@ runtime.validateLyric(brokenPlayed)
 
 **Generate**
 
+Regenerates `src/generated` from `proto/`; requires buf 1.72.0 on the `PATH`.
+
 ```bash
-npm run generate
+python ../script/generate-proto-binding.py node
 ```
 
 **Build**

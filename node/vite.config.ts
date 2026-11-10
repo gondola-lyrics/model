@@ -5,7 +5,6 @@ import { defineConfig } from 'vite'
 
 const root = import.meta.dirname
 const src = resolve(root, 'src')
-const gen = resolve(root, 'gen')
 const out = resolve(root, 'dist')
 
 const runtimeSrc = resolve(src, 'runtime')
@@ -15,13 +14,14 @@ export default defineConfig({
   resolve: {
     alias: {
       '@root': src,
-      '@gen': gen,
     },
   },
   plugins: [
     dts({
       tsconfigPath: resolve(root, 'tsconfig.json'),
-      include: ['src', 'gen'],
+      // Roots the per-file declarations at dist/src while bundling, so `../common` in them cannot resolve to the bundled dist/common.d.ts and declare the enums twice.
+      entryRoot: root,
+      include: ['src'],
       bundleTypes: true,
       outDirs: [{ dir: out }],
     }),
@@ -44,7 +44,7 @@ export default defineConfig({
       formats: ['es'],
     },
     rollupOptions: {
-      external: [/^@bufbuild\/protobuf/, './runtime', './storage'],
+      external: ['./runtime', './storage'],
       // Lets an entry chunk absorb the modules it shares, so no hashed chunk is emitted beside it.
       preserveEntrySignatures: 'allow-extension',
       output: {

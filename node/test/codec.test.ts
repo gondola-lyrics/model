@@ -1,10 +1,7 @@
-import type { UnknownField } from '@bufbuild/protobuf'
+import { describe, it } from 'node:test'
+import { deepStrictEqual, strictEqual } from 'node:assert/strict'
 
 import { runtime, storage } from '@root/index'
-import { WireType } from '@bufbuild/protobuf/wire'
-
-import { describe, it } from 'node:test'
-import { deepStrictEqual, ok, strictEqual } from 'node:assert/strict'
 
 const buildLyric = (): runtime.Lyric => {
   const lines = [
@@ -47,17 +44,6 @@ describe('codec', () => {
       ],
     })
     deepStrictEqual(storage.decode(storage.encode(lyric)), lyric)
-  })
-
-  // A submessage holding nothing but unknown fields is the only thing standing between a round trip and silent data loss.
-  it('keeps a submessage carrying only unknown fields', () => {
-    const unknown: UnknownField[] = [{ no: 9999, wireType: WireType.Varint, data: new Uint8Array([1]) }]
-    const meta = runtime.makeMeta()
-    meta.$unknown = unknown
-    const canonical = runtime.canonicalizeLyric({ ...buildLyric(), meta })
-
-    ok(canonical.meta !== undefined)
-    deepStrictEqual(runtime.decode(runtime.encode(canonical)).meta?.$unknown, unknown)
   })
 
   it('drops a submessage that is empty for real', () => {

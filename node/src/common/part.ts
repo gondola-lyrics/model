@@ -1,19 +1,18 @@
 import type { MakeInit } from '@root/utils'
-import type { Part } from './proto'
+import type { Part } from '@root/generated/common/index.gen'
 import type { Diagnostic } from './diagnostic'
 
-import { PartSchema, PartType, PartTypeSchema } from './proto'
+import { PartType } from '@root/generated/common/index.gen'
 import { DiagnosticCode } from './diagnostic'
 
-import { childPath, isUnresolved } from '@root/utils'
-
-import { create } from '@bufbuild/protobuf'
+import { childPath, isUnresolved, withInit } from '@root/utils'
+import { createCommonPart } from '@root/generated/internal.gen'
 
 /**
  * Creates a Part, the structural section a line belongs to.
  */
-export const makePart = (init?: MakeInit<typeof PartSchema>): Part => {
-  return create(PartSchema, init)
+export const makePart = (init?: MakeInit<Part>): Part => {
+  return withInit(createCommonPart(), init)
 }
 
 /**
@@ -22,7 +21,7 @@ export const makePart = (init?: MakeInit<typeof PartSchema>): Part => {
  */
 export const validatePart = (part: Part, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
-  if (isUnresolved(PartTypeSchema, part.type)) {
+  if (isUnresolved(PartType, part.type)) {
     diagnostics.push({ path: childPath(path, 'type'), code: DiagnosticCode.PartTypeUnspecified })
   } else if (part.type === PartType.OTHER && part.raw === undefined) {
     diagnostics.push({ path, code: DiagnosticCode.PartRawMissing })

@@ -1,7 +1,6 @@
-import type { DescMessage, MessageShape } from '@bufbuild/protobuf'
+import type { MessageFields } from '@root/generated/internal.gen'
 import type { Diagnostic } from './diagnostic'
 
-import { ScalarType, isMessage } from '@bufbuild/protobuf'
 import { DiagnosticCode } from './diagnostic'
 
 /**
@@ -41,41 +40,42 @@ export const isLanguageTag = (tag: string): boolean => {
  * `exempt` names the fields that may hold a scheme instead, and `sealed` the fields another validator reads, so a tag is never reported twice.
  */
 const collectTagDiagnostics = (
-  schema: DescMessage,
-  message: MessageShape<DescMessage>,
+  schema: MessageFields<any>,
+  message: unknown,
   exempt: readonly string[],
   sealed: readonly string[],
   path: string,
 ): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
-  const entries = message as unknown as Record<string, unknown>
+  const entries = message as Record<string, unknown>
   for (const field of schema.fields) {
-    const child = path === '' ? field.localName : `${path}.${field.localName}`
-    if (sealed.includes(field.localName)) {
+    const child = path === '' ? field.name : `${path}.${field.name}`
+    if (sealed.includes(field.name)) {
       continue
     }
-    if (field.fieldKind === 'message') {
-      const value = entries[field.localName]
-      if (isMessage(value, field.message)) {
+    if (field.shape === 'message') {
+      const value = entries[field.name]
+      if (value !== undefined) {
         diagnostics.push(...collectTagDiagnostics(field.message, value, exempt, sealed, child))
       }
-    } else if (field.fieldKind === 'list' && field.message !== undefined) {
-      const element = field.message
-      const values = entries[field.localName] as readonly unknown[]
+    } else if (field.shape === 'list-message') {
+      const values = entries[field.name] as readonly unknown[]
       values.forEach((value, i) => {
-        if (isMessage(value, element)) {
-          diagnostics.push(...collectTagDiagnostics(element, value, exempt, sealed, `${child}[${i}]`))
-        }
+        diagnostics.push(...collectTagDiagnostics(field.message, value, exempt, sealed, `${child}[${i}]`))
       })
-    } else if (field.fieldKind === 'list' && field.scalar === ScalarType.STRING && field.localName === 'languages') {
-      const values = entries[field.localName] as readonly string[]
+    } else if (field.shape === 'list-scalar' && field.name === 'languages') {
+      const values = entries[field.name] as readonly string[]
       values.forEach((value, i) => {
         if (value !== '' && !isLanguageTag(value)) {
           diagnostics.push({ path: `${child}[${i}]`, code: DiagnosticCode.LanguageTagMalformed })
         }
       })
-    } else if (field.fieldKind === 'scalar' && field.name === 'language' && !exempt.some((name) => child.endsWith(name))) {
-      const value = entries[field.localName] as string | undefined
+    } else if (
+      (field.shape === 'scalar' || field.shape === 'optional') &&
+      field.name === 'language' &&
+      !exempt.some((name) => child.endsWith(name))
+    ) {
+      const value = entries[field.name] as string | undefined
       if (value !== undefined && value !== '' && !isLanguageTag(value)) {
         diagnostics.push({ path: child, code: DiagnosticCode.LanguageTagMalformed })
       }
@@ -88,7 +88,7 @@ const collectTagDiagnostics = (
  * Collects the malformed language tags of one line: its own list, its words and its annotations.
  * A line is validated on its own as well as under a lyric, so where it sits changes nothing and the path is the line's own.
  */
-export const validateLineTags = (schema: DescMessage, line: MessageShape<DescMessage>, path = ''): Diagnostic[] => {
+export const validateLineTags = (schema: MessageFields<any>, line: unknown, path = ''): Diagnostic[] => {
   return collectTagDiagnostics(schema, line, TRANSLITERATION_FIELDS, [], path)
 }
 
@@ -96,6 +96,6 @@ export const validateLineTags = (schema: DescMessage, line: MessageShape<DescMes
  * Collects the malformed language tags a lyric carries outside its lines: the language its metadata declares and the tags on every text it holds.
  * The lines are left to `validateLine`, which alone knows which fields a line's kind forbids.
  */
-export const validateLyricTags = (schema: DescMessage, lyric: MessageShape<DescMessage>): Diagnostic[] => {
+export const validateLyricTags = (schema: MessageFields<any>, lyric: unknown): Diagnostic[] => {
   return collectTagDiagnostics(schema, lyric, [], ['lines'], '')
 }

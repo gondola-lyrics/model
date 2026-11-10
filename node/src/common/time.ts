@@ -1,18 +1,16 @@
 import type { MakeInit } from '@root/utils'
-import type { TimeRange } from './proto'
+import type { TimeRange } from '@root/generated/common/index.gen'
 import type { Diagnostic } from './diagnostic'
 
-import { MAX_TIME, checkNumberDomain } from '@root/utils'
-import { TimeRangeSchema } from './proto'
+import { MAX_TIME, checkNumberDomain, withInit } from '@root/utils'
+import { createCommonTimeRange } from '@root/generated/internal.gen'
 import { DiagnosticCode } from './diagnostic'
-
-import { create } from '@bufbuild/protobuf'
 
 /**
  * Creates a TimeRange, the half-open range [start, end); leaving the end unset opens it above.
  */
-export const makeTimeRange = (init?: MakeInit<typeof TimeRangeSchema>): TimeRange => {
-  return create(TimeRangeSchema, init)
+export const makeTimeRange = (init?: MakeInit<TimeRange>): TimeRange => {
+  return withInit(createCommonTimeRange(), init)
 }
 
 /**

@@ -19,3 +19,6 @@
 # Shell scripts
 *.ps1 text eol=lf
 *.sh text eol=lf
+
+# Generated bindings
+node/src/generated/** linguist-generated=true

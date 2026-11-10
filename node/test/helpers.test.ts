@@ -1,7 +1,7 @@
-import { runtime } from '@root/index'
-
 import { describe, it } from 'node:test'
 import { deepStrictEqual } from 'node:assert/strict'
+
+import { runtime } from '@root/index'
 
 describe('derive line languages', () => {
   // Returning the line's own array let a caller mutate the line through the result.

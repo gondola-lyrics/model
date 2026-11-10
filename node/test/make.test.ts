@@ -1,7 +1,7 @@
-import { SCHEMA_VERSION, runtime, storage } from '@root/index'
-
 import { describe, it } from 'node:test'
 import { deepStrictEqual, strictEqual } from 'node:assert/strict'
+
+import { SCHEMA_VERSION, runtime, storage } from '@root/index'
 
 describe('make', () => {
   it('stamps the schema version it was built from', () => {

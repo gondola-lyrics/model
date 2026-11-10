@@ -1,15 +1,28 @@
-import type { DescEnum, DescMessage, MessageInitShape, MessageShape } from '@bufbuild/protobuf'
+import type { FieldInfo, MessageFields } from '@root/generated/internal.gen'
 
-import { create, equals, ScalarType } from '@bufbuild/protobuf'
-import { TimeRangeSchema } from '@root/common/proto'
+import { fieldsCommonTimeRange } from '@root/generated/internal.gen'
 
 /**
- * The user-settable init fields `create` accepts, narrowed from MessageInitShape's plain-object variant.
- * Its `$`-prefixed fields (`$typeName`, `$unknown`) are stripped.
- * Nothing in it is deep-copied, so editing a message or array it carries afterwards can reach the message built from it.
+ * The fields a `make*` takes, each of which may be left out or undefined to keep its default.
+ * Nothing in it is copied, so editing a structure or array it carries afterwards can reach the structure built from it.
  * Every `make*` stores what it is given: canonical form is `canonicalize*`'s to produce and `validate*` reports nothing about it, so a lyric built by hand is as the producer wrote it until it is canonicalized.
  */
-export type MakeInit<Desc extends DescMessage> = Omit<Extract<MessageInitShape<Desc>, { $typeName?: undefined }>, `$${string}`>
+export type MakeInit<T> = { [K in keyof T]?: T[K] | undefined }
+
+/**
+ * Assigns the fields init sets to a freshly created structure, skipping undefined and null so an unset field keeps its default and an optional one stays absent.
+ */
+export const withInit = <T extends object>(message: T, init: MakeInit<T> | undefined): T => {
+  if (init !== undefined) {
+    for (const key of Object.keys(init) as (keyof T)[]) {
+      const value = init[key]
+      if (value !== undefined && value !== null) {
+        message[key] = value as T[keyof T]
+      }
+    }
+  }
+  return message
+}
 
 /**
  * Matches a full semantic version, per semver.org.
@@ -26,8 +39,8 @@ export const MAX_TIME = 2 ** 31 - 1
  * Reports whether a value is the zero value of an enum, which the schema reads as "the field was not set" rather than as a resolved value.
  * A value the enum does not declare at all reads the same way, so a producer's future value is treated as unresolved here instead of being reported as an error.
  */
-export const isUnresolved = (schema: DescEnum, value: number): boolean => {
-  return value === 0 || schema.value[value] === undefined
+export const isUnresolved = (enumeration: Record<number, string>, value: number): boolean => {
+  return value === 0 || enumeration[value] === undefined
 }
 
 /**
@@ -50,7 +63,7 @@ export const checkNumberDomain = (value: number, min: number, max: number): Numb
 /**
  * The bounds a time range holds, so helpers that only read them work on either layer's message and on a plain object.
  */
-export type TimeRangeBounds = { start: number; end?: number }
+export type TimeRangeBounds = { start: number; end?: number | undefined }
 
 /**
  * Reports whether a time range is set and both its bounds hold numbers the schema allows, so comparing it against another range is meaningful.
@@ -190,20 +203,36 @@ export const byTime = <T>(bounds: (item: T) => TimeRangeBounds | undefined) => {
 }
 
 /**
- * Reports whether a message equals a freshly created default, so an all-default submessage can be treated as unset.
- * Unknown fields count as payload even though `equals` ignores them by default.
+ * Reports whether a field holds its default, where an optional field set to a zero value still counts as set, since its presence is data.
  */
-const isDefault = <Desc extends DescMessage>(schema: Desc, message: MessageShape<Desc>): boolean => {
-  if (message.$unknown?.length) {
-    return false
+const isFieldDefault = (field: FieldInfo, value: unknown): boolean => {
+  switch (field.shape) {
+    case 'scalar':
+    case 'enum':
+      return value === '' || value === 0 || value === false
+    case 'optional':
+    case 'message':
+      return value === undefined
+    case 'list-scalar':
+    case 'list-message':
+      return (value as readonly unknown[]).length === 0
+    case 'map':
+      return Object.keys(value as object).length === 0
   }
-  return equals(schema, message, create(schema))
+}
+
+/**
+ * Reports whether every field of a structure holds its default, so an all-default submessage can be treated as unset.
+ */
+const isDefault = <T>(schema: MessageFields<T>, message: T): boolean => {
+  const entries = message as Record<string, unknown>
+  return schema.fields.every((field) => isFieldDefault(field, entries[field.name]))
 }
 
 /**
  * Drops an all-default submessage to undefined so empty and unset encode alike, keeping a meaningful one as is.
  */
-export const dropDefault = <Desc extends DescMessage>(schema: Desc, message: MessageShape<Desc> | undefined): MessageShape<Desc> | undefined => {
+export const dropDefault = <T>(schema: MessageFields<T>, message: T | undefined): T | undefined => {
   return message && !isDefault(schema, message) ? message : undefined
 }
 
@@ -218,30 +247,22 @@ export const copyMessage = <T extends object>(message: T | undefined): T | undef
 /**
  * Canonicalizes an optional submessage through a callback, then drops it when the result is all-default.
  */
-export const canonicalizeField = <Desc extends DescMessage>(
-  schema: Desc,
-  message: MessageShape<Desc> | undefined,
-  canon: (message: MessageShape<Desc>) => MessageShape<Desc>,
-): MessageShape<Desc> | undefined => {
+export const canonicalizeField = <T>(schema: MessageFields<T>, message: T | undefined, canon: (message: T) => T): T | undefined => {
   return message ? dropDefault(schema, canon(message)) : undefined
 }
 
 /**
  * Canonicalizes each entry of a repeated submessage field through a callback, then drops every all-default entry.
  */
-export const canonicalizeList = <Desc extends DescMessage>(
-  schema: Desc,
-  messages: MessageShape<Desc>[],
-  canon: (message: MessageShape<Desc>) => MessageShape<Desc>,
-): MessageShape<Desc>[] => {
+export const canonicalizeList = <T>(schema: MessageFields<T>, messages: T[], canon: (message: T) => T): T[] => {
   return messages.map(canon).filter((message) => !isDefault(schema, message))
 }
 
 /**
- * The schemas whose all-default instance is meaningful anyway, so a field of one may hold the default.
+ * The structures whose all-default instance is meaningful anyway, so a field of one may hold the default.
  * A time range says when something happens even when it says nothing about its bounds, while every other message reads the same empty as unset.
  */
-const DEFAULT_IS_MEANINGFUL: readonly DescMessage[] = [TimeRangeSchema]
+const DEFAULT_IS_MEANINGFUL: readonly MessageFields<any>[] = [fieldsCommonTimeRange]
 
 /**
  * Reports whether a path locates `path` or something below it, so an entry another rule already spoke about is recognized.
@@ -251,46 +272,45 @@ const coversPath = (other: string, path: string): boolean => {
 }
 
 /**
- * Walks a message from its schema, collecting the path of every entry in a repeated field that is all default.
+ * Walks a structure by its field table, collecting the path of every entry in a repeated field that is all default.
  */
-const collectDefaultEntries = (schema: DescMessage, message: MessageShape<DescMessage>, path: string): string[] => {
+const collectDefaultEntries = (schema: MessageFields<any>, message: unknown, path: string): string[] => {
   if (DEFAULT_IS_MEANINGFUL.includes(schema)) {
     return []
   }
   const found: string[] = []
-  const entries = message as unknown as Record<string, unknown>
+  const entries = message as Record<string, unknown>
   for (const field of schema.fields) {
-    const child = path === '' ? field.localName : `${path}.${field.localName}`
-    if (field.fieldKind === 'list') {
-      const values = entries[field.localName] as readonly unknown[]
-      if (field.message !== undefined) {
-        values.forEach((value, i) => {
-          const entryPath = `${child}[${i}]`
-          if (isDefault(field.message, value as MessageShape<DescMessage>)) {
-            found.push(entryPath)
-          }
-          found.push(...collectDefaultEntries(field.message, value as MessageShape<DescMessage>, entryPath))
-        })
-      } else if (field.scalar === ScalarType.STRING) {
-        // An empty string is the scalar default, and a repeated string field never holds one for the same reason as a message entry.
-        values.forEach((value, i) => {
-          if (value === '') {
-            found.push(`${child}[${i}]`)
-          }
-        })
-      }
-    } else if (field.fieldKind === 'message' && entries[field.localName] !== undefined) {
-      found.push(...collectDefaultEntries(field.message, entries[field.localName] as MessageShape<DescMessage>, child))
+    const child = path === '' ? field.name : `${path}.${field.name}`
+    if (field.shape === 'list-message') {
+      const values = entries[field.name] as readonly unknown[]
+      values.forEach((value, i) => {
+        const entryPath = `${child}[${i}]`
+        if (isDefault(field.message, value)) {
+          found.push(entryPath)
+        }
+        found.push(...collectDefaultEntries(field.message, value, entryPath))
+      })
+    } else if (field.shape === 'list-scalar') {
+      // An empty string is the scalar default, and a repeated string field never holds one for the same reason as a message entry.
+      const values = entries[field.name] as readonly unknown[]
+      values.forEach((value, i) => {
+        if (value === '') {
+          found.push(`${child}[${i}]`)
+        }
+      })
+    } else if (field.shape === 'message' && entries[field.name] !== undefined) {
+      found.push(...collectDefaultEntries(field.message, entries[field.name], child))
     }
   }
   return found
 }
 
 /**
- * Collects the path of every entry in a repeated field that is all default, reading the whole tree from its schema.
+ * Collects the path of every entry in a repeated field that is all default, reading the whole tree by its field tables.
  * A repeated field never holds one, since a list the source never mentioned at that index shifts the ones after it and counts as a declaration of its own.
  * `covered` holds the paths an existing diagnostic locates, which silence an entry at or above them, so a rule that already spoke about a field is not restated by this sweep.
  */
-export const findDefaultEntries = (schema: DescMessage, message: MessageShape<DescMessage>, covered: readonly string[] = []): string[] => {
+export const findDefaultEntries = <T>(schema: MessageFields<T>, message: T, covered: readonly string[] = []): string[] => {
   return collectDefaultEntries(schema, message, '').filter((path) => !covered.some((other) => coversPath(other, path)))
 }

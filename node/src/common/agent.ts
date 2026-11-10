@@ -1,20 +1,19 @@
 import type { MakeInit } from '@root/utils'
-import type { Agent } from './proto'
+import type { Agent } from '@root/generated/common/index.gen'
 import type { Diagnostic } from './diagnostic'
 
-import { AgentSchema, AgentType, AgentTypeSchema, TextSchema } from './proto'
+import { AgentType } from '@root/generated/common/index.gen'
 import { DiagnosticCode } from './diagnostic'
 
-import { canonicalizeList, childPath, findDuplicates, isUnresolved, lowerTag } from '@root/utils'
+import { canonicalizeList, childPath, findDuplicates, isUnresolved, lowerTag, withInit } from '@root/utils'
+import { createCommonAgent, fieldsCommonText } from '@root/generated/internal.gen'
 import { canonicalizeText, validateText } from './text'
-
-import { create } from '@bufbuild/protobuf'
 
 /**
  * Creates an Agent, a performing voice referenced by lines through its id.
  */
-export const makeAgent = (init?: MakeInit<typeof AgentSchema>): Agent => {
-  return create(AgentSchema, init)
+export const makeAgent = (init?: MakeInit<Agent>): Agent => {
+  return withInit(createCommonAgent(), init)
 }
 
 /**
@@ -25,7 +24,7 @@ export const validateAgent = (agent: Agent, path = ''): Diagnostic[] => {
   if (agent.id === '') {
     diagnostics.push({ path, code: DiagnosticCode.AgentIdEmpty })
   }
-  if (isUnresolved(AgentTypeSchema, agent.type)) {
+  if (isUnresolved(AgentType, agent.type)) {
     diagnostics.push({ path: childPath(path, 'type'), code: DiagnosticCode.AgentTypeUnspecified })
   } else if (agent.type === AgentType.OTHER && agent.raw === undefined) {
     diagnostics.push({ path, code: DiagnosticCode.AgentRawMissing })
@@ -42,7 +41,7 @@ export const validateAgent = (agent: Agent, path = ''): Diagnostic[] => {
  * Returns a copy of the Agent with its names canonicalized and all-default entries dropped.
  */
 export const canonicalizeAgent = (agent: Agent): Agent => {
-  return { ...agent, names: canonicalizeList(TextSchema, agent.names, canonicalizeText) }
+  return { ...agent, names: canonicalizeList(fieldsCommonText, agent.names, canonicalizeText) }
 }
 
 /**

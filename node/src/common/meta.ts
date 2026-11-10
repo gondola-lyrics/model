@@ -1,14 +1,21 @@
 import type { MakeInit } from '@root/utils'
-import type { Meta, MetaCredit, MetaReference } from './proto'
+import type { Meta, MetaCredit, MetaReference } from '@root/generated/common/index.gen'
 import type { Diagnostic } from './diagnostic'
 
-import { CreditRole, CreditRoleSchema, MetaCreditSchema, MetaReferenceSchema, MetaSchema, TextSchema, UnknownEntrySchema } from './proto'
+import { CreditRole } from '@root/generated/common/index.gen'
 import { DiagnosticCode } from './diagnostic'
 
-import { canonicalizeList, checkNumberDomain, childPath, findDuplicates, isUnresolved, lowerTag } from '@root/utils'
+import { canonicalizeList, checkNumberDomain, childPath, findDuplicates, isUnresolved, lowerTag, withInit } from '@root/utils'
+import {
+  createCommonMeta,
+  createCommonMetaCredit,
+  createCommonMetaReference,
+  fieldsCommonMetaCredit,
+  fieldsCommonMetaReference,
+  fieldsCommonText,
+  fieldsCommonUnknownEntry,
+} from '@root/generated/internal.gen'
 import { canonicalizeText, validateText } from './text'
-
-import { create } from '@bufbuild/protobuf'
 
 /**
  * The schema declares a duration above this bound invalid, matching a time.
@@ -37,22 +44,22 @@ const isIsrc = (isrc: string): boolean => {
 /**
  * Creates a Meta, the lyric's metadata.
  */
-export const makeMeta = (init?: MakeInit<typeof MetaSchema>): Meta => {
-  return create(MetaSchema, init)
+export const makeMeta = (init?: MakeInit<Meta>): Meta => {
+  return withInit(createCommonMeta(), init)
 }
 
 /**
  * Creates a MetaCredit, one credited role and the names filling it.
  */
-export const makeMetaCredit = (init?: MakeInit<typeof MetaCreditSchema>): MetaCredit => {
-  return create(MetaCreditSchema, init)
+export const makeMetaCredit = (init?: MakeInit<MetaCredit>): MetaCredit => {
+  return withInit(createCommonMetaCredit(), init)
 }
 
 /**
  * Creates a MetaReference, an external platform id for the lyric.
  */
-export const makeMetaReference = (init?: MakeInit<typeof MetaReferenceSchema>): MetaReference => {
-  return create(MetaReferenceSchema, init)
+export const makeMetaReference = (init?: MakeInit<MetaReference>): MetaReference => {
+  return withInit(createCommonMetaReference(), init)
 }
 
 /**
@@ -61,7 +68,7 @@ export const makeMetaReference = (init?: MakeInit<typeof MetaReferenceSchema>): 
  */
 export const validateMetaCredit = (credit: MetaCredit, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
-  if (isUnresolved(CreditRoleSchema, credit.role)) {
+  if (isUnresolved(CreditRole, credit.role)) {
     diagnostics.push({ path: childPath(path, 'role'), code: DiagnosticCode.MetaCreditRoleUnspecified })
   } else if (credit.role === CreditRole.OTHER && credit.raw === undefined) {
     diagnostics.push({ path, code: DiagnosticCode.MetaCreditRawMissing })
@@ -97,7 +104,7 @@ export const validateMeta = (meta: Meta, path = ''): Diagnostic[] => {
       diagnostics.push({ path: childPath(path, `${field}[${i}]`), code })
     })
   }
-  const byLanguage = (text: { language?: string }): string => lowerTag(text.language) ?? ''
+  const byLanguage = (text: { language?: string | undefined }): string => lowerTag(text.language) ?? ''
   const offset = checkNumberDomain(meta.offset, MIN_OFFSET, MAX_OFFSET)
   if (offset === 'invalid') {
     diagnostics.push({ path: childPath(path, 'offset'), code: DiagnosticCode.MetaOffsetInvalid })
@@ -135,7 +142,7 @@ export const validateMeta = (meta: Meta, path = ''): Diagnostic[] => {
  * Returns a copy of the credit with its names canonicalized and all-default entries dropped.
  */
 export const canonicalizeMetaCredit = (credit: MetaCredit): MetaCredit => {
-  return { ...credit, names: canonicalizeList(TextSchema, credit.names, canonicalizeText) }
+  return { ...credit, names: canonicalizeList(fieldsCommonText, credit.names, canonicalizeText) }
 }
 
 /**
@@ -151,15 +158,15 @@ export const canonicalizeMetaReference = (reference: MetaReference): MetaReferen
 export const canonicalizeMeta = (meta: Meta): Meta => {
   return {
     ...meta,
-    unknowns: canonicalizeList(UnknownEntrySchema, meta.unknowns, (entry) => ({ ...entry })),
+    unknowns: canonicalizeList(fieldsCommonUnknownEntry, meta.unknowns, (entry) => ({ ...entry })),
     language: lowerTag(meta.language),
-    titles: canonicalizeList(TextSchema, meta.titles, canonicalizeText),
-    artists: canonicalizeList(TextSchema, meta.artists, canonicalizeText),
-    albums: canonicalizeList(TextSchema, meta.albums, canonicalizeText),
-    authors: canonicalizeList(TextSchema, meta.authors, canonicalizeText),
+    titles: canonicalizeList(fieldsCommonText, meta.titles, canonicalizeText),
+    artists: canonicalizeList(fieldsCommonText, meta.artists, canonicalizeText),
+    albums: canonicalizeList(fieldsCommonText, meta.albums, canonicalizeText),
+    authors: canonicalizeList(fieldsCommonText, meta.authors, canonicalizeText),
     isrcs: meta.isrcs.map((isrc) => isrc.replace(/[^0-9a-zA-Z]/g, '').toUpperCase()).filter((isrc) => isrc !== ''),
-    credits: canonicalizeList(MetaCreditSchema, meta.credits, canonicalizeMetaCredit),
-    references: canonicalizeList(MetaReferenceSchema, meta.references, canonicalizeMetaReference),
+    credits: canonicalizeList(fieldsCommonMetaCredit, meta.credits, canonicalizeMetaCredit),
+    references: canonicalizeList(fieldsCommonMetaReference, meta.references, canonicalizeMetaReference),
   }
 }
 

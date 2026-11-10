@@ -1,22 +1,27 @@
 import type { MakeInit } from '@root/utils'
-import type { LineAnnotation, LineAnnotationRoman, LineAnnotationTranslation, TimeRange } from './proto'
+import type { LineAnnotation, LineAnnotationRoman, LineAnnotationTranslation, TimeRange } from '@root/generated/common/index.gen'
 import type { AnyWord } from './word'
 import type { Diagnostic } from './diagnostic'
 
-import { LineAnnotationRomanSchema, LineAnnotationSchema, LineAnnotationTranslationSchema, Timing, WordType } from './proto'
+import { Timing, WordType } from '@root/generated/common/index.gen'
 import { DiagnosticCode } from './diagnostic'
 
-import { canonicalizeList, childPath, findDuplicates, lowerTag } from '@root/utils'
+import { canonicalizeList, childPath, findDuplicates, lowerTag, withInit } from '@root/utils'
+import {
+  createCommonLineAnnotation,
+  createCommonLineAnnotationRoman,
+  createCommonLineAnnotationTranslation,
+  fieldsCommonLineAnnotationRoman,
+  fieldsCommonLineAnnotationTranslation,
+} from '@root/generated/internal.gen'
 import { getAnnotationItemText, getWordsLanguages, getWordsText, validateWords } from './word'
-
-import { create } from '@bufbuild/protobuf'
 
 /**
  * The fields every layer's line content shares, so helpers that only read them work on either layer.
  */
 export type AnyLineContent = {
   words: AnyWord[]
-  text?: string
+  text?: string | undefined
 }
 
 /**
@@ -58,7 +63,7 @@ export const getContentText = (content: AnyLineContent | undefined): string => {
 /**
  * Reports whether a line is word-level, i.e. its content carries words rather than plain text; an instrumental or text line is not.
  */
-export const isWordLevelLine = (line: { content?: AnyLineContent }): boolean => {
+export const isWordLevelLine = (line: { content?: AnyLineContent | undefined }): boolean => {
   return (line.content?.words.length ?? 0) > 0
 }
 
@@ -67,7 +72,7 @@ export const isWordLevelLine = (line: { content?: AnyLineContent }): boolean => 
  * Both layers carry the same shape, so one helper serves a line and a background line of either.
  * It answers what one line shows, while `deriveLanguageUsages` unions line and word tags for the lyric-wide count.
  */
-export const deriveLineLanguages = (line: { languages: string[]; content?: AnyLineContent }): string[] => {
+export const deriveLineLanguages = (line: { languages: string[]; content?: AnyLineContent | undefined }): string[] => {
   if (line.languages.length === 0) {
     return getWordsLanguages(line.content?.words ?? [])
   }
@@ -77,8 +82,8 @@ export const deriveLineLanguages = (line: { languages: string[]; content?: AnyLi
 /**
  * Creates a LineAnnotation, the per-line annotation container.
  */
-export const makeLineAnnotation = (init?: MakeInit<typeof LineAnnotationSchema>): LineAnnotation => {
-  return create(LineAnnotationSchema, init)
+export const makeLineAnnotation = (init?: MakeInit<LineAnnotation>): LineAnnotation => {
+  return withInit(createCommonLineAnnotation(), init)
 }
 
 /**
@@ -89,7 +94,7 @@ export const validateLineAnnotation = (annotation: LineAnnotation, path = ''): D
   /**
    * Reports every entry of one list whose language an earlier entry already took, treating an unset and an empty tag as the same default language.
    */
-  const checkLanguages = (items: { language?: string }[], field: string, code: DiagnosticCode): void => {
+  const checkLanguages = (items: { language?: string | undefined }[], field: string, code: DiagnosticCode): void => {
     findDuplicates(items, (item) => lowerTag(item.language) ?? '').forEach((i) => {
       diagnostics.push({ path: childPath(path, `${field}[${i}]`), code })
     })
@@ -102,15 +107,15 @@ export const validateLineAnnotation = (annotation: LineAnnotation, path = ''): D
 /**
  * Creates a LineAnnotationRoman, a romanized transliteration of a whole line.
  */
-export const makeLineAnnotationRoman = (init?: MakeInit<typeof LineAnnotationRomanSchema>): LineAnnotationRoman => {
-  return create(LineAnnotationRomanSchema, init)
+export const makeLineAnnotationRoman = (init?: MakeInit<LineAnnotationRoman>): LineAnnotationRoman => {
+  return withInit(createCommonLineAnnotationRoman(), init)
 }
 
 /**
  * Creates a LineAnnotationTranslation, a translation of a whole line.
  */
-export const makeLineAnnotationTranslation = (init?: MakeInit<typeof LineAnnotationTranslationSchema>): LineAnnotationTranslation => {
-  return create(LineAnnotationTranslationSchema, init)
+export const makeLineAnnotationTranslation = (init?: MakeInit<LineAnnotationTranslation>): LineAnnotationTranslation => {
+  return withInit(createCommonLineAnnotationTranslation(), init)
 }
 
 /**
@@ -133,8 +138,8 @@ export const canonicalizeLineAnnotationTranslation = (translation: LineAnnotatio
 export const canonicalizeLineAnnotation = (annotation: LineAnnotation): LineAnnotation => {
   return {
     ...annotation,
-    romans: canonicalizeList(LineAnnotationRomanSchema, annotation.romans, canonicalizeLineAnnotationRoman),
-    translations: canonicalizeList(LineAnnotationTranslationSchema, annotation.translations, canonicalizeLineAnnotationTranslation),
+    romans: canonicalizeList(fieldsCommonLineAnnotationRoman, annotation.romans, canonicalizeLineAnnotationRoman),
+    translations: canonicalizeList(fieldsCommonLineAnnotationTranslation, annotation.translations, canonicalizeLineAnnotationTranslation),
   }
 }
 

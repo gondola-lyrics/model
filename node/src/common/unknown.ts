@@ -1,15 +1,14 @@
 import type { MakeInit } from '@root/utils'
-import type { UnknownEntry } from './proto'
+import type { UnknownEntry } from '@root/generated/common/index.gen'
 
-import { UnknownEntrySchema } from './proto'
-
-import { create } from '@bufbuild/protobuf'
+import { withInit } from '@root/utils'
+import { createCommonUnknownEntry } from '@root/generated/internal.gen'
 
 /**
  * Creates an UnknownEntry, a preserved key-value pair the model has no typed field for.
  */
-export const makeUnknownEntry = (init?: MakeInit<typeof UnknownEntrySchema>): UnknownEntry => {
-  return create(UnknownEntrySchema, init)
+export const makeUnknownEntry = (init?: MakeInit<UnknownEntry>): UnknownEntry => {
+  return withInit(createCommonUnknownEntry(), init)
 }
 
 /**

@@ -1,29 +1,48 @@
 import type { MakeInit } from '@root/utils'
 import type { Diagnostic, TimeRange } from '@root/common'
-import type { LineContent, Lyric } from './proto'
+import type { LineContent, Lyric } from '@root/generated/runtime/index.gen'
 
-import { AgentSchema, LineType, LineTypeSchema, MetaSchema, Timing, TimingSchema } from '@root/common/proto'
+import { LineType, Timing } from '@root/generated/common/index.gen'
+import { LyricStatus } from '@root/generated/runtime/index.gen'
 import { DiagnosticCode } from '@root/common'
-import { LineSchema, LyricSchema, LyricStatus } from './proto'
 import { SCHEMA_VERSION } from '@root/version'
 
-import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath, findDefaultEntries, findUnordered, isUnresolved } from '@root/utils'
-import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateLyricTags, validateMeta } from '@root/common'
+import {
+  SEMVER_PATTERN,
+  byTime,
+  canonicalizeField,
+  canonicalizeList,
+  childPath,
+  findDefaultEntries,
+  findUnordered,
+  isUnresolved,
+  withInit,
+} from '@root/utils'
+import { read, write } from '@root/utils/wire'
+import {
+  createRuntimeLyric,
+  decodeRuntimeLyric,
+  encodeRuntimeLyric,
+  fieldsCommonAgent,
+  fieldsCommonMeta,
+  fieldsRuntimeLine,
+  fieldsRuntimeLyric,
+} from '@root/generated/internal.gen'
+import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMeta } from '@root/common'
+import { validateLyricTags } from '@root/common/tag'
 import { canonicalizeLanguageUsages, deriveLanguageUsages, orderLanguageUsages, validateLanguageUsage } from './language'
 import { canonicalizeLine, orderLine, validateLine } from './line'
-
-import { create, fromBinary, toBinary } from '@bufbuild/protobuf'
 
 /**
  * Creates a runtime Lyric, stamping the current schema version over any version in init.
  * status must be VALID or INVALID; UNSPECIFIED is rejected at compile time, and the caller flips it as parsing resolves.
  */
 export const makeLyric = (
-  init: Omit<MakeInit<typeof LyricSchema>, 'version' | 'status'> & {
+  init: Omit<MakeInit<Lyric>, 'version' | 'status'> & {
     status: LyricStatus.VALID | LyricStatus.INVALID
   },
 ): Lyric => {
-  return create(LyricSchema, {
+  return withInit(createRuntimeLyric(), {
     version: SCHEMA_VERSION,
     format: init.format,
     status: init.status,
@@ -51,7 +70,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   }
 
   // An unresolved precision leaves every timing rule with nothing to hold the lyric to, so a lyric that never stated one is reported rather than read as untimed.
-  if (isUnresolved(TimingSchema, lyric.timing)) {
+  if (isUnresolved(Timing, lyric.timing)) {
     diagnostics.push({ path: 'timing', code: DiagnosticCode.LyricTimingUnspecified })
   }
 
@@ -72,7 +91,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   }
 
   // Every tag outside the lines is read here, since a line's own are read by validateLine, which knows the fields its kind forbids.
-  diagnostics.push(...validateLyricTags(LyricSchema, lyric))
+  diagnostics.push(...validateLyricTags(fieldsRuntimeLyric, lyric))
 
   const languageTags = new Set<string>()
   lyric.languages.forEach((usage, i) => {
@@ -129,7 +148,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   ): void => {
     const words = content?.words ?? []
     // A kind outside the enum turns out to need no range as readily as the zero value, so both are left unasked.
-    const unresolvedType = isUnresolved(LineTypeSchema, type)
+    const unresolvedType = isUnresolved(LineType, type)
     const sung = type !== LineType.INSTRUMENTAL
     if (sung) {
       agents.forEach((id, j) => {
@@ -192,7 +211,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   // A rule that already spoke about a path keeps the sweep off it, and validateAgent reports an all-default agent at the agent rather than inside it.
   const covered = diagnostics.map((diagnostic) => diagnostic.path)
   lyric.agents.forEach((agent, i) => covered.push(`agents[${i}]`))
-  findDefaultEntries(LyricSchema, lyric, covered).forEach((path) => {
+  findDefaultEntries(fieldsRuntimeLyric, lyric, covered).forEach((path) => {
     diagnostics.push({ path, code: DiagnosticCode.LyricListEntryEmpty })
   })
 
@@ -218,25 +237,26 @@ export const canonicalizeLyric = (lyric: Lyric): Lyric => {
   return {
     ...lyric,
     format: lyric.format.toLowerCase(),
-    meta: canonicalizeField(MetaSchema, lyric.meta, canonicalizeMeta),
+    meta: canonicalizeField(fieldsCommonMeta, lyric.meta, canonicalizeMeta),
     extra: { ...lyric.extra },
     languages: canonicalizeLanguageUsages(lyric.languages),
-    agents: canonicalizeList(AgentSchema, lyric.agents, canonicalizeAgent),
-    lines: canonicalizeList(LineSchema, lyric.lines, canonicalizeLine).sort(byTime((line) => line.time)),
+    agents: canonicalizeList(fieldsCommonAgent, lyric.agents, canonicalizeAgent),
+    lines: canonicalizeList(fieldsRuntimeLine, lyric.lines, canonicalizeLine).sort(byTime((line) => line.time)),
   }
 }
 
 /**
- * Encodes a runtime Lyric to bytes.
+ * Encodes a runtime Lyric to bytes the official Protobuf libraries read.
+ * It throws on a number its field cannot hold and on a string that is not well-formed UTF-16.
  */
 export const encode = (lyric: Lyric): Uint8Array => {
-  return toBinary(LyricSchema, lyric)
+  return write(encodeRuntimeLyric, lyric)
 }
 
 /**
- * Decodes a runtime Lyric from bytes, keeping unknown fields so a round trip loses nothing.
+ * Decodes a runtime Lyric from bytes, dropping fields the schema does not define.
  * It throws on malformed bytes and leaves the schema's rules to validateLyric.
  */
 export const decode = (bytes: Uint8Array): Lyric => {
-  return fromBinary(LyricSchema, bytes)
+  return read(createRuntimeLyric, decodeRuntimeLyric, bytes)
 }

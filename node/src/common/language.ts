@@ -5,7 +5,7 @@ import { lowerTag, scoreTag } from '@root/utils'
  * Tags compare case-insensitively on subtag boundaries, and either side may be the more specific one, so `ja` picks `ja-JP` while `zh-Hans` never picks `zh-CN`.
  * With no match, or no `wanted`, it returns the first entry carrying no language, else the first entry only if `fallback` is set.
  */
-export const pickItemByLanguage = <T extends { language?: string }>(items: T[], wanted?: string, fallback = false): T | undefined => {
+export const pickItemByLanguage = <T extends { language?: string | undefined }>(items: T[], wanted?: string, fallback = false): T | undefined => {
   const range = lowerTag(wanted)
   let best: T | undefined
   let bestScore = 0

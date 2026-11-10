@@ -1,19 +1,17 @@
 import type { MakeInit } from '@root/utils'
-import type { Word, WordEmphasis } from './proto'
+import type { Word, WordEmphasis } from '@root/generated/runtime/index.gen'
 
-import { WordType } from '@root/common/proto'
-import { WordEmphasisSchema, WordSchema } from './proto'
+import { WordType } from '@root/generated/common/index.gen'
 
-import { copyMessage, dropDefault } from '@root/utils'
+import { copyMessage, dropDefault, withInit } from '@root/utils'
+import { createRuntimeWord, createRuntimeWordEmphasis, fieldsRuntimeWordEmphasis } from '@root/generated/internal.gen'
 import { canonicalizeWordShared } from '@root/common'
-
-import { create } from '@bufbuild/protobuf'
 
 /**
  * Creates a normal word, stamping WORD_TYPE_NORMAL so the discriminant can never be set from outside.
  */
-export const makeWordNormal = (init?: Omit<MakeInit<typeof WordSchema>, 'type'>): Word => {
-  return create(WordSchema, {
+export const makeWordNormal = (init?: Omit<MakeInit<Word>, 'type'>): Word => {
+  return withInit(createRuntimeWord(), {
     type: WordType.NORMAL,
     time: init?.time,
     text: init?.text,
@@ -26,20 +24,20 @@ export const makeWordNormal = (init?: Omit<MakeInit<typeof WordSchema>, 'type'>)
 /**
  * Creates a whitespace word carrying the separator as its text, stamping WORD_TYPE_SPACE.
  */
-export const makeWordSpace = (init?: Pick<MakeInit<typeof WordSchema>, 'text'>): Word => {
-  return create(WordSchema, { text: init?.text, type: WordType.SPACE })
+export const makeWordSpace = (init?: Pick<MakeInit<Word>, 'text'>): Word => {
+  return withInit(createRuntimeWord(), { text: init?.text, type: WordType.SPACE })
 }
 
 /**
  * Creates a WordEmphasis, whether a word is emphasized and whether that was derived rather than stated.
  */
-export const makeWordEmphasis = (init?: MakeInit<typeof WordEmphasisSchema>): WordEmphasis => {
-  return create(WordEmphasisSchema, init)
+export const makeWordEmphasis = (init?: MakeInit<WordEmphasis>): WordEmphasis => {
+  return withInit(createRuntimeWordEmphasis(), init)
 }
 
 /**
  * Returns a copy of the word canonicalized, with its emphasis dropped when all-default.
  */
 export const canonicalizeWord = (word: Word): Word => {
-  return { ...canonicalizeWordShared(word), emphasis: dropDefault(WordEmphasisSchema, copyMessage(word.emphasis)) }
+  return { ...canonicalizeWordShared(word), emphasis: dropDefault(fieldsRuntimeWordEmphasis, copyMessage(word.emphasis)) }
 }

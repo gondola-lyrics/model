@@ -1,7 +1,7 @@
-import { runtime } from '@root/index'
-
 import { describe, it } from 'node:test'
 import { deepStrictEqual } from 'node:assert/strict'
+
+import { runtime } from '@root/index'
 
 describe('order', () => {
   // A line with no range used to sort first, which told the consumer it starts at zero.

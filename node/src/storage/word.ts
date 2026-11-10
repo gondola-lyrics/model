@@ -1,18 +1,17 @@
 import type { MakeInit } from '@root/utils'
-import type { Word } from './proto'
+import type { Word } from '@root/generated/storage/index.gen'
 
-import { WordType } from '@root/common/proto'
-import { WordSchema } from './proto'
+import { WordType } from '@root/generated/common/index.gen'
 
+import { withInit } from '@root/utils'
+import { createStorageWord } from '@root/generated/internal.gen'
 import { canonicalizeWordShared } from '@root/common'
-
-import { create } from '@bufbuild/protobuf'
 
 /**
  * Creates a normal word, stamping WORD_TYPE_NORMAL so the discriminant can never be set from outside.
  */
-export const makeWordNormal = (init?: Omit<MakeInit<typeof WordSchema>, 'type'>): Word => {
-  return create(WordSchema, {
+export const makeWordNormal = (init?: Omit<MakeInit<Word>, 'type'>): Word => {
+  return withInit(createStorageWord(), {
     type: WordType.NORMAL,
     time: init?.time,
     text: init?.text,
@@ -25,8 +24,8 @@ export const makeWordNormal = (init?: Omit<MakeInit<typeof WordSchema>, 'type'>)
 /**
  * Creates a whitespace word carrying the separator as its text, stamping WORD_TYPE_SPACE.
  */
-export const makeWordSpace = (init?: Pick<MakeInit<typeof WordSchema>, 'text'>): Word => {
-  return create(WordSchema, { text: init?.text, type: WordType.SPACE })
+export const makeWordSpace = (init?: Pick<MakeInit<Word>, 'text'>): Word => {
+  return withInit(createStorageWord(), { text: init?.text, type: WordType.SPACE })
 }
 
 /**

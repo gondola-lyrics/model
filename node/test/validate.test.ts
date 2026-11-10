@@ -1,7 +1,7 @@
-import { runtime, storage } from '@root/index'
-
 import { describe, it } from 'node:test'
 import { deepStrictEqual } from 'node:assert/strict'
+
+import { runtime, storage } from '@root/index'
 
 const textLine = (start: number, end?: number): runtime.Line => {
   return runtime.makeLineNormal({ time: runtime.makeTimeRange({ start, end }), content: runtime.makeLineContentText('x') })

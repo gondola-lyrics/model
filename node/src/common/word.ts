@@ -1,17 +1,15 @@
 import type { MakeInit } from '@root/utils'
-import type { TimeRange, WordAnnotation, WordAnnotationRoman, WordAnnotationRuby, WordAnnotationToken, WordAnnotationTranslation } from './proto'
+import type {
+  TimeRange,
+  WordAnnotation,
+  WordAnnotationRoman,
+  WordAnnotationRuby,
+  WordAnnotationToken,
+  WordAnnotationTranslation,
+} from '@root/generated/common/index.gen'
 import type { Diagnostic } from './diagnostic'
 
-import {
-  Timing,
-  WordAnnotationRomanSchema,
-  WordAnnotationRubySchema,
-  WordAnnotationSchema,
-  WordAnnotationTokenSchema,
-  WordAnnotationTranslationSchema,
-  WordType,
-  WordTypeSchema,
-} from './proto'
+import { Timing, WordType } from '@root/generated/common/index.gen'
 import { DiagnosticCode } from './diagnostic'
 
 import {
@@ -23,20 +21,31 @@ import {
   isTimeRangeUncovered,
   isUnresolved,
   lowerTag,
+  withInit,
 } from '@root/utils'
+import {
+  createCommonWordAnnotation,
+  createCommonWordAnnotationRoman,
+  createCommonWordAnnotationRuby,
+  createCommonWordAnnotationToken,
+  createCommonWordAnnotationTranslation,
+  fieldsCommonWordAnnotation,
+  fieldsCommonWordAnnotationRoman,
+  fieldsCommonWordAnnotationRuby,
+  fieldsCommonWordAnnotationToken,
+  fieldsCommonWordAnnotationTranslation,
+} from '@root/generated/internal.gen'
 import { validateTimeRange } from './time'
-
-import { create } from '@bufbuild/protobuf'
 
 /**
  * The fields every layer's word shares, so helpers that only read them work on either layer.
  */
 export type AnyWord = {
   type: WordType
-  time?: TimeRange
+  time?: TimeRange | undefined
   text: string
-  language?: string
-  annotation?: WordAnnotation
+  language?: string | undefined
+  annotation?: WordAnnotation | undefined
 }
 
 /**
@@ -58,36 +67,36 @@ const ownsWordTimes = (timing: Timing): boolean => {
 /**
  * Creates a WordAnnotationToken, one timed piece of a ruby or roman annotation.
  */
-export const makeWordAnnotationToken = (init?: MakeInit<typeof WordAnnotationTokenSchema>): WordAnnotationToken => {
-  return create(WordAnnotationTokenSchema, init)
+export const makeWordAnnotationToken = (init?: MakeInit<WordAnnotationToken>): WordAnnotationToken => {
+  return withInit(createCommonWordAnnotationToken(), init)
 }
 
 /**
  * Creates a WordAnnotationRoman, a romanized transliteration of a single word.
  */
-export const makeWordAnnotationRoman = (init?: MakeInit<typeof WordAnnotationRomanSchema>): WordAnnotationRoman => {
-  return create(WordAnnotationRomanSchema, init)
+export const makeWordAnnotationRoman = (init?: MakeInit<WordAnnotationRoman>): WordAnnotationRoman => {
+  return withInit(createCommonWordAnnotationRoman(), init)
 }
 
 /**
  * Creates a WordAnnotationTranslation, a translation of a single word.
  */
-export const makeWordAnnotationTranslation = (init?: MakeInit<typeof WordAnnotationTranslationSchema>): WordAnnotationTranslation => {
-  return create(WordAnnotationTranslationSchema, init)
+export const makeWordAnnotationTranslation = (init?: MakeInit<WordAnnotationTranslation>): WordAnnotationTranslation => {
+  return withInit(createCommonWordAnnotationTranslation(), init)
 }
 
 /**
  * Creates a WordAnnotationRuby, a ruby annotation of a single word such as furigana.
  */
-export const makeWordAnnotationRuby = (init?: MakeInit<typeof WordAnnotationRubySchema>): WordAnnotationRuby => {
-  return create(WordAnnotationRubySchema, init)
+export const makeWordAnnotationRuby = (init?: MakeInit<WordAnnotationRuby>): WordAnnotationRuby => {
+  return withInit(createCommonWordAnnotationRuby(), init)
 }
 
 /**
  * Creates a WordAnnotation, the per-word annotation container.
  */
-export const makeWordAnnotation = (init?: MakeInit<typeof WordAnnotationSchema>): WordAnnotation => {
-  return create(WordAnnotationSchema, init)
+export const makeWordAnnotation = (init?: MakeInit<WordAnnotation>): WordAnnotation => {
+  return withInit(createCommonWordAnnotation(), init)
 }
 
 /**
@@ -100,7 +109,7 @@ export const validateWordAnnotation = (annotation: WordAnnotation, path = '', ti
   /**
    * Reports every entry of one list whose language an earlier entry already took, treating an unset and an empty tag as the same default language.
    */
-  const checkLanguages = (items: { language?: string }[], field: string, code: DiagnosticCode): void => {
+  const checkLanguages = (items: { language?: string | undefined }[], field: string, code: DiagnosticCode): void => {
     findDuplicates(items, (item) => lowerTag(item.language) ?? '').forEach((i) => {
       diagnostics.push({ path: childPath(path, `${field}[${i}]`), code })
     })
@@ -146,7 +155,7 @@ export const validateWordAnnotation = (annotation: WordAnnotation, path = '', ti
 export const validateWord = (word: AnyWord, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   // A kind outside the enum reads as unresolved too, since a value this schema does not know cannot be held to any of its kind's rules.
-  if (isUnresolved(WordTypeSchema, word.type)) {
+  if (isUnresolved(WordType, word.type)) {
     diagnostics.push({ path, code: DiagnosticCode.WordTypeUnspecified })
   }
   if (word.type === WordType.NORMAL && word.text === '') {
@@ -222,7 +231,7 @@ export const canonicalizeWordAnnotationRoman = (roman: WordAnnotationRoman): Wor
     ...roman,
     time: copyMessage(roman.time),
     language: lowerTag(roman.language),
-    tokens: canonicalizeList(WordAnnotationTokenSchema, roman.tokens, canonicalizeWordAnnotationToken),
+    tokens: canonicalizeList(fieldsCommonWordAnnotationToken, roman.tokens, canonicalizeWordAnnotationToken),
   }
 }
 
@@ -234,7 +243,7 @@ export const canonicalizeWordAnnotationRuby = (ruby: WordAnnotationRuby): WordAn
     ...ruby,
     time: copyMessage(ruby.time),
     language: lowerTag(ruby.language),
-    tokens: canonicalizeList(WordAnnotationTokenSchema, ruby.tokens, canonicalizeWordAnnotationToken),
+    tokens: canonicalizeList(fieldsCommonWordAnnotationToken, ruby.tokens, canonicalizeWordAnnotationToken),
   }
 }
 
@@ -251,9 +260,9 @@ export const canonicalizeWordAnnotationTranslation = (translation: WordAnnotatio
 export const canonicalizeWordAnnotation = (annotation: WordAnnotation): WordAnnotation => {
   return {
     ...annotation,
-    rubies: canonicalizeList(WordAnnotationRubySchema, annotation.rubies, canonicalizeWordAnnotationRuby),
-    romans: canonicalizeList(WordAnnotationRomanSchema, annotation.romans, canonicalizeWordAnnotationRoman),
-    translations: canonicalizeList(WordAnnotationTranslationSchema, annotation.translations, canonicalizeWordAnnotationTranslation),
+    rubies: canonicalizeList(fieldsCommonWordAnnotationRuby, annotation.rubies, canonicalizeWordAnnotationRuby),
+    romans: canonicalizeList(fieldsCommonWordAnnotationRoman, annotation.romans, canonicalizeWordAnnotationRoman),
+    translations: canonicalizeList(fieldsCommonWordAnnotationTranslation, annotation.translations, canonicalizeWordAnnotationTranslation),
   }
 }
 
@@ -266,7 +275,7 @@ export const canonicalizeWordShared = <T extends AnyWord>(word: T): T => {
     ...word,
     time: copyMessage(word.time),
     language: lowerTag(word.language),
-    annotation: canonicalizeField(WordAnnotationSchema, word.annotation, canonicalizeWordAnnotation),
+    annotation: canonicalizeField(fieldsCommonWordAnnotation, word.annotation, canonicalizeWordAnnotation),
   }
 }
 

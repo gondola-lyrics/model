@@ -1,20 +1,18 @@
 import type { MakeInit } from '@root/utils'
-import type { Text } from './proto'
+import type { Text } from '@root/generated/common/index.gen'
 import type { Diagnostic } from './diagnostic'
 
-import { TextSchema } from './proto'
 import { DiagnosticCode } from './diagnostic'
 
-import { lowerTag } from '@root/utils'
-
-import { create } from '@bufbuild/protobuf'
+import { lowerTag, withInit } from '@root/utils'
+import { createCommonText } from '@root/generated/internal.gen'
 
 /**
  * Creates a Text, text with an optional BCP 47 language tag.
  * The tag is kept as given, since canonical form is `canonicalizeText`'s to produce and a constructor that quietly rewrote one would make two spellings of the same field.
  */
-export const makeText = (init?: MakeInit<typeof TextSchema>): Text => {
-  return create(TextSchema, init)
+export const makeText = (init?: MakeInit<Text>): Text => {
+  return withInit(createCommonText(), init)
 }
 
 /**

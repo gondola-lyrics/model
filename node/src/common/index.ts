@@ -1,11 +1,11 @@
-export * from './proto'
+export * from '@root/generated/common/index.gen'
 
 export * from './agent'
 export * from './language'
 export * from './line'
 export * from './meta'
 export * from './part'
-export * from './tag'
+export { isLanguageTag } from './tag'
 export * from './text'
 export * from './time'
 export * from './word'

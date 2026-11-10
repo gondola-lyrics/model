@@ -1,10 +1,9 @@
 import type { MakeInit } from '@root/utils'
 import type { Diagnostic } from '@root/common'
-import type { Line, LineBackground, LineContent, Word } from './proto'
+import type { Line, LineBackground, LineContent, Word } from '@root/generated/storage/index.gen'
 
-import { LineAnnotationSchema, LineType, LineTypeSchema, PartSchema, Timing } from '@root/common/proto'
+import { LineType, Timing } from '@root/generated/common/index.gen'
 import { DiagnosticCode } from '@root/common'
-import { LineBackgroundSchema, LineContentSchema, LineSchema, WordSchema } from './proto'
 
 import {
   byTime,
@@ -19,38 +18,49 @@ import {
   isTimeRangeOrdered,
   isUnresolved,
   lowerTag,
+  withInit,
 } from '@root/utils'
-import { canonicalizeLineAnnotation, validateContent, validateLineAnnotation, validateLineTags, validatePart, validateTimeRange } from '@root/common'
+import {
+  createStorageLine,
+  createStorageLineBackground,
+  createStorageLineContent,
+  fieldsCommonLineAnnotation,
+  fieldsCommonPart,
+  fieldsStorageLine,
+  fieldsStorageLineBackground,
+  fieldsStorageLineContent,
+  fieldsStorageWord,
+} from '@root/generated/internal.gen'
+import { canonicalizeLineAnnotation, validateContent, validateLineAnnotation, validatePart, validateTimeRange } from '@root/common'
+import { validateLineTags } from '@root/common/tag'
 import { canonicalizeWord } from './word'
-
-import { create } from '@bufbuild/protobuf'
 
 /**
  * Creates a word-level LineContent from the words the line decomposes into.
  */
 export const makeLineContentWords = (words: Word[]): LineContent => {
-  return create(LineContentSchema, { words })
+  return withInit(createStorageLineContent(), { words })
 }
 
 /**
  * Creates a line-level LineContent from the line's plain text.
  */
 export const makeLineContentText = (text: string): LineContent => {
-  return create(LineContentSchema, { text })
+  return withInit(createStorageLineContent(), { text })
 }
 
 /**
  * Returns a canonical copy of the content with its words canonicalized; the plain text is left as is.
  */
 export const canonicalizeLineContent = (content: LineContent): LineContent => {
-  return { ...content, words: canonicalizeList(WordSchema, content.words, canonicalizeWord) }
+  return { ...content, words: canonicalizeList(fieldsStorageWord, content.words, canonicalizeWord) }
 }
 
 /**
  * Creates a normal line, stamping LINE_TYPE_NORMAL so the discriminant can never be set from outside.
  */
-export const makeLineNormal = (init?: Omit<MakeInit<typeof LineSchema>, 'type'>): Line => {
-  return create(LineSchema, {
+export const makeLineNormal = (init?: Omit<MakeInit<Line>, 'type'>): Line => {
+  return withInit(createStorageLine(), {
     id: init?.id,
     type: LineType.NORMAL,
     time: init?.time,
@@ -67,15 +77,15 @@ export const makeLineNormal = (init?: Omit<MakeInit<typeof LineSchema>, 'type'>)
  * Creates an instrumental line, stamping LINE_TYPE_INSTRUMENTAL and carrying no content, only a time range and optionally an id and a part.
  * A present part means the source stated the stretch; its absence means it was derived from a gap in the timeline.
  */
-export const makeLineInstrumental = (init?: Pick<MakeInit<typeof LineSchema>, 'id' | 'time' | 'part'>): Line => {
-  return create(LineSchema, { id: init?.id, time: init?.time, part: init?.part, type: LineType.INSTRUMENTAL })
+export const makeLineInstrumental = (init?: Pick<MakeInit<Line>, 'id' | 'time' | 'part'>): Line => {
+  return withInit(createStorageLine(), { id: init?.id, time: init?.time, part: init?.part, type: LineType.INSTRUMENTAL })
 }
 
 /**
  * Creates a LineBackground, a background vocal line attached to a normal line.
  */
-export const makeLineBackground = (init?: MakeInit<typeof LineBackgroundSchema>): LineBackground => {
-  return create(LineBackgroundSchema, init)
+export const makeLineBackground = (init?: MakeInit<LineBackground>): LineBackground => {
+  return withInit(createStorageLineBackground(), init)
 }
 
 /**
@@ -87,11 +97,11 @@ export const validateLine = (line: Line, path = '', timing = Timing.UNSPECIFIED)
   const diagnostics: Diagnostic[] = []
   // Tags are read here rather than by the lyric, since only this knows which fields a line's kind forbids, and a forbidden field is never descended into.
   if (line.type !== LineType.INSTRUMENTAL) {
-    diagnostics.push(...validateLineTags(LineSchema, line, path))
+    diagnostics.push(...validateLineTags(fieldsStorageLine, line, path))
   }
   const instrumental = line.type === LineType.INSTRUMENTAL
   // A kind outside the enum reads as unresolved too, since a value this schema does not know cannot be held to any of its kind's rules.
-  if (isUnresolved(LineTypeSchema, line.type)) {
+  if (isUnresolved(LineType, line.type)) {
     diagnostics.push({ path: childPath(path, 'type'), code: DiagnosticCode.LineTypeUnspecified })
   }
   // An instrumental line is the stretch its range marks out, so it is nothing without a range, and nothing with one that never ends or one that ends where it starts.
@@ -190,8 +200,8 @@ export const canonicalizeLineBackground = (background: LineBackground): LineBack
     time: copyMessage(background.time),
     agents: background.agents.filter((id) => id !== ''),
     languages: [...new Set(background.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
-    content: canonicalizeField(LineContentSchema, background.content, canonicalizeLineContent),
-    annotation: canonicalizeField(LineAnnotationSchema, background.annotation, canonicalizeLineAnnotation),
+    content: canonicalizeField(fieldsStorageLineContent, background.content, canonicalizeLineContent),
+    annotation: canonicalizeField(fieldsCommonLineAnnotation, background.annotation, canonicalizeLineAnnotation),
   }
 }
 
@@ -202,11 +212,13 @@ export const canonicalizeLine = (line: Line): Line => {
   return {
     ...line,
     time: copyMessage(line.time),
-    part: dropDefault(PartSchema, copyMessage(line.part)),
+    part: dropDefault(fieldsCommonPart, copyMessage(line.part)),
     agents: line.agents.filter((id) => id !== ''),
     languages: [...new Set(line.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
-    content: canonicalizeField(LineContentSchema, line.content, canonicalizeLineContent),
-    annotation: canonicalizeField(LineAnnotationSchema, line.annotation, canonicalizeLineAnnotation),
-    backgrounds: canonicalizeList(LineBackgroundSchema, line.backgrounds, canonicalizeLineBackground).sort(byTime((background) => background.time)),
+    content: canonicalizeField(fieldsStorageLineContent, line.content, canonicalizeLineContent),
+    annotation: canonicalizeField(fieldsCommonLineAnnotation, line.annotation, canonicalizeLineAnnotation),
+    backgrounds: canonicalizeList(fieldsStorageLineBackground, line.backgrounds, canonicalizeLineBackground).sort(
+      byTime((background) => background.time),
+    ),
   }
 }
