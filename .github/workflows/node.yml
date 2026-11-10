@@ -28,6 +28,12 @@ jobs:
         run: npm ci
         working-directory: node
 
+      - name: Setup buf
+        uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+          version: '1.72.0'
+
       - name: Check version
         run: |
           version="${GITHUB_REF_NAME#node/v}"
@@ -51,8 +57,7 @@ jobs:
       - name: Generate
         run: |
           cp ../LICENSE LICENSE
-          npm run generate
-          git diff --exit-code -- src/version.ts
+          python3 ../script/generate-proto-binding.py node --check
         working-directory: node
 
       - name: Check code
