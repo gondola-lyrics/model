@@ -25,6 +25,11 @@ public data class Lyric(
      */
     val format: String = "",
     /**
+     * Source-format dialect, scoped by `format` and identified by the parser.
+     * Compared case-insensitively; canonical form is lower case, and empty means unspecified.
+     */
+    val profile: String = "",
+    /**
      * Declared timing precision.
      */
     val timing: Timing = Timing.TIMING_UNSPECIFIED,

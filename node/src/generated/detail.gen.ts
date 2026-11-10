@@ -295,6 +295,7 @@ export const fieldsRuntimeLyric: MessageFields<runtime.Lyric> = {
   fields: [
     { name: 'version', shape: 'scalar' },
     { name: 'format', shape: 'scalar' },
+    { name: 'profile', shape: 'scalar' },
     { name: 'status', shape: 'enum' },
     { name: 'timing', shape: 'enum' },
     { name: 'meta', shape: 'message', message: fieldsCommonMeta },
@@ -306,7 +307,7 @@ export const fieldsRuntimeLyric: MessageFields<runtime.Lyric> = {
 }
 
 export const createRuntimeLyric = (): runtime.Lyric => {
-  return { version: '', format: '', status: 0, timing: 0, extra: {}, languages: [], agents: [], lines: [] }
+  return { version: '', format: '', profile: '', status: 0, timing: 0, extra: {}, languages: [], agents: [], lines: [] }
 }
 
 export const fieldsStorageWord: MessageFields<storage.Word> = {
@@ -372,6 +373,7 @@ export const fieldsStorageLyric: MessageFields<storage.Lyric> = {
   fields: [
     { name: 'version', shape: 'scalar' },
     { name: 'format', shape: 'scalar' },
+    { name: 'profile', shape: 'scalar' },
     { name: 'timing', shape: 'enum' },
     { name: 'meta', shape: 'message', message: fieldsCommonMeta },
     { name: 'extra', shape: 'map' },
@@ -381,5 +383,5 @@ export const fieldsStorageLyric: MessageFields<storage.Lyric> = {
 }
 
 export const createStorageLyric = (): storage.Lyric => {
-  return { version: '', format: '', timing: 0, extra: {}, agents: [], lines: [] }
+  return { version: '', format: '', profile: '', timing: 0, extra: {}, agents: [], lines: [] }
 }

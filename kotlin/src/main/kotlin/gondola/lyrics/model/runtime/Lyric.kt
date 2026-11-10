@@ -35,6 +35,7 @@ import gondola.lyrics.model.utils.write
 public fun makeLyric(
     status: LyricStatus,
     format: String = "",
+    profile: String = "",
     timing: Timing = Timing.TIMING_UNSPECIFIED,
     meta: Meta? = null,
     extra: Map<String, String> = emptyMap(),
@@ -48,6 +49,7 @@ public fun makeLyric(
     return Lyric(
         version = SCHEMA_VERSION,
         format = format,
+        profile = profile,
         status = status,
         timing = timing,
         meta = meta,
@@ -234,12 +236,13 @@ public fun orderLyric(lyric: Lyric): Lyric {
 }
 
 /**
- * Returns a canonical copy of the runtime lyric: format lowercased, meta/agents/lines canonicalized, languages canonicalized then ordered, lines ordered.
+ * Returns a canonical copy of the runtime lyric: format and profile lowercased, meta/agents/lines canonicalized, languages canonicalized then ordered, lines ordered.
  * The copy shares no mutable containers with the lyric it was given, so editing either leaves the other as it was.
  */
 public fun canonicalizeLyric(lyric: Lyric): Lyric {
     return lyric.copy(
         format = lyric.format.lowercase(),
+        profile = lyric.profile.lowercase(),
         meta = canonicalizeField(lyric.meta, ::canonicalizeMeta),
         extra = lyric.extra.toMap(),
         agents = canonicalizeList(lyric.agents, ::canonicalizeAgent),

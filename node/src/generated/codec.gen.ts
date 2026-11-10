@@ -966,26 +966,30 @@ export const encodeRuntimeLyric = (w: WireWriter, v: runtime.Lyric): void => {
     w.tag(18)
     w.string(v.format)
   }
+  if (v.profile !== '') {
+    w.tag(26)
+    w.string(v.profile)
+  }
   if (v.status !== 0) {
-    w.tag(24)
+    w.tag(32)
     w.int32(v.status)
   }
   if (v.timing !== 0) {
-    w.tag(32)
+    w.tag(40)
     w.int32(v.timing)
   }
   if (v.meta !== undefined) {
-    w.message(42, encodeCommonMeta, v.meta)
+    w.message(50, encodeCommonMeta, v.meta)
   }
-  w.map(50, v.extra)
+  w.map(58, v.extra)
   for (const item of v.languages) {
-    w.message(58, encodeRuntimeLanguageUsage, item)
+    w.message(66, encodeRuntimeLanguageUsage, item)
   }
   for (const item of v.agents) {
-    w.message(66, encodeCommonAgent, item)
+    w.message(74, encodeCommonAgent, item)
   }
   for (const item of v.lines) {
-    w.message(74, encodeRuntimeLine, item)
+    w.message(82, encodeRuntimeLine, item)
   }
 }
 
@@ -998,23 +1002,26 @@ export const decodeRuntimeLyric = (r: WireReader, m: runtime.Lyric): void => {
       case 18:
         m.format = r.string()
         break
-      case 24:
-        m.status = r.int32()
+      case 26:
+        m.profile = r.string()
         break
       case 32:
+        m.status = r.int32()
+        break
+      case 40:
         m.timing = r.int32()
         break
-      case 42: {
+      case 50: {
         m.meta ??= createCommonMeta()
         const end = r.enter()
         decodeCommonMeta(r, m.meta)
         r.leave(end)
         break
       }
-      case 50:
+      case 58:
         r.mapEntry(m.extra)
         break
-      case 58: {
+      case 66: {
         const item = createRuntimeLanguageUsage()
         const end = r.enter()
         decodeRuntimeLanguageUsage(r, item)
@@ -1022,7 +1029,7 @@ export const decodeRuntimeLyric = (r: WireReader, m: runtime.Lyric): void => {
         m.languages.push(item)
         break
       }
-      case 66: {
+      case 74: {
         const item = createCommonAgent()
         const end = r.enter()
         decodeCommonAgent(r, item)
@@ -1030,7 +1037,7 @@ export const decodeRuntimeLyric = (r: WireReader, m: runtime.Lyric): void => {
         m.agents.push(item)
         break
       }
-      case 74: {
+      case 82: {
         const item = createRuntimeLine()
         const end = r.enter()
         decodeRuntimeLine(r, item)
@@ -1297,19 +1304,23 @@ export const encodeStorageLyric = (w: WireWriter, v: storage.Lyric): void => {
     w.tag(18)
     w.string(v.format)
   }
+  if (v.profile !== '') {
+    w.tag(26)
+    w.string(v.profile)
+  }
   if (v.timing !== 0) {
-    w.tag(24)
+    w.tag(32)
     w.int32(v.timing)
   }
   if (v.meta !== undefined) {
-    w.message(34, encodeCommonMeta, v.meta)
+    w.message(42, encodeCommonMeta, v.meta)
   }
-  w.map(42, v.extra)
+  w.map(50, v.extra)
   for (const item of v.agents) {
-    w.message(50, encodeCommonAgent, item)
+    w.message(58, encodeCommonAgent, item)
   }
   for (const item of v.lines) {
-    w.message(58, encodeStorageLine, item)
+    w.message(66, encodeStorageLine, item)
   }
 }
 
@@ -1322,20 +1333,23 @@ export const decodeStorageLyric = (r: WireReader, m: storage.Lyric): void => {
       case 18:
         m.format = r.string()
         break
-      case 24:
+      case 26:
+        m.profile = r.string()
+        break
+      case 32:
         m.timing = r.int32()
         break
-      case 34: {
+      case 42: {
         m.meta ??= createCommonMeta()
         const end = r.enter()
         decodeCommonMeta(r, m.meta)
         r.leave(end)
         break
       }
-      case 42:
+      case 50:
         r.mapEntry(m.extra)
         break
-      case 50: {
+      case 58: {
         const item = createCommonAgent()
         const end = r.enter()
         decodeCommonAgent(r, item)
@@ -1343,7 +1357,7 @@ export const decodeStorageLyric = (r: WireReader, m: storage.Lyric): void => {
         m.agents.push(item)
         break
       }
-      case 58: {
+      case 66: {
         const item = createStorageLine()
         const end = r.enter()
         decodeStorageLine(r, item)

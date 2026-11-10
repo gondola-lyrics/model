@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import { deepStrictEqual } from 'node:assert/strict'
 
-import { runtime } from '@root/index'
+import { runtime, storage } from '@root/index'
 
 const collectNodes = (node: unknown, seen = new Set<object>()): Set<object> => {
   if (node === null || typeof node !== 'object' || seen.has(node)) {
@@ -31,7 +31,8 @@ const buildLyric = (): runtime.Lyric => {
     }),
   ]
   return runtime.makeLyric({
-    format: 'LRC',
+    format: 'TTML',
+    profile: 'AMLL',
     timing: runtime.Timing.WORD,
     status: runtime.LyricStatus.VALID,
     languages: runtime.deriveLanguageUsages(lines),
@@ -40,11 +41,16 @@ const buildLyric = (): runtime.Lyric => {
 }
 
 describe('canonicalize', () => {
-  it('lowercases the format and the tags', () => {
+  it('lowercases the format, profile and tags', () => {
     const canonical = runtime.canonicalizeLyric(buildLyric())
-    deepStrictEqual(canonical.format, 'lrc')
+    deepStrictEqual(canonical.format, 'ttml')
+    deepStrictEqual(canonical.profile, 'amll')
     deepStrictEqual(canonical.lines[0]?.languages, ['en'])
     deepStrictEqual(canonical.lines[0]?.content?.words[0]?.language, 'en')
+
+    const persisted = storage.canonicalizeLyric(storage.makeLyric({ format: 'TTML', profile: 'ITUNES' }))
+    deepStrictEqual(persisted.format, 'ttml')
+    deepStrictEqual(persisted.profile, 'itunes')
   })
 
   it('is idempotent', () => {

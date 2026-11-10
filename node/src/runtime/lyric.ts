@@ -6,7 +6,6 @@ import { LineType, Timing } from '@root/generated/common/index.gen'
 import { LyricStatus } from '@root/generated/runtime/index.gen'
 import { DiagnosticCode } from '@root/common'
 import { SCHEMA_VERSION } from '@root/version'
-
 import {
   SEMVER_PATTERN,
   byTime,
@@ -23,6 +22,7 @@ import { decodeRuntimeLyric, encodeRuntimeLyric } from '@root/generated/codec.ge
 import { createRuntimeLyric, fieldsCommonAgent, fieldsCommonMeta, fieldsRuntimeLine, fieldsRuntimeLyric } from '@root/generated/detail.gen'
 import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMeta } from '@root/common'
 import { validateLyricTags } from '@root/common/tag'
+
 import { canonicalizeLanguageUsages, deriveLanguageUsages, orderLanguageUsages, validateLanguageUsage } from './language'
 import { canonicalizeLine, orderLine, validateLine } from './line'
 
@@ -38,6 +38,7 @@ export const makeLyric = (
   return withInit(createRuntimeLyric(), {
     version: SCHEMA_VERSION,
     format: init.format,
+    profile: init.profile,
     status: init.status,
     timing: init.timing,
     meta: init.meta,
@@ -223,13 +224,14 @@ export const orderLyric = (lyric: Lyric): Lyric => {
 }
 
 /**
- * Returns a canonical copy of the runtime lyric: format lowercased, meta/agents/lines canonicalized, languages canonicalized then ordered, lines ordered.
+ * Returns a canonical copy of the runtime lyric: format and profile lowercased, meta/agents/lines canonicalized, languages canonicalized then ordered, lines ordered.
  * The copy shares no part of the tree with the lyric it was given, so editing either leaves the other as it was.
  */
 export const canonicalizeLyric = (lyric: Lyric): Lyric => {
   return {
     ...lyric,
     format: lyric.format.toLowerCase(),
+    profile: lyric.profile.toLowerCase(),
     meta: canonicalizeField(fieldsCommonMeta, lyric.meta, canonicalizeMeta),
     extra: { ...lyric.extra },
     languages: canonicalizeLanguageUsages(lyric.languages),

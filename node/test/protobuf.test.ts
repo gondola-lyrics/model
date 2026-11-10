@@ -1,7 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { describe, it } from 'node:test'
 import { deepStrictEqual, ok, throws } from 'node:assert/strict'
-
 import { FileDescriptorSetSchema } from '@bufbuild/protobuf/wkt'
 import { create, createFileRegistry, fromBinary, toBinary } from '@bufbuild/protobuf'
 
@@ -77,6 +76,7 @@ const extra = () => {
 const runtimeLyric = (): runtime.Lyric => {
   return runtime.makeLyric({
     format: 'ttml',
+    profile: 'amll',
     status: runtime.LyricStatus.VALID,
     timing: 99 as runtime.Timing,
     meta: meta(),
@@ -119,7 +119,8 @@ const runtimeLyric = (): runtime.Lyric => {
 
 const storageLyric = (): storage.Lyric => {
   return storage.makeLyric({
-    format: 'lrc',
+    format: 'ttml',
+    profile: 'itunes',
     timing: storage.Timing.WORD,
     meta: meta(),
     extra: extra(),
@@ -191,7 +192,7 @@ describe('protobuf', () => {
     const malformed = {
       'a tag with nothing behind it': '0a',
       'a length past the end': '0a05',
-      'a length past the end of the nested range': '2a020a7f',
+      'a length past the end of the nested range': '32020a7f',
       'field number 0': '00',
       'wire type 7': '0f',
       'a tag past 32 bits': '8880808010',
@@ -216,13 +217,13 @@ describe('protobuf', () => {
       'accepts groups nested up to the limit': ['a306'.repeat(10001) + 'a406'.repeat(10001), ''],
       'reads a tag padded past five bytes': ['8a80808080000161', '0a0161'],
       'lets a later scalar win': ['0a01610a0162', '0a0162'],
-      'merges a repeated submessage': ['2a0210022a021807', '2a0410021807'],
-      'reads a missing map value as empty': ['32030a0161', '32050a01611200'],
-      'reads a missing map key as empty': ['3203120161', '32050a00120161'],
-      'lets a later map entry win': ['32060a0161120162' + '32060a0161120163', '32060a0161120163'],
-      'keeps a negative enum': ['20ffffffffffffffffff01', '20ffffffffffffffffff01'],
-      'reads an overlong zero as the default': ['2080808080808080808000', ''],
-      'keeps the low 32 bits of a uint32': ['2a0618ffffffff7f', '2a0618ffffffff0f'],
+      'merges a repeated submessage': ['3202100232021807', '320410021807'],
+      'reads a missing map value as empty': ['3a030a0161', '3a050a01611200'],
+      'reads a missing map key as empty': ['3a03120161', '3a050a00120161'],
+      'lets a later map entry win': ['3a060a0161120162' + '3a060a0161120163', '3a060a0161120163'],
+      'keeps a negative enum': ['28ffffffffffffffffff01', '28ffffffffffffffffff01'],
+      'reads an overlong zero as the default': ['2880808080808080808000', ''],
+      'keeps the low 32 bits of a uint32': ['320618ffffffff7f', '320618ffffffff0f'],
       'keeps a leading BOM': ['0a03efbbbf', '0a03efbbbf'],
     }
     for (const [why, [input, output]] of Object.entries(accepted)) {

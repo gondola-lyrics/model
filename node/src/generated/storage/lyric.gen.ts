@@ -24,6 +24,11 @@ export type Lyric = {
    */
   format: string
   /**
+   * Source-format dialect, scoped by `format` and identified by the parser.
+   * Compared case-insensitively; canonical form is lower case, and empty means unspecified.
+   */
+  profile: string
+  /**
    * Declared timing precision.
    */
   timing: Timing

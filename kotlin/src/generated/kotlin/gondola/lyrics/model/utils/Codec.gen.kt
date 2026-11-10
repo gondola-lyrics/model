@@ -408,24 +408,28 @@ internal fun encodeRuntimeLyric(w: WireWriter, src: RuntimeLyric) {
         w.tag(18)
         w.string(src.format)
     }
+    if (src.profile.isNotEmpty()) {
+        w.tag(26)
+        w.string(src.profile)
+    }
     if (src.status.value != 0) {
-        w.tag(24)
+        w.tag(32)
         w.int32(src.status.value)
     }
     if (src.timing.value != 0) {
-        w.tag(32)
+        w.tag(40)
         w.int32(src.timing.value)
     }
-    src.meta?.let { w.message(42, ::encodeCommonMeta, it) }
-    w.stringMap(50, src.extra)
+    src.meta?.let { w.message(50, ::encodeCommonMeta, it) }
+    w.stringMap(58, src.extra)
     for (item in src.languages) {
-        w.message(58, ::encodeRuntimeLanguageUsage, item)
+        w.message(66, ::encodeRuntimeLanguageUsage, item)
     }
     for (item in src.agents) {
-        w.message(66, ::encodeCommonAgent, item)
+        w.message(74, ::encodeCommonAgent, item)
     }
     for (item in src.lines) {
-        w.message(74, ::encodeRuntimeLine, item)
+        w.message(82, ::encodeRuntimeLine, item)
     }
 }
 
@@ -518,17 +522,21 @@ internal fun encodeStorageLyric(w: WireWriter, src: StorageLyric) {
         w.tag(18)
         w.string(src.format)
     }
+    if (src.profile.isNotEmpty()) {
+        w.tag(26)
+        w.string(src.profile)
+    }
     if (src.timing.value != 0) {
-        w.tag(24)
+        w.tag(32)
         w.int32(src.timing.value)
     }
-    src.meta?.let { w.message(34, ::encodeCommonMeta, it) }
-    w.stringMap(42, src.extra)
+    src.meta?.let { w.message(42, ::encodeCommonMeta, it) }
+    w.stringMap(50, src.extra)
     for (item in src.agents) {
-        w.message(50, ::encodeCommonAgent, item)
+        w.message(58, ::encodeCommonAgent, item)
     }
     for (item in src.lines) {
-        w.message(58, ::encodeStorageLine, item)
+        w.message(66, ::encodeStorageLine, item)
     }
 }
 
@@ -862,6 +870,7 @@ private class RuntimeLineState {
 private class RuntimeLyricState {
     var version: String = ""
     var format: String = ""
+    var profile: String = ""
     var status: RuntimeLyricStatus = RuntimeLyricStatus.LYRIC_STATUS_UNSPECIFIED
     var timing: CommonTiming = CommonTiming.TIMING_UNSPECIFIED
     var meta: CommonMetaState? = null
@@ -874,6 +883,7 @@ private class RuntimeLyricState {
         return RuntimeLyric(
             version = version,
             format = format,
+            profile = profile,
             status = status,
             timing = timing,
             meta = meta?.finish(),
@@ -966,6 +976,7 @@ private class StorageLineState {
 private class StorageLyricState {
     var version: String = ""
     var format: String = ""
+    var profile: String = ""
     var timing: CommonTiming = CommonTiming.TIMING_UNSPECIFIED
     var meta: CommonMetaState? = null
     val extra = LinkedHashMap<String, String>()
@@ -976,6 +987,7 @@ private class StorageLyricState {
         return StorageLyric(
             version = version,
             format = format,
+            profile = profile,
             timing = timing,
             meta = meta?.finish(),
             extra = extra,
@@ -1623,20 +1635,22 @@ private fun mergeRuntimeLyric(r: WireReader, state: RuntimeLyricState) {
 
             18 -> state.format = r.string()
 
-            24 -> state.status = RuntimeLyricStatus(r.int32())
+            26 -> state.profile = r.string()
 
-            32 -> state.timing = CommonTiming(r.int32())
+            32 -> state.status = RuntimeLyricStatus(r.int32())
 
-            42 -> {
+            40 -> state.timing = CommonTiming(r.int32())
+
+            50 -> {
                 val item = state.meta ?: CommonMetaState().also { state.meta = it }
                 val end = r.enter()
                 mergeCommonMeta(r, item)
                 r.leave(end)
             }
 
-            50 -> r.mapEntry(state.extra)
+            58 -> r.mapEntry(state.extra)
 
-            58 -> {
+            66 -> {
                 val item = RuntimeLanguageUsageState()
                 val end = r.enter()
                 mergeRuntimeLanguageUsage(r, item)
@@ -1644,7 +1658,7 @@ private fun mergeRuntimeLyric(r: WireReader, state: RuntimeLyricState) {
                 state.languages.add(item)
             }
 
-            66 -> {
+            74 -> {
                 val item = CommonAgentState()
                 val end = r.enter()
                 mergeCommonAgent(r, item)
@@ -1652,7 +1666,7 @@ private fun mergeRuntimeLyric(r: WireReader, state: RuntimeLyricState) {
                 state.agents.add(item)
             }
 
-            74 -> {
+            82 -> {
                 val item = RuntimeLineState()
                 val end = r.enter()
                 mergeRuntimeLine(r, item)
@@ -1842,18 +1856,20 @@ private fun mergeStorageLyric(r: WireReader, state: StorageLyricState) {
 
             18 -> state.format = r.string()
 
-            24 -> state.timing = CommonTiming(r.int32())
+            26 -> state.profile = r.string()
 
-            34 -> {
+            32 -> state.timing = CommonTiming(r.int32())
+
+            42 -> {
                 val item = state.meta ?: CommonMetaState().also { state.meta = it }
                 val end = r.enter()
                 mergeCommonMeta(r, item)
                 r.leave(end)
             }
 
-            42 -> r.mapEntry(state.extra)
+            50 -> r.mapEntry(state.extra)
 
-            50 -> {
+            58 -> {
                 val item = CommonAgentState()
                 val end = r.enter()
                 mergeCommonAgent(r, item)
@@ -1861,7 +1877,7 @@ private fun mergeStorageLyric(r: WireReader, state: StorageLyricState) {
                 state.agents.add(item)
             }
 
-            58 -> {
+            66 -> {
                 val item = StorageLineState()
                 val end = r.enter()
                 mergeStorageLine(r, item)

@@ -64,6 +64,11 @@ public data class Lyric(
      */
     val format: String = "",
     /**
+     * Source-format dialect, scoped by `format` and identified by the parser.
+     * Compared case-insensitively; canonical form is lower case, and empty means unspecified.
+     */
+    val profile: String = "",
+    /**
      * Parse validity of the lyric.
      * When INVALID, only `version` and `status` are guaranteed; the other fields are best-effort and may be empty, and no rule is relaxed for them.
      */

@@ -31,6 +31,7 @@ import gondola.lyrics.model.storage.Lyric as StorageLyric
 import gondola.lyrics.model.storage.Word as StorageWord
 import gondola.lyrics.model.storage.canonicalizeLyric as canonicalizeStorageLyric
 import gondola.lyrics.model.storage.encode as encodeStorage
+import gondola.lyrics.model.storage.makeLyric as makeStorageLyric
 
 class CanonicalizeTest {
     private fun buildLyric(): Lyric {
@@ -52,7 +53,8 @@ class CanonicalizeTest {
             ),
         )
         return makeLyric(
-            format = "LRC",
+            format = "TTML",
+            profile = "AMLL",
             timing = Timing.TIMING_WORD,
             status = LyricStatus.LYRIC_STATUS_VALID,
             languages = deriveLanguageUsages(lines),
@@ -61,11 +63,16 @@ class CanonicalizeTest {
     }
 
     @Test
-    fun lowercasesFormatAndTags() {
+    fun lowercasesFormatProfileAndTags() {
         val canonical = canonicalizeLyric(buildLyric())
-        assertEquals("lrc", canonical.format)
+        assertEquals("ttml", canonical.format)
+        assertEquals("amll", canonical.profile)
         assertEquals(listOf("en"), canonical.lines[0].languages)
         assertEquals("en", assertNotNull(canonical.lines[0].content).words[0].language)
+
+        val persisted = canonicalizeStorageLyric(makeStorageLyric(format = "TTML", profile = "ITUNES"))
+        assertEquals("ttml", persisted.format)
+        assertEquals("itunes", persisted.profile)
     }
 
     @Test

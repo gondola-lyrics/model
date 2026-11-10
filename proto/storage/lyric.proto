@@ -25,20 +25,24 @@ message Lyric {
   // Format this lyric was parsed from, named by the parser and compared case-insensitively; canonical form is lower case, and empty means unknown.
   string format = 2;
 
+  // Source-format dialect, scoped by `format` and identified by the parser.
+  // Compared case-insensitively; canonical form is lower case, and empty means unspecified.
+  string profile = 3;
+
   // Declared timing precision.
-  lyric.common.Timing timing = 3;
+  lyric.common.Timing timing = 4;
 
   // Metadata of the lyric.
-  lyric.common.Meta meta = 4;
+  lyric.common.Meta meta = 5;
 
   // Format-specific data with no typed field, looked up by key.
   // Unlike `Meta.unknowns`, a consumer may act on these.
-  map<string, string> extra = 5;
+  map<string, string> extra = 6;
 
   // Performing agents referenced by lines.
-  repeated lyric.common.Agent agents = 6;
+  repeated lyric.common.Agent agents = 7;
 
   // Lyric lines, ordered by TimeRange.start ascending.
   // Every line's range has a known end except the last line's, and an instrumental line's always has one.
-  repeated Line lines = 7;
+  repeated Line lines = 8;
 }

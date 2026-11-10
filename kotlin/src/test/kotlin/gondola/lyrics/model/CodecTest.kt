@@ -162,7 +162,8 @@ class CodecTest {
         )
         val native = Lyric(
             version = "1.1.0",
-            format = "lrc",
+            format = "ttml",
+            profile = "amll",
             status = LyricStatus.LYRIC_STATUS_VALID,
             timing = Timing(-1),
             meta = meta,
@@ -173,7 +174,8 @@ class CodecTest {
         )
         val stored = StorageLyric(
             version = "1.1.0",
-            format = "lrc",
+            format = "ttml",
+            profile = "amll",
             timing = Timing(-1),
             meta = meta,
             extra = mapOf("\$private" to "kept"),
@@ -196,7 +198,8 @@ class CodecTest {
             val emphasis = if (layer == "runtime") official("lyric.runtime.WordEmphasis") else false
             val values = listOf(
                 "version" to "1.1.0",
-                "format" to "lrc",
+                "format" to "ttml",
+                "profile" to "amll",
                 "timing" to -1,
                 "meta" to officialMeta,
                 "extra" to listOf(official("lyric.$layer.Lyric.ExtraEntry", "key" to "\$private", "value" to "kept")),
@@ -245,7 +248,7 @@ class CodecTest {
         val decoded = decode(bytes + fromHex("a00601"))
         assertEquals(lyric, decoded)
         assertContentEquals(bytes, encode(decoded))
-        val emptyMeta = decode(fromHex("2a03a00601"))
+        val emptyMeta = decode(fromHex("3203a00601"))
         assertEquals(Meta(), emptyMeta.meta)
         assertNull(canonicalizeLyric(emptyMeta).meta)
     }
@@ -262,7 +265,7 @@ class CodecTest {
         val malformed = mapOf(
             "missing field value" to "0a",
             "length beyond input" to "0a05",
-            "length beyond nested range" to "2a020a7f",
+            "length beyond nested range" to "32020a7f",
             "zero field number" to "00",
             "invalid wire type" to "0f",
             "tag beyond 32 bits" to "8880808010",
@@ -291,13 +294,13 @@ class CodecTest {
             "maximum group depth" to ("a306".repeat(10001) + "a406".repeat(10001) to ""),
             "padded tag" to ("8a80808080000161" to "0a0161"),
             "last scalar wins" to ("0a01610a0162" to "0a0162"),
-            "merge singular message" to ("2a0210022a021807" to "2a0410021807"),
-            "missing map value" to ("32030a0161" to "32050a01611200"),
-            "missing map key" to ("3203120161" to "32050a00120161"),
-            "last map value wins" to ("32060a016112016232060a0161120163" to "32060a0161120163"),
-            "negative enum" to ("20ffffffffffffffffff01" to "20ffffffffffffffffff01"),
-            "padded zero" to ("2080808080808080808000" to ""),
-            "uint32 low bits" to ("2a0618ffffffff7f" to "2a0618ffffffff0f"),
+            "merge singular message" to ("3202100232021807" to "320410021807"),
+            "missing map value" to ("3a030a0161" to "3a050a01611200"),
+            "missing map key" to ("3a03120161" to "3a050a00120161"),
+            "last map value wins" to ("3a060a01611201623a060a0161120163" to "3a060a0161120163"),
+            "negative enum" to ("28ffffffffffffffffff01" to "28ffffffffffffffffff01"),
+            "padded zero" to ("2880808080808080808000" to ""),
+            "uint32 low bits" to ("320618ffffffff7f" to "320618ffffffff0f"),
             "leading BOM" to ("0a03efbbbf" to "0a03efbbbf"),
         )
         for ((reason, pair) in accepted) {
@@ -309,7 +312,7 @@ class CodecTest {
     @Test
     fun mergesRepeatedMessageChunksAndAppendsTheirLists() {
         val count = 2048
-        val bytes = fromHex("2a021002" + "2a050a030a016b".repeat(count) + "2a021807")
+        val bytes = fromHex("32021002" + "32050a030a016b".repeat(count) + "32021807")
         val lyric = decode(bytes)
         val meta = assertNotNull(lyric.meta)
         assertEquals(1, meta.offset)

@@ -165,6 +165,7 @@ internal fun isDefault(message: Any): Boolean {
         is RuntimeLyric ->
             message.version == "" &&
                 message.format == "" &&
+                message.profile == "" &&
                 message.status.value == 0 &&
                 message.timing.value == 0 &&
                 message.meta == null &&
@@ -206,6 +207,7 @@ internal fun isDefault(message: Any): Boolean {
         is StorageLyric ->
             message.version == "" &&
                 message.format == "" &&
+                message.profile == "" &&
                 message.timing.value == 0 &&
                 message.meta == null &&
                 message.extra.isEmpty() &&
@@ -365,6 +367,7 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
         is RuntimeLyric -> {
             visit("version", FieldShape.SCALAR, message.version)
             visit("format", FieldShape.SCALAR, message.format)
+            visit("profile", FieldShape.SCALAR, message.profile)
             visit("status", FieldShape.ENUM, message.status)
             visit("timing", FieldShape.ENUM, message.timing)
             visit("meta", FieldShape.MESSAGE, message.meta)
@@ -412,6 +415,7 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
         is StorageLyric -> {
             visit("version", FieldShape.SCALAR, message.version)
             visit("format", FieldShape.SCALAR, message.format)
+            visit("profile", FieldShape.SCALAR, message.profile)
             visit("timing", FieldShape.ENUM, message.timing)
             visit("meta", FieldShape.MESSAGE, message.meta)
             visit("extra", FieldShape.MAP, message.extra)
@@ -592,6 +596,7 @@ internal fun readField(message: Any, name: String): Any? {
         is RuntimeLyric -> when (name) {
             "version" -> message.version
             "format" -> message.format
+            "profile" -> message.profile
             "status" -> message.status.value
             "timing" -> message.timing.value
             "meta" -> message.meta
@@ -644,6 +649,7 @@ internal fun readField(message: Any, name: String): Any? {
         is StorageLyric -> when (name) {
             "version" -> message.version
             "format" -> message.format
+            "profile" -> message.profile
             "timing" -> message.timing.value
             "meta" -> message.meta
             "extra" -> message.extra

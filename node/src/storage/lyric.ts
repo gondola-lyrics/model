@@ -5,7 +5,6 @@ import type { LineContent, Lyric } from '@root/generated/storage/index.gen'
 import { LineType, Timing } from '@root/generated/common/index.gen'
 import { DiagnosticCode } from '@root/common'
 import { SCHEMA_VERSION } from '@root/version'
-
 import {
   SEMVER_PATTERN,
   byTime,
@@ -22,6 +21,7 @@ import { decodeStorageLyric, encodeStorageLyric } from '@root/generated/codec.ge
 import { createStorageLyric, fieldsCommonAgent, fieldsCommonMeta, fieldsStorageLine, fieldsStorageLyric } from '@root/generated/detail.gen'
 import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMeta } from '@root/common'
 import { validateLyricTags } from '@root/common/tag'
+
 import { canonicalizeLine, orderLine, validateLine } from './line'
 
 /**
@@ -31,6 +31,7 @@ export const makeLyric = (init?: Omit<MakeInit<Lyric>, 'version'>): Lyric => {
   return withInit(createStorageLyric(), {
     version: SCHEMA_VERSION,
     format: init?.format,
+    profile: init?.profile,
     timing: init?.timing,
     meta: init?.meta,
     extra: init?.extra,
@@ -189,13 +190,14 @@ export const orderLyric = (lyric: Lyric): Lyric => {
 }
 
 /**
- * Returns a canonical copy of the storage lyric: format lowercased, meta/agents/lines canonicalized, lines ordered.
+ * Returns a canonical copy of the storage lyric: format and profile lowercased, meta/agents/lines canonicalized, lines ordered.
  * The copy shares no part of the tree with the lyric it was given, so editing either leaves the other as it was.
  */
 export const canonicalizeLyric = (lyric: Lyric): Lyric => {
   return {
     ...lyric,
     format: lyric.format.toLowerCase(),
+    profile: lyric.profile.toLowerCase(),
     meta: canonicalizeField(fieldsCommonMeta, lyric.meta, canonicalizeMeta),
     extra: { ...lyric.extra },
     agents: canonicalizeList(fieldsCommonAgent, lyric.agents, canonicalizeAgent),
