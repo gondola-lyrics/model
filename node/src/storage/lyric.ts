@@ -18,15 +18,8 @@ import {
   withInit,
 } from '@root/utils'
 import { read, write } from '@root/utils/wire'
-import {
-  createStorageLyric,
-  decodeStorageLyric,
-  encodeStorageLyric,
-  fieldsCommonAgent,
-  fieldsCommonMeta,
-  fieldsStorageLine,
-  fieldsStorageLyric,
-} from '@root/generated/internal.gen'
+import { decodeStorageLyric, encodeStorageLyric } from '@root/generated/codec.gen'
+import { createStorageLyric, fieldsCommonAgent, fieldsCommonMeta, fieldsStorageLine, fieldsStorageLyric } from '@root/generated/detail.gen'
 import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMeta } from '@root/common'
 import { validateLyricTags } from '@root/common/tag'
 import { canonicalizeLine, orderLine, validateLine } from './line'

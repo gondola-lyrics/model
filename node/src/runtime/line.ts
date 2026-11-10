@@ -30,7 +30,7 @@ import {
   fieldsRuntimeLineBackground,
   fieldsRuntimeLineContent,
   fieldsRuntimeWord,
-} from '@root/generated/internal.gen'
+} from '@root/generated/detail.gen'
 import { canonicalizeLineAnnotation, validateContent, validateLineAnnotation, validatePart, validateTimeRange } from '@root/common'
 import { validateLineTags } from '@root/common/tag'
 import { canonicalizeWord } from './word'

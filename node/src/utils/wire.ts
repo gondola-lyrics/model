@@ -1,4 +1,4 @@
-import type { WireReader, WireWriter } from '@root/generated/internal.gen'
+import type { WireReader, WireWriter } from '@root/generated/codec.gen'
 
 const VARINT = 0
 const FIXED64 = 1

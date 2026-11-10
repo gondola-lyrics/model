@@ -1,4 +1,4 @@
-import type { MessageFields } from '@root/generated/internal.gen'
+import type { MessageFields } from '@root/generated/detail.gen'
 import type { Diagnostic } from './diagnostic'
 
 import { DiagnosticCode } from './diagnostic'

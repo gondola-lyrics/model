@@ -13,7 +13,7 @@ import {
   createCommonLineAnnotationTranslation,
   fieldsCommonLineAnnotationRoman,
   fieldsCommonLineAnnotationTranslation,
-} from '@root/generated/internal.gen'
+} from '@root/generated/detail.gen'
 import { getAnnotationItemText, getWordsLanguages, getWordsText, validateWords } from './word'
 
 /**

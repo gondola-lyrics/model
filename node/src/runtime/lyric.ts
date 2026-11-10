@@ -19,15 +19,8 @@ import {
   withInit,
 } from '@root/utils'
 import { read, write } from '@root/utils/wire'
-import {
-  createRuntimeLyric,
-  decodeRuntimeLyric,
-  encodeRuntimeLyric,
-  fieldsCommonAgent,
-  fieldsCommonMeta,
-  fieldsRuntimeLine,
-  fieldsRuntimeLyric,
-} from '@root/generated/internal.gen'
+import { decodeRuntimeLyric, encodeRuntimeLyric } from '@root/generated/codec.gen'
+import { createRuntimeLyric, fieldsCommonAgent, fieldsCommonMeta, fieldsRuntimeLine, fieldsRuntimeLyric } from '@root/generated/detail.gen'
 import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMeta } from '@root/common'
 import { validateLyricTags } from '@root/common/tag'
 import { canonicalizeLanguageUsages, deriveLanguageUsages, orderLanguageUsages, validateLanguageUsage } from './language'

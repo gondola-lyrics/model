@@ -2,7 +2,7 @@ import type { MakeInit } from '@root/utils'
 import type { UnknownEntry } from '@root/generated/common/index.gen'
 
 import { withInit } from '@root/utils'
-import { createCommonUnknownEntry } from '@root/generated/internal.gen'
+import { createCommonUnknownEntry } from '@root/generated/detail.gen'
 
 /**
  * Creates an UnknownEntry, a preserved key-value pair the model has no typed field for.

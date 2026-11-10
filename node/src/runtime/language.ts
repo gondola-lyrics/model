@@ -6,7 +6,7 @@ import { LineType, WordType } from '@root/generated/common/index.gen'
 import { DiagnosticCode } from '@root/common'
 
 import { checkNumberDomain, childPath, compareTags, lowerTag, withInit } from '@root/utils'
-import { createRuntimeLanguageUsage } from '@root/generated/internal.gen'
+import { createRuntimeLanguageUsage } from '@root/generated/detail.gen'
 import { isLanguageTag } from '@root/common'
 
 /**

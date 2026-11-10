@@ -1,6 +1,6 @@
-import type { FieldInfo, MessageFields } from '@root/generated/internal.gen'
+import type { FieldInfo, MessageFields } from '@root/generated/detail.gen'
 
-import { fieldsCommonTimeRange } from '@root/generated/internal.gen'
+import { fieldsCommonTimeRange } from '@root/generated/detail.gen'
 
 /**
  * The fields a `make*` takes, each of which may be left out or undefined to keep its default.

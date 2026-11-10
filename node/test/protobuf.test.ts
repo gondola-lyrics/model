@@ -7,7 +7,8 @@ import { create, createFileRegistry, fromBinary, toBinary } from '@bufbuild/prot
 
 import { runtime, storage } from '@root/index'
 import { read, write } from '@root/utils/wire'
-import { createStorageLineContent, decodeStorageLineContent, encodeStorageLineContent } from '@root/generated/internal.gen'
+import { decodeStorageLineContent, encodeStorageLineContent } from '@root/generated/codec.gen'
+import { createStorageLineContent } from '@root/generated/detail.gen'
 
 /**
  * The same bytes every language's tests decode, covering presence: an explicit zero end, an empty language, a false and a true emphasis, an undeclared word type and an empty text.

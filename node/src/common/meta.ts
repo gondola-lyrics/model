@@ -14,7 +14,7 @@ import {
   fieldsCommonMetaReference,
   fieldsCommonText,
   fieldsCommonUnknownEntry,
-} from '@root/generated/internal.gen'
+} from '@root/generated/detail.gen'
 import { canonicalizeText, validateText } from './text'
 
 /**

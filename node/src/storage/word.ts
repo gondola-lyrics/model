@@ -4,7 +4,7 @@ import type { Word } from '@root/generated/storage/index.gen'
 import { WordType } from '@root/generated/common/index.gen'
 
 import { withInit } from '@root/utils'
-import { createStorageWord } from '@root/generated/internal.gen'
+import { createStorageWord } from '@root/generated/detail.gen'
 import { canonicalizeWordShared } from '@root/common'
 
 /**

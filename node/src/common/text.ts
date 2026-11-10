@@ -5,7 +5,7 @@ import type { Diagnostic } from './diagnostic'
 import { DiagnosticCode } from './diagnostic'
 
 import { lowerTag, withInit } from '@root/utils'
-import { createCommonText } from '@root/generated/internal.gen'
+import { createCommonText } from '@root/generated/detail.gen'
 
 /**
  * Creates a Text, text with an optional BCP 47 language tag.

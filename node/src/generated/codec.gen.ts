@@ -4,6 +4,35 @@ import type * as common from './common/index.gen'
 import type * as runtime from './runtime/index.gen'
 import type * as storage from './storage/index.gen'
 
+import {
+  createCommonAgent,
+  createCommonLineAnnotation,
+  createCommonLineAnnotationRoman,
+  createCommonLineAnnotationTranslation,
+  createCommonMeta,
+  createCommonMetaCredit,
+  createCommonMetaReference,
+  createCommonPart,
+  createCommonText,
+  createCommonTimeRange,
+  createCommonUnknownEntry,
+  createCommonWordAnnotation,
+  createCommonWordAnnotationRoman,
+  createCommonWordAnnotationRuby,
+  createCommonWordAnnotationToken,
+  createCommonWordAnnotationTranslation,
+  createRuntimeLanguageUsage,
+  createRuntimeLine,
+  createRuntimeLineBackground,
+  createRuntimeLineContent,
+  createRuntimeWord,
+  createRuntimeWordEmphasis,
+  createStorageLine,
+  createStorageLineBackground,
+  createStorageLineContent,
+  createStorageWord,
+} from './detail.gen'
+
 /**
  * What the generated encoders write through.
  */
@@ -35,32 +64,6 @@ export type WireReader = {
   skip(): void
 }
 
-/**
- * One field of a structure, for the helpers that walk a structure without naming its fields.
- */
-export type FieldInfo =
-  | { readonly name: string; readonly shape: 'scalar' | 'enum' | 'optional' | 'list-scalar' | 'map' }
-  | { readonly name: string; readonly shape: 'message' | 'list-message'; readonly message: MessageFields<any> }
-
-/**
- * The fields of one structure, tied to its type so a table cannot be paired with another structure.
- */
-export type MessageFields<T> = {
-  readonly fields: readonly FieldInfo[]
-  readonly phantom?: (value: T) => T
-}
-
-export const fieldsCommonText: MessageFields<common.Text> = {
-  fields: [
-    { name: 'language', shape: 'optional' },
-    { name: 'text', shape: 'scalar' },
-  ],
-}
-
-export const createCommonText = (): common.Text => {
-  return { text: '' }
-}
-
 export const encodeCommonText = (w: WireWriter, v: common.Text): void => {
   if (v.language !== undefined) {
     w.tag(10)
@@ -85,19 +88,6 @@ export const decodeCommonText = (r: WireReader, m: common.Text): void => {
         r.skip()
     }
   }
-}
-
-export const fieldsCommonAgent: MessageFields<common.Agent> = {
-  fields: [
-    { name: 'id', shape: 'scalar' },
-    { name: 'type', shape: 'enum' },
-    { name: 'raw', shape: 'optional' },
-    { name: 'names', shape: 'list-message', message: fieldsCommonText },
-  ],
-}
-
-export const createCommonAgent = (): common.Agent => {
-  return { id: '', type: 0, names: [] }
 }
 
 export const encodeCommonAgent = (w: WireWriter, v: common.Agent): void => {
@@ -144,17 +134,6 @@ export const decodeCommonAgent = (r: WireReader, m: common.Agent): void => {
   }
 }
 
-export const fieldsCommonLineAnnotationRoman: MessageFields<common.LineAnnotationRoman> = {
-  fields: [
-    { name: 'language', shape: 'optional' },
-    { name: 'text', shape: 'scalar' },
-  ],
-}
-
-export const createCommonLineAnnotationRoman = (): common.LineAnnotationRoman => {
-  return { text: '' }
-}
-
 export const encodeCommonLineAnnotationRoman = (w: WireWriter, v: common.LineAnnotationRoman): void => {
   if (v.language !== undefined) {
     w.tag(10)
@@ -181,17 +160,6 @@ export const decodeCommonLineAnnotationRoman = (r: WireReader, m: common.LineAnn
   }
 }
 
-export const fieldsCommonLineAnnotationTranslation: MessageFields<common.LineAnnotationTranslation> = {
-  fields: [
-    { name: 'language', shape: 'optional' },
-    { name: 'text', shape: 'scalar' },
-  ],
-}
-
-export const createCommonLineAnnotationTranslation = (): common.LineAnnotationTranslation => {
-  return { text: '' }
-}
-
 export const encodeCommonLineAnnotationTranslation = (w: WireWriter, v: common.LineAnnotationTranslation): void => {
   if (v.language !== undefined) {
     w.tag(10)
@@ -216,17 +184,6 @@ export const decodeCommonLineAnnotationTranslation = (r: WireReader, m: common.L
         r.skip()
     }
   }
-}
-
-export const fieldsCommonLineAnnotation: MessageFields<common.LineAnnotation> = {
-  fields: [
-    { name: 'romans', shape: 'list-message', message: fieldsCommonLineAnnotationRoman },
-    { name: 'translations', shape: 'list-message', message: fieldsCommonLineAnnotationTranslation },
-  ],
-}
-
-export const createCommonLineAnnotation = (): common.LineAnnotation => {
-  return { romans: [], translations: [] }
 }
 
 export const encodeCommonLineAnnotation = (w: WireWriter, v: common.LineAnnotation): void => {
@@ -263,17 +220,6 @@ export const decodeCommonLineAnnotation = (r: WireReader, m: common.LineAnnotati
   }
 }
 
-export const fieldsCommonUnknownEntry: MessageFields<common.UnknownEntry> = {
-  fields: [
-    { name: 'key', shape: 'scalar' },
-    { name: 'value', shape: 'scalar' },
-  ],
-}
-
-export const createCommonUnknownEntry = (): common.UnknownEntry => {
-  return { key: '', value: '' }
-}
-
 export const encodeCommonUnknownEntry = (w: WireWriter, v: common.UnknownEntry): void => {
   if (v.key !== '') {
     w.tag(10)
@@ -298,18 +244,6 @@ export const decodeCommonUnknownEntry = (r: WireReader, m: common.UnknownEntry):
         r.skip()
     }
   }
-}
-
-export const fieldsCommonMetaCredit: MessageFields<common.MetaCredit> = {
-  fields: [
-    { name: 'role', shape: 'enum' },
-    { name: 'raw', shape: 'optional' },
-    { name: 'names', shape: 'list-message', message: fieldsCommonText },
-  ],
-}
-
-export const createCommonMetaCredit = (): common.MetaCredit => {
-  return { role: 0, names: [] }
 }
 
 export const encodeCommonMetaCredit = (w: WireWriter, v: common.MetaCredit): void => {
@@ -349,17 +283,6 @@ export const decodeCommonMetaCredit = (r: WireReader, m: common.MetaCredit): voi
   }
 }
 
-export const fieldsCommonMetaReference: MessageFields<common.MetaReference> = {
-  fields: [
-    { name: 'platform', shape: 'scalar' },
-    { name: 'ids', shape: 'list-scalar' },
-  ],
-}
-
-export const createCommonMetaReference = (): common.MetaReference => {
-  return { platform: '', ids: [] }
-}
-
 export const encodeCommonMetaReference = (w: WireWriter, v: common.MetaReference): void => {
   if (v.platform !== '') {
     w.tag(10)
@@ -384,26 +307,6 @@ export const decodeCommonMetaReference = (r: WireReader, m: common.MetaReference
         r.skip()
     }
   }
-}
-
-export const fieldsCommonMeta: MessageFields<common.Meta> = {
-  fields: [
-    { name: 'unknowns', shape: 'list-message', message: fieldsCommonUnknownEntry },
-    { name: 'offset', shape: 'scalar' },
-    { name: 'duration', shape: 'optional' },
-    { name: 'language', shape: 'optional' },
-    { name: 'titles', shape: 'list-message', message: fieldsCommonText },
-    { name: 'artists', shape: 'list-message', message: fieldsCommonText },
-    { name: 'albums', shape: 'list-message', message: fieldsCommonText },
-    { name: 'authors', shape: 'list-message', message: fieldsCommonText },
-    { name: 'isrcs', shape: 'list-scalar' },
-    { name: 'credits', shape: 'list-message', message: fieldsCommonMetaCredit },
-    { name: 'references', shape: 'list-message', message: fieldsCommonMetaReference },
-  ],
-}
-
-export const createCommonMeta = (): common.Meta => {
-  return { unknowns: [], offset: 0, titles: [], artists: [], albums: [], authors: [], isrcs: [], credits: [], references: [] }
 }
 
 export const encodeCommonMeta = (w: WireWriter, v: common.Meta): void => {
@@ -523,17 +426,6 @@ export const decodeCommonMeta = (r: WireReader, m: common.Meta): void => {
   }
 }
 
-export const fieldsCommonPart: MessageFields<common.Part> = {
-  fields: [
-    { name: 'type', shape: 'enum' },
-    { name: 'raw', shape: 'optional' },
-  ],
-}
-
-export const createCommonPart = (): common.Part => {
-  return { type: 0 }
-}
-
 export const encodeCommonPart = (w: WireWriter, v: common.Part): void => {
   if (v.type !== 0) {
     w.tag(8)
@@ -560,17 +452,6 @@ export const decodeCommonPart = (r: WireReader, m: common.Part): void => {
   }
 }
 
-export const fieldsCommonTimeRange: MessageFields<common.TimeRange> = {
-  fields: [
-    { name: 'start', shape: 'scalar' },
-    { name: 'end', shape: 'optional' },
-  ],
-}
-
-export const createCommonTimeRange = (): common.TimeRange => {
-  return { start: 0 }
-}
-
 export const encodeCommonTimeRange = (w: WireWriter, v: common.TimeRange): void => {
   if (v.start !== 0) {
     w.tag(8)
@@ -595,17 +476,6 @@ export const decodeCommonTimeRange = (r: WireReader, m: common.TimeRange): void 
         r.skip()
     }
   }
-}
-
-export const fieldsCommonWordAnnotationToken: MessageFields<common.WordAnnotationToken> = {
-  fields: [
-    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
-    { name: 'text', shape: 'scalar' },
-  ],
-}
-
-export const createCommonWordAnnotationToken = (): common.WordAnnotationToken => {
-  return { text: '' }
 }
 
 export const encodeCommonWordAnnotationToken = (w: WireWriter, v: common.WordAnnotationToken): void => {
@@ -637,17 +507,6 @@ export const decodeCommonWordAnnotationToken = (r: WireReader, m: common.WordAnn
   }
 }
 
-export const fieldsCommonWordAnnotationTranslation: MessageFields<common.WordAnnotationTranslation> = {
-  fields: [
-    { name: 'language', shape: 'optional' },
-    { name: 'text', shape: 'scalar' },
-  ],
-}
-
-export const createCommonWordAnnotationTranslation = (): common.WordAnnotationTranslation => {
-  return { text: '' }
-}
-
 export const encodeCommonWordAnnotationTranslation = (w: WireWriter, v: common.WordAnnotationTranslation): void => {
   if (v.language !== undefined) {
     w.tag(10)
@@ -672,18 +531,6 @@ export const decodeCommonWordAnnotationTranslation = (r: WireReader, m: common.W
         r.skip()
     }
   }
-}
-
-export const fieldsCommonWordAnnotationRoman: MessageFields<common.WordAnnotationRoman> = {
-  fields: [
-    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
-    { name: 'language', shape: 'optional' },
-    { name: 'tokens', shape: 'list-message', message: fieldsCommonWordAnnotationToken },
-  ],
-}
-
-export const createCommonWordAnnotationRoman = (): common.WordAnnotationRoman => {
-  return { tokens: [] }
 }
 
 export const encodeCommonWordAnnotationRoman = (w: WireWriter, v: common.WordAnnotationRoman): void => {
@@ -726,18 +573,6 @@ export const decodeCommonWordAnnotationRoman = (r: WireReader, m: common.WordAnn
   }
 }
 
-export const fieldsCommonWordAnnotationRuby: MessageFields<common.WordAnnotationRuby> = {
-  fields: [
-    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
-    { name: 'language', shape: 'optional' },
-    { name: 'tokens', shape: 'list-message', message: fieldsCommonWordAnnotationToken },
-  ],
-}
-
-export const createCommonWordAnnotationRuby = (): common.WordAnnotationRuby => {
-  return { tokens: [] }
-}
-
 export const encodeCommonWordAnnotationRuby = (w: WireWriter, v: common.WordAnnotationRuby): void => {
   if (v.time !== undefined) {
     w.message(10, encodeCommonTimeRange, v.time)
@@ -776,18 +611,6 @@ export const decodeCommonWordAnnotationRuby = (r: WireReader, m: common.WordAnno
         r.skip()
     }
   }
-}
-
-export const fieldsCommonWordAnnotation: MessageFields<common.WordAnnotation> = {
-  fields: [
-    { name: 'rubies', shape: 'list-message', message: fieldsCommonWordAnnotationRuby },
-    { name: 'romans', shape: 'list-message', message: fieldsCommonWordAnnotationRoman },
-    { name: 'translations', shape: 'list-message', message: fieldsCommonWordAnnotationTranslation },
-  ],
-}
-
-export const createCommonWordAnnotation = (): common.WordAnnotation => {
-  return { rubies: [], romans: [], translations: [] }
 }
 
 export const encodeCommonWordAnnotation = (w: WireWriter, v: common.WordAnnotation): void => {
@@ -835,17 +658,6 @@ export const decodeCommonWordAnnotation = (r: WireReader, m: common.WordAnnotati
   }
 }
 
-export const fieldsRuntimeLanguageUsage: MessageFields<runtime.LanguageUsage> = {
-  fields: [
-    { name: 'tag', shape: 'scalar' },
-    { name: 'count', shape: 'scalar' },
-  ],
-}
-
-export const createRuntimeLanguageUsage = (): runtime.LanguageUsage => {
-  return { tag: '', count: 0 }
-}
-
 export const encodeRuntimeLanguageUsage = (w: WireWriter, v: runtime.LanguageUsage): void => {
   if (v.tag !== '') {
     w.tag(10)
@@ -872,17 +684,6 @@ export const decodeRuntimeLanguageUsage = (r: WireReader, m: runtime.LanguageUsa
   }
 }
 
-export const fieldsRuntimeWordEmphasis: MessageFields<runtime.WordEmphasis> = {
-  fields: [
-    { name: 'value', shape: 'scalar' },
-    { name: 'derived', shape: 'scalar' },
-  ],
-}
-
-export const createRuntimeWordEmphasis = (): runtime.WordEmphasis => {
-  return { value: false, derived: false }
-}
-
 export const encodeRuntimeWordEmphasis = (w: WireWriter, v: runtime.WordEmphasis): void => {
   if (v.value !== false) {
     w.tag(8)
@@ -907,21 +708,6 @@ export const decodeRuntimeWordEmphasis = (r: WireReader, m: runtime.WordEmphasis
         r.skip()
     }
   }
-}
-
-export const fieldsRuntimeWord: MessageFields<runtime.Word> = {
-  fields: [
-    { name: 'type', shape: 'enum' },
-    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
-    { name: 'language', shape: 'optional' },
-    { name: 'text', shape: 'scalar' },
-    { name: 'annotation', shape: 'message', message: fieldsCommonWordAnnotation },
-    { name: 'emphasis', shape: 'message', message: fieldsRuntimeWordEmphasis },
-  ],
-}
-
-export const createRuntimeWord = (): runtime.Word => {
-  return { type: 0, text: '' }
 }
 
 export const encodeRuntimeWord = (w: WireWriter, v: runtime.Word): void => {
@@ -987,17 +773,6 @@ export const decodeRuntimeWord = (r: WireReader, m: runtime.Word): void => {
   }
 }
 
-export const fieldsRuntimeLineContent: MessageFields<runtime.LineContent> = {
-  fields: [
-    { name: 'words', shape: 'list-message', message: fieldsRuntimeWord },
-    { name: 'text', shape: 'optional' },
-  ],
-}
-
-export const createRuntimeLineContent = (): runtime.LineContent => {
-  return { words: [] }
-}
-
 export const encodeRuntimeLineContent = (w: WireWriter, v: runtime.LineContent): void => {
   for (const item of v.words) {
     w.message(10, encodeRuntimeWord, item)
@@ -1026,21 +801,6 @@ export const decodeRuntimeLineContent = (r: WireReader, m: runtime.LineContent):
         r.skip()
     }
   }
-}
-
-export const fieldsRuntimeLineBackground: MessageFields<runtime.LineBackground> = {
-  fields: [
-    { name: 'id', shape: 'scalar' },
-    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
-    { name: 'agents', shape: 'list-scalar' },
-    { name: 'languages', shape: 'list-scalar' },
-    { name: 'content', shape: 'message', message: fieldsRuntimeLineContent },
-    { name: 'annotation', shape: 'message', message: fieldsCommonLineAnnotation },
-  ],
-}
-
-export const createRuntimeLineBackground = (): runtime.LineBackground => {
-  return { id: '', agents: [], languages: [] }
 }
 
 export const encodeRuntimeLineBackground = (w: WireWriter, v: runtime.LineBackground): void => {
@@ -1104,24 +864,6 @@ export const decodeRuntimeLineBackground = (r: WireReader, m: runtime.LineBackgr
         r.skip()
     }
   }
-}
-
-export const fieldsRuntimeLine: MessageFields<runtime.Line> = {
-  fields: [
-    { name: 'id', shape: 'scalar' },
-    { name: 'type', shape: 'enum' },
-    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
-    { name: 'part', shape: 'message', message: fieldsCommonPart },
-    { name: 'agents', shape: 'list-scalar' },
-    { name: 'languages', shape: 'list-scalar' },
-    { name: 'content', shape: 'message', message: fieldsRuntimeLineContent },
-    { name: 'annotation', shape: 'message', message: fieldsCommonLineAnnotation },
-    { name: 'backgrounds', shape: 'list-message', message: fieldsRuntimeLineBackground },
-  ],
-}
-
-export const createRuntimeLine = (): runtime.Line => {
-  return { id: '', type: 0, agents: [], languages: [], backgrounds: [] }
 }
 
 export const encodeRuntimeLine = (w: WireWriter, v: runtime.Line): void => {
@@ -1215,24 +957,6 @@ export const decodeRuntimeLine = (r: WireReader, m: runtime.Line): void => {
   }
 }
 
-export const fieldsRuntimeLyric: MessageFields<runtime.Lyric> = {
-  fields: [
-    { name: 'version', shape: 'scalar' },
-    { name: 'format', shape: 'scalar' },
-    { name: 'status', shape: 'enum' },
-    { name: 'timing', shape: 'enum' },
-    { name: 'meta', shape: 'message', message: fieldsCommonMeta },
-    { name: 'extra', shape: 'map' },
-    { name: 'languages', shape: 'list-message', message: fieldsRuntimeLanguageUsage },
-    { name: 'agents', shape: 'list-message', message: fieldsCommonAgent },
-    { name: 'lines', shape: 'list-message', message: fieldsRuntimeLine },
-  ],
-}
-
-export const createRuntimeLyric = (): runtime.Lyric => {
-  return { version: '', format: '', status: 0, timing: 0, extra: {}, languages: [], agents: [], lines: [] }
-}
-
 export const encodeRuntimeLyric = (w: WireWriter, v: runtime.Lyric): void => {
   if (v.version !== '') {
     w.tag(10)
@@ -1320,21 +1044,6 @@ export const decodeRuntimeLyric = (r: WireReader, m: runtime.Lyric): void => {
   }
 }
 
-export const fieldsStorageWord: MessageFields<storage.Word> = {
-  fields: [
-    { name: 'type', shape: 'enum' },
-    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
-    { name: 'language', shape: 'optional' },
-    { name: 'text', shape: 'scalar' },
-    { name: 'annotation', shape: 'message', message: fieldsCommonWordAnnotation },
-    { name: 'emphasis', shape: 'optional' },
-  ],
-}
-
-export const createStorageWord = (): storage.Word => {
-  return { type: 0, text: '' }
-}
-
 export const encodeStorageWord = (w: WireWriter, v: storage.Word): void => {
   if (v.type !== 0) {
     w.tag(8)
@@ -1395,17 +1104,6 @@ export const decodeStorageWord = (r: WireReader, m: storage.Word): void => {
   }
 }
 
-export const fieldsStorageLineContent: MessageFields<storage.LineContent> = {
-  fields: [
-    { name: 'words', shape: 'list-message', message: fieldsStorageWord },
-    { name: 'text', shape: 'optional' },
-  ],
-}
-
-export const createStorageLineContent = (): storage.LineContent => {
-  return { words: [] }
-}
-
 export const encodeStorageLineContent = (w: WireWriter, v: storage.LineContent): void => {
   for (const item of v.words) {
     w.message(10, encodeStorageWord, item)
@@ -1434,21 +1132,6 @@ export const decodeStorageLineContent = (r: WireReader, m: storage.LineContent):
         r.skip()
     }
   }
-}
-
-export const fieldsStorageLineBackground: MessageFields<storage.LineBackground> = {
-  fields: [
-    { name: 'id', shape: 'scalar' },
-    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
-    { name: 'agents', shape: 'list-scalar' },
-    { name: 'languages', shape: 'list-scalar' },
-    { name: 'content', shape: 'message', message: fieldsStorageLineContent },
-    { name: 'annotation', shape: 'message', message: fieldsCommonLineAnnotation },
-  ],
-}
-
-export const createStorageLineBackground = (): storage.LineBackground => {
-  return { id: '', agents: [], languages: [] }
 }
 
 export const encodeStorageLineBackground = (w: WireWriter, v: storage.LineBackground): void => {
@@ -1512,24 +1195,6 @@ export const decodeStorageLineBackground = (r: WireReader, m: storage.LineBackgr
         r.skip()
     }
   }
-}
-
-export const fieldsStorageLine: MessageFields<storage.Line> = {
-  fields: [
-    { name: 'id', shape: 'scalar' },
-    { name: 'type', shape: 'enum' },
-    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
-    { name: 'part', shape: 'message', message: fieldsCommonPart },
-    { name: 'agents', shape: 'list-scalar' },
-    { name: 'languages', shape: 'list-scalar' },
-    { name: 'content', shape: 'message', message: fieldsStorageLineContent },
-    { name: 'annotation', shape: 'message', message: fieldsCommonLineAnnotation },
-    { name: 'backgrounds', shape: 'list-message', message: fieldsStorageLineBackground },
-  ],
-}
-
-export const createStorageLine = (): storage.Line => {
-  return { id: '', type: 0, agents: [], languages: [], backgrounds: [] }
 }
 
 export const encodeStorageLine = (w: WireWriter, v: storage.Line): void => {
@@ -1621,22 +1286,6 @@ export const decodeStorageLine = (r: WireReader, m: storage.Line): void => {
         r.skip()
     }
   }
-}
-
-export const fieldsStorageLyric: MessageFields<storage.Lyric> = {
-  fields: [
-    { name: 'version', shape: 'scalar' },
-    { name: 'format', shape: 'scalar' },
-    { name: 'timing', shape: 'enum' },
-    { name: 'meta', shape: 'message', message: fieldsCommonMeta },
-    { name: 'extra', shape: 'map' },
-    { name: 'agents', shape: 'list-message', message: fieldsCommonAgent },
-    { name: 'lines', shape: 'list-message', message: fieldsStorageLine },
-  ],
-}
-
-export const createStorageLyric = (): storage.Lyric => {
-  return { version: '', format: '', timing: 0, extra: {}, agents: [], lines: [] }
 }
 
 export const encodeStorageLyric = (w: WireWriter, v: storage.Lyric): void => {

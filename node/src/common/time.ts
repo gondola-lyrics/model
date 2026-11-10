@@ -3,7 +3,7 @@ import type { TimeRange } from '@root/generated/common/index.gen'
 import type { Diagnostic } from './diagnostic'
 
 import { MAX_TIME, checkNumberDomain, withInit } from '@root/utils'
-import { createCommonTimeRange } from '@root/generated/internal.gen'
+import { createCommonTimeRange } from '@root/generated/detail.gen'
 import { DiagnosticCode } from './diagnostic'
 
 /**

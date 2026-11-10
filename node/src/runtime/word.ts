@@ -4,7 +4,7 @@ import type { Word, WordEmphasis } from '@root/generated/runtime/index.gen'
 import { WordType } from '@root/generated/common/index.gen'
 
 import { copyMessage, dropDefault, withInit } from '@root/utils'
-import { createRuntimeWord, createRuntimeWordEmphasis, fieldsRuntimeWordEmphasis } from '@root/generated/internal.gen'
+import { createRuntimeWord, createRuntimeWordEmphasis, fieldsRuntimeWordEmphasis } from '@root/generated/detail.gen'
 import { canonicalizeWordShared } from '@root/common'
 
 /**

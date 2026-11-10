@@ -6,7 +6,7 @@ import { PartType } from '@root/generated/common/index.gen'
 import { DiagnosticCode } from './diagnostic'
 
 import { childPath, isUnresolved, withInit } from '@root/utils'
-import { createCommonPart } from '@root/generated/internal.gen'
+import { createCommonPart } from '@root/generated/detail.gen'
 
 /**
  * Creates a Part, the structural section a line belongs to.

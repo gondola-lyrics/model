@@ -6,7 +6,7 @@ import { AgentType } from '@root/generated/common/index.gen'
 import { DiagnosticCode } from './diagnostic'
 
 import { canonicalizeList, childPath, findDuplicates, isUnresolved, lowerTag, withInit } from '@root/utils'
-import { createCommonAgent, fieldsCommonText } from '@root/generated/internal.gen'
+import { createCommonAgent, fieldsCommonText } from '@root/generated/detail.gen'
 import { canonicalizeText, validateText } from './text'
 
 /**

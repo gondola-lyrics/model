@@ -34,7 +34,7 @@ import {
   fieldsCommonWordAnnotationRuby,
   fieldsCommonWordAnnotationToken,
   fieldsCommonWordAnnotationTranslation,
-} from '@root/generated/internal.gen'
+} from '@root/generated/detail.gen'
 import { validateTimeRange } from './time'
 
 /**
