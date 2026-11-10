@@ -39,7 +39,7 @@ class Binding:
 
 BINDINGS = {
     "node": Binding(("node", "src", "generated"), ("**", "*.gen.ts")),
-    "kotlin": Binding(("kotlin", "src", "main", "kotlin"), ("**", "*.gen.kt"), ("package=gondola.lyrics.model",)),
+    "kotlin": Binding(("kotlin", "src", "generated", "kotlin"), ("**", "*.gen.kt"), ("package=gondola.lyrics.model",)),
     "go": Binding(("go",), ("**", "*.gen.go"), ("module=github.com/gondola-lyrics/model/go",)),
     "cpp": Binding(("cpp", "include"), ("**", "*.gen.hpp")),
 }
@@ -129,7 +129,7 @@ def format_files(name: str, files: list[str]) -> None:
         return
     if name == "kotlin":
         gradlew = os.path.join(ROOT, "kotlin", "gradlew.bat" if os.name == "nt" else "gradlew")
-        command(gradlew, "--quiet", "spotlessApply", cwd=os.path.join(ROOT, "kotlin"))
+        command(gradlew, "--quiet", "spotlessKotlinGeneratedApply", cwd=os.path.join(ROOT, "kotlin"))
     elif name == "go":
         command("gofmt", "-w", *files)
     else:
@@ -171,7 +171,9 @@ def main() -> None:
 
     if "cpp" in names:
         check_clang_format()
-    with tempfile.TemporaryDirectory() as staging:
+    temporary = os.path.join(ROOT, ".claude", "temp")
+    os.makedirs(temporary, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=temporary) as staging:
         run_buf(names, staging, version)
         for name in names:
             files = install(BINDINGS[name], staging)

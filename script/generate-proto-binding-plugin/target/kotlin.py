@@ -1,16 +1,52 @@
 """
-Renders the Kotlin models, internal wire codec functions and schema version into kotlin/src/main/kotlin.
+Renders the Kotlin models, internal wire codec functions and schema version into kotlin/src/generated/kotlin.
+
+Model files follow the proto layout while keeping their existing package names.
 """
 
 import posixpath
 
-from schema import Enum, Field, Message, Schema
+from schema import Enum, Field, Message, ProtoFile, Schema
 
-from .common import HEADER, block, camel, function_name, option, outside_refs, upper_first
+from .common import HEADER, block, camel, function_name, option, upper_first
 
 SCALARS = {"string": "String", "bool": "Boolean", "uint32": "Long", "sint32": "Int"}
 DEFAULTS = {"string": '""', "bool": "false", "uint32": "0", "sint32": "0"}
 ZEROS = {"string": '""', "bool": "false", "uint32": "0L", "sint32": "0"}
+
+WIRE_TYPES = """\
+/**
+ * The operations used by the generated encoders, independent of the buffer implementation.
+ */
+internal interface WireWriter {
+    fun tag(value: Int)
+    fun uint32(value: Long)
+    fun int32(value: Int)
+    fun sint32(value: Int)
+    fun bool(value: Boolean)
+    fun string(value: String)
+    fun <T> message(tag: Int, encode: (WireWriter, T) -> Unit, value: T)
+    fun stringMap(tag: Int, entries: Map<String, String>)
+}
+
+/**
+ * The operations used by the generated decoders, confined to the current message range.
+ */
+internal interface WireReader {
+    fun more(): Boolean
+    fun tag(): Int
+    fun uint32(): Long
+    fun int32(): Int
+    fun sint32(): Int
+    fun bool(): Boolean
+    fun string(): String
+    fun enter(): Int
+    fun leave(previous: Int)
+    fun mapEntry(target: MutableMap<String, String>)
+    fun skip()
+}
+
+"""
 
 
 def field_type(item: Field) -> str:
@@ -43,12 +79,12 @@ def fallback(item: Field) -> str:
 
 def render_enum(item: Enum) -> str:
     out = f"{block(item.comment)}public class {item.name}(@JvmField public val value: Int) {{\n"
-    out += f"    override fun equals(other: Any?): Boolean = other is {item.name} && other.value == value\n\n"
-    out += "    override fun hashCode(): Int = value\n\n"
-    out += "    override fun toString(): String = when (value) {\n"
+    out += f"    override fun equals(other: Any?): Boolean {{\n        return other is {item.name} && other.value == value\n    }}\n\n"
+    out += "    override fun hashCode(): Int {\n        return value\n    }\n\n"
+    out += "    override fun toString(): String {\n        return when (value) {\n"
     for value in item.values:
-        out += f'        {value.number} -> "{value.name}"\n'
-    out += f'        else -> "{item.name}($value)"\n    }}\n\n    public companion object {{\n'
+        out += f'            {value.number} -> "{value.name}"\n'
+    out += f'            else -> "{item.name}($value)"\n        }}\n    }}\n\n    public companion object {{\n'
     for value in item.values:
         constant = f"@JvmField public val {value.name}: {item.name} = {item.name}({value.number})"
         out += f"{block(value.comment, '        ')}        {constant}\n"
@@ -56,22 +92,25 @@ def render_enum(item: Enum) -> str:
     return out
 
 
-def render_models(model: Schema, package: str) -> list[tuple[str, str]]:
-    files = []
-    for group in model.packages:
-        out = f"// {HEADER}\npackage {package}.{group.name}\n\n"
-        imports = [f"import {package}.{pkg}.{name}\n" for pkg, names in outside_refs(group).items() for name in names]
-        if imports:
-            out += "".join(sorted(imports)) + "\n"
-        out += "".join(render_enum(item) for item in group.enums)
-        for message in group.messages:
-            out += f"{block(message.comment)}public data class {message.name}(\n"
-            for item in message.fields:
-                parameter = f"val {camel(item.name)}: {field_type(item)} = {fallback(item)}"
-                out += f"{block(item.comment, '    ')}    {parameter},\n"
-            out += ")\n\n"
-        files.append((posixpath.join(*package.split("."), group.name, "Model.gen.kt"), out.rstrip() + "\n"))
-    return files
+def render_model(proto_file: ProtoFile, package: str) -> tuple[str, str]:
+    out = f"// {HEADER}\n\npackage {package}.{proto_file.pkg}\n\n"
+    imports = {
+        f"import {package}.{item.ref.pkg}.{item.ref.name}\n"
+        for message in proto_file.messages
+        for item in message.fields
+        if item.ref is not None and item.ref.pkg != proto_file.pkg
+    }
+    if imports:
+        out += "".join(sorted(imports)) + "\n"
+    out += "".join(render_enum(item) for item in proto_file.enums)
+    for message in proto_file.messages:
+        out += f"{block(message.comment)}public data class {message.name}(\n"
+        for item in message.fields:
+            parameter = f"val {camel(item.name)}: {field_type(item)} = {fallback(item)}"
+            out += f"{block(item.comment, '    ')}    {parameter},\n"
+        out += ")\n\n"
+    stem = upper_first(posixpath.splitext(posixpath.basename(proto_file.name))[0])
+    return (posixpath.join(*package.split("."), proto_file.pkg, f"{stem}.gen.kt"), out.rstrip() + "\n")
 
 
 def alias(item: Message | Enum) -> str:
@@ -99,48 +138,54 @@ def render_encode(item: Field) -> str:
         return f"    w.stringMap({tag}, {name})\n"
     encode = function_name("encode", item.ref)
     if item.shape == "message":
-        return f"    {name}?.let {{ item -> w.message({tag}) {{ {encode}(it, item) }} }}\n"
-    return f"    for (item in {name}) {{\n        w.message({tag}) {{ {encode}(it, item) }}\n    }}\n"
+        return f"    {name}?.let {{ w.message({tag}, ::{encode}, it) }}\n"
+    return f"    for (item in {name}) {{\n        w.message({tag}, ::{encode}, item)\n    }}\n"
 
 
-def local(item: Field) -> str:
-    return f"{camel(item.name)}Field"
-
-
-def render_local(item: Field) -> str:
+def render_state_field(item: Field) -> str:
     name = camel(item.name)
     if item.shape == "scalar":
-        return f"    var {local(item)}: {SCALARS[item.scalar]} = base?.{name} ?: {ZEROS[item.scalar]}\n"
+        return f"    var {name}: {SCALARS[item.scalar]} = {ZEROS[item.scalar]}\n"
     if item.shape == "optional":
-        return f"    var {local(item)}: {SCALARS[item.scalar]}? = base?.{name}\n"
+        return f"    var {name}: {SCALARS[item.scalar]}? = null\n"
     if item.shape == "enum":
-        return f"    var {local(item)}: {alias(item.ref)} = base?.{name} ?: {alias(item.ref)}.{item.ref.zero.name}\n"
+        return f"    var {name}: {alias(item.ref)} = {alias(item.ref)}.{item.ref.zero.name}\n"
     if item.shape == "message":
-        return f"    var {local(item)}: {alias(item.ref)}? = base?.{name}\n"
+        return f"    var {name}: {alias(item.ref)}State? = null\n"
     if item.shape == "map":
-        container = "LinkedHashMap<String, String>()"
-        return f"    val {local(item)} = {container}\n    base?.let {{ {local(item)}.putAll(it.{name}) }}\n"
-    element = SCALARS[item.scalar] if item.shape == "list-scalar" else alias(item.ref)
-    return f"    val {local(item)} = ArrayList<{element}>()\n    base?.let {{ {local(item)}.addAll(it.{name}) }}\n"
+        return f"    val {name} = LinkedHashMap<String, String>()\n"
+    element = SCALARS[item.scalar] if item.shape == "list-scalar" else f"{alias(item.ref)}State"
+    return f"    val {name} = ArrayList<{element}>()\n"
+
+
+def render_finish_field(item: Field) -> str:
+    name = camel(item.name)
+    value = name
+    if item.shape == "message":
+        value += "?.finish()"
+    elif item.shape == "list-message":
+        value += ".map { it.finish() }"
+    return f"            {name} = {value},\n"
 
 
 def render_case(item: Field) -> str:
     tag = item.tag
+    name = f"state.{camel(item.name)}"
     if item.shape in ("scalar", "optional"):
-        return f"            {tag} -> {local(item)} = r.{item.scalar}()\n"
+        return f"            {tag} -> {name} = r.{item.scalar}()\n"
     if item.shape == "enum":
-        return f"            {tag} -> {local(item)} = {alias(item.ref)}(r.int32())\n"
+        return f"            {tag} -> {name} = {alias(item.ref)}(r.int32())\n"
     if item.shape == "list-scalar":
-        return f"            {tag} -> {local(item)}.add(r.{item.scalar}())\n"
+        return f"            {tag} -> {name}.add(r.{item.scalar}())\n"
     if item.shape == "map":
-        return f"            {tag} -> r.mapEntry({local(item)})\n"
-    decode = function_name("decode", item.ref)
-    # A repeated single message merges into the value decoded so far, as the wire format requires.
-    value = f"{decode}(r, {local(item)})" if item.shape == "message" else f"{decode}(r, null)"
-    store = f"{local(item)} = {value}" if item.shape == "message" else f"{local(item)}.add({value})"
+        return f"            {tag} -> r.mapEntry({name})\n"
+    state = f"{alias(item.ref)}State()"
+    create = f"{name} ?: {state}.also {{ {name} = it }}" if item.shape == "message" else state
+    append = f"                {name}.add(item)\n" if item.shape == "list-message" else ""
     return (
-        f"            {tag} -> {{\n                val end = r.enter()\n"
-        f"                {store}\n                r.leave(end)\n            }}\n"
+        f"            {tag} -> {{\n                val item = {create}\n                val end = r.enter()\n"
+        f"                {function_name('merge', item.ref)}(r, item)\n                r.leave(end)\n"
+        f"{append}            }}\n"
     )
 
 
@@ -148,27 +193,90 @@ def render_codec(model: Schema, package: str) -> tuple[str, str]:
     imports = sorted(
         f"import {package}.{item.pkg}.{item.name} as {alias(item)}" for item in [*model.messages, *model.enums]
     )
-    out = f'// {HEADER}\n@file:JvmName("CodecGen")\n\npackage {package}.protobuf\n\n'
+    out = f'// {HEADER}\n\n@file:JvmName("CodecGen")\n\npackage {package}.utils\n\n'
     out += "\n".join(imports) + "\n\n"
+    out += WIRE_TYPES
     for message in model.messages:
-        out += f"internal fun {function_name('encode', message)}(w: Writer, src: {alias(message)}) {{\n"
+        out += (
+            f"@JvmSynthetic\ninternal fun {function_name('encode', message)}(w: WireWriter, src: {alias(message)}) {{\n"
+        )
         out += "".join(render_encode(item) for item in message.by_number)
         out += "}\n\n"
-        decode = function_name("decode", message)
-        out += f"internal fun {decode}(r: Reader, base: {alias(message)}?): {alias(message)} {{\n"
-        out += "".join(render_local(item) for item in message.by_number)
+
+    out += block(["Decode state keeps repeated submessages merging in place until the root is complete."])
+    for message in model.messages:
+        out += f"private class {alias(message)}State {{\n"
+        out += "".join(render_state_field(item) for item in message.fields)
+        out += f"\n    fun finish(): {alias(message)} {{\n        return {alias(message)}(\n"
+        out += "".join(render_finish_field(item) for item in message.fields)
+        out += "        )\n    }\n}\n\n"
+
+    for message in model.messages:
+        out += f"private fun {function_name('merge', message)}(r: WireReader, state: {alias(message)}State) {{\n"
         out += "    while (r.more()) {\n        when (r.tag()) {\n"
         out += "".join(render_case(item) for item in message.by_number)
-        out += f"            else -> r.skip()\n        }}\n    }}\n    return {alias(message)}(\n"
-        out += "".join(f"        {camel(item.name)} = {local(item)},\n" for item in message.by_number)
-        out += "    )\n}\n\n"
-    return (posixpath.join(*package.split("."), "protobuf", "Codec.gen.kt"), out.rstrip() + "\n")
+        out += "            else -> r.skip()\n        }\n    }\n}\n\n"
+        out += f"@JvmSynthetic\ninternal fun {function_name('decode', message)}(r: WireReader): {alias(message)} {{\n"
+        out += f"    val state = {alias(message)}State()\n    {function_name('merge', message)}(r, state)\n"
+        out += "    return state.finish()\n}\n\n"
+    return (posixpath.join(*package.split("."), "utils", "Codec.gen.kt"), out.rstrip() + "\n")
 
 
-def render_detail(package: str) -> tuple[str, str]:
-    # Field access is added when the native helpers are migrated.
-    out = f'// {HEADER}\n@file:JvmName("DetailGen")\n\npackage {package}.protobuf\n'
-    return (posixpath.join(*package.split("."), "protobuf", "Detail.gen.kt"), out)
+def default_check(item: Field) -> str:
+    name = f"message.{camel(item.name)}"
+    if item.shape == "scalar":
+        return f"{name} == {ZEROS[item.scalar]}"
+    if item.shape == "enum":
+        return f"{name}.value == 0"
+    if item.shape in ("message", "optional"):
+        return f"{name} == null"
+    return f"{name}.isEmpty()"
+
+
+def render_detail(model: Schema, package: str) -> tuple[str, str]:
+    imports = sorted(
+        f"import {package}.{item.pkg}.{item.name} as {alias(item)}" for item in [*model.messages, *model.enums]
+    )
+    out = f'// {HEADER}\n\n@file:JvmName("DetailGen")\n\npackage {package}.utils\n\n'
+    out += "\n".join(imports) + "\n\n"
+    out += "internal enum class FieldShape { SCALAR, ENUM, OPTIONAL, MESSAGE, LIST_SCALAR, LIST_MESSAGE, MAP }\n\n"
+    out += block(["Reports defaults without treating an explicitly present zero as an absent field."])
+    out += "@JvmSynthetic\ninternal fun isDefault(message: Any): Boolean {\n    return when (message) {\n"
+    for message in model.messages:
+        checks = " &&\n            ".join(default_check(item) for item in message.fields) or "true"
+        out += f"        is {alias(message)} -> {checks}\n"
+    out += "        else -> false\n    }\n}\n\n"
+
+    out += block(["Visits declared fields without reflection or a dependency on the codec."])
+    out += "@JvmSynthetic\ninternal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit) {\n"
+    out += "    when (message) {\n"
+    for message in model.messages:
+        out += f"        is {alias(message)} -> {{\n"
+        for item in message.fields:
+            name = camel(item.name)
+            shape = item.shape.replace("-", "_").upper()
+            out += f'            visit("{name}", FieldShape.{shape}, message.{name})\n'
+        out += "        }\n"
+    out += "    }\n}\n\n"
+
+    out += block(["Reads diagnostic fields, exposing enum numbers and preserving optional presence."])
+    out += "@JvmSynthetic\ninternal fun readField(message: Any, name: String): Any? {\n    return when (message) {\n"
+    for message in model.messages:
+        out += f"        is {alias(message)} -> when (name) {{\n"
+        for item in message.fields:
+            name = camel(item.name)
+            suffix = ".value" if item.shape == "enum" else ""
+            out += f'            "{name}" -> message.{name}{suffix}\n'
+        out += "            else -> null\n        }\n"
+    out += "        else -> null\n    }\n}\n\n"
+
+    out += block(["Treats zero and values unknown to this schema as unresolved without discarding their numbers."])
+    out += "@JvmSynthetic\ninternal fun isUnresolved(value: Any): Boolean {\n    return when (value) {\n"
+    for item in model.enums:
+        checks = " && ".join(f"value.value != {entry.number}" for entry in item.values if entry.number != 0) or "true"
+        out += f"        is {alias(item)} -> {checks}\n"
+    out += "        else -> false\n    }\n}\n"
+    return (posixpath.join(*package.split("."), "utils", "Detail.gen.kt"), out)
 
 
 def render_version(package: str, version: str) -> tuple[str, str]:
@@ -180,7 +288,7 @@ def render_version(package: str, version: str) -> tuple[str, str]:
         ]
     )
     # Keep the facade class name of the former build-generated Version.kt so Java callers do not change.
-    out = f'// {HEADER}\n@file:JvmName("VersionKt")\n\npackage {package}\n\n'
+    out = f'// {HEADER}\n\n@file:JvmName("VersionKt")\n\npackage {package}\n\n'
     out += f'{doc}public const val SCHEMA_VERSION: String = "{version}"\n'
     return (posixpath.join(*package.split("."), "Version.gen.kt"), out)
 
@@ -190,7 +298,7 @@ def generate(model: Schema, options: dict[str, str]) -> list[tuple[str, str]]:
     version = option(options, "version")
     return [
         render_version(package, version),
-        *render_models(model, package),
+        *(render_model(proto_file, package) for proto_file in model.files),
         render_codec(model, package),
-        render_detail(package),
+        render_detail(model, package),
     ]
