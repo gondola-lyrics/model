@@ -23,7 +23,6 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PLUGIN = os.path.join(ROOT, "script", "generate-proto-binding-plugin", "main.py")
 PROTO = os.path.join(ROOT, "proto")
 VERSION_FILE = os.path.join(ROOT, "proto", "VERSION.txt")
-PRETTIER = os.path.join(ROOT, "node", "node_modules", "prettier", "bin", "prettier.cjs")
 CLANG_FORMAT_STYLE = os.path.join(ROOT, "cpp", ".clang-format")
 
 # Pinned so that regenerating on another machine yields the same files.
@@ -39,7 +38,7 @@ class Binding:
 
 
 BINDINGS = {
-    "node": Binding(("node", "src", "generated"), ("*.gen.ts",)),
+    "node": Binding(("node", "src", "generated"), ("**", "*.gen.ts")),
     "kotlin": Binding(("kotlin", "src", "main", "kotlin"), ("**", "*.gen.kt"), ("package=gondola.lyrics.model",)),
     "go": Binding(("go",), ("**", "*_gen.go"), ("module=github.com/gondola-lyrics/model/go",)),
     "cpp": Binding(("cpp", "include"), ("**", "*.gen.hpp")),
@@ -125,9 +124,10 @@ def install(binding: Binding, staging: str) -> list[str]:
 
 
 def format_files(name: str, files: list[str]) -> None:
+    # The Node files stay exactly as the plugin wrote them, and node/.prettierignore keeps them out of formatting.
     if name == "node":
-        command("node", PRETTIER, "--write", "--log-level", "warn", *files, cwd=os.path.join(ROOT, "node"))
-    elif name == "kotlin":
+        return
+    if name == "kotlin":
         gradlew = os.path.join(ROOT, "kotlin", "gradlew.bat" if os.name == "nt" else "gradlew")
         command(gradlew, "--quiet", "spotlessApply", cwd=os.path.join(ROOT, "kotlin"))
     elif name == "go":

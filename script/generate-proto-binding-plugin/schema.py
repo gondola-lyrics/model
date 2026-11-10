@@ -14,9 +14,6 @@ SCALARS = {
     descriptor.TYPE_SINT32: "sint32",
 }
 
-# Messages with this name are the encode and decode entry points of each package.
-ROOTS = ("Lyric",)
-
 # Path components of SourceCodeInfo locations, from descriptor.proto.
 MESSAGE_PATH = 4
 ENUM_PATH = 5
@@ -41,6 +38,7 @@ class Enum:
     pkg: str
     name: str
     full: str
+    file: str
     comment: list[str]
     values: list[EnumValue]
 
@@ -69,6 +67,7 @@ class Message:
     pkg: str
     name: str
     full: str
+    file: str
     comment: list[str]
     fields: list[Field] = field(default_factory=list)
 
@@ -84,13 +83,22 @@ class Package:
     messages: list[Message] = field(default_factory=list)
 
 
+@dataclass(eq=False)
+class ProtoFile:
+    name: str
+    pkg: str
+    enums: list[Enum] = field(default_factory=list)
+    messages: list[Message] = field(default_factory=list)
+
+
 @dataclass
 class Schema:
     packages: list[Package]
     # Every message, ordered so that each one follows the messages it contains.
     messages: list[Message]
     enums: list[Enum]
-    roots: list[Message]
+    # Every .proto file, each listing its enums and messages in declaration order.
+    files: list[ProtoFile]
 
 
 def words(name: str) -> list[str]:
@@ -107,6 +115,7 @@ def build(request: descriptor.Request) -> Schema:
     enums: dict[str, Enum] = {}
     messages: dict[str, Message] = {}
     sources = []
+    proto_files: list[ProtoFile] = []
 
     for file in files:
         if file.syntax != "proto3":
@@ -115,6 +124,8 @@ def build(request: descriptor.Request) -> Schema:
             raise GenerateError(f"{file.name} declares services or extensions")
         name = file.package.split(".")[-1]
         group = packages.setdefault(name, Package(name))
+        proto_file = ProtoFile(file.name, name)
+        proto_files.append(proto_file)
 
         for index, item in enumerate(file.enums):
             prefix = "_".join(words(item.name)).upper() + "_"
@@ -127,15 +138,17 @@ def build(request: descriptor.Request) -> Schema:
             if not any(value.number == 0 for value in values):
                 raise GenerateError(f"{item.name} has no zero value")
             full = f".{file.package}.{item.name}"
-            enums[full] = Enum(name, item.name, full, comment_at(file, (ENUM_PATH, index)), values)
+            enums[full] = Enum(name, item.name, full, file.name, comment_at(file, (ENUM_PATH, index)), values)
             group.enums.append(enums[full])
+            proto_file.enums.append(enums[full])
 
         for index, item in enumerate(file.messages):
             if item.enum_count or item.extension_count or any(not nested.map_entry for nested in item.nested):
                 raise GenerateError(f"{item.name} has nested types or extensions")
             full = f".{file.package}.{item.name}"
-            messages[full] = Message(name, item.name, full, comment_at(file, (MESSAGE_PATH, index)))
+            messages[full] = Message(name, item.name, full, file.name, comment_at(file, (MESSAGE_PATH, index)))
             sources.append((messages[full], item, file, index))
+            proto_file.messages.append(messages[full])
 
     for message, source, file, index in sources:
         for field_index, item in enumerate(source.fields):
@@ -145,8 +158,7 @@ def build(request: descriptor.Request) -> Schema:
     ordered = order(list(messages.values()))
     for group in packages.values():
         group.messages = [message for message in ordered if message.pkg == group.name]
-    roots = [message for message in ordered if message.name in ROOTS]
-    return Schema(list(packages.values()), ordered, list(enums.values()), roots)
+    return Schema(list(packages.values()), ordered, list(enums.values()), proto_files)
 
 
 def build_field(
