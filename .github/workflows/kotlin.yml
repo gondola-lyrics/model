@@ -48,6 +48,15 @@ jobs:
         with:
           cache-read-only: false
 
+      - name: Setup buf
+        uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+          version: '1.72.0'
+
+      - name: Verify generated bindings
+        run: python3 script/generate-proto-binding.py kotlin --check
+
       - name: Build
         run: bash ./gradlew --no-daemon build emptyJavadocJar checkPomFileForMavenPublication
         working-directory: kotlin
