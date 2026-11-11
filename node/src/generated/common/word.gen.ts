@@ -59,9 +59,13 @@ export type WordAnnotationRoman = {
    */
   time?: TimeRange | undefined
   /**
-   * Language (BCP 47 tag) or transliteration scheme of this item.
+   * Language of this item, as a BCP 47 tag.
    */
   language?: string | undefined
+  /**
+   * Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+   */
+  scheme?: string | undefined
   /**
    * Tokens composing the item in order.
    */
@@ -78,9 +82,13 @@ export type WordAnnotationRuby = {
    */
   time?: TimeRange | undefined
   /**
-   * Language (BCP 47 tag) or transliteration scheme of this item.
+   * Language of this item, as a BCP 47 tag.
    */
   language?: string | undefined
+  /**
+   * Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+   */
+  scheme?: string | undefined
   /**
    * Tokens composing the item in order.
    */
@@ -89,7 +97,8 @@ export type WordAnnotationRuby = {
 
 /**
  * Annotations attached to a single word.
- * Each list holds one entry per language.
+ * Ruby and roman lists hold one entry per language and scheme pair; translations hold one per language.
+ * Unset and empty language or scheme values identify the same entry.
  */
 export type WordAnnotation = {
   /**

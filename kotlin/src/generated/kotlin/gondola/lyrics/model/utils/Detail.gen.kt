@@ -60,7 +60,8 @@ internal fun isDefault(message: Any): Boolean {
 
         is CommonLineAnnotationRoman ->
             message.language == null &&
-                message.text == ""
+                message.text == "" &&
+                message.scheme == null
 
         is CommonLineAnnotationTranslation ->
             message.language == null &&
@@ -113,11 +114,13 @@ internal fun isDefault(message: Any): Boolean {
         is CommonWordAnnotationRoman ->
             message.time == null &&
                 message.language == null &&
+                message.scheme == null &&
                 message.tokens.isEmpty()
 
         is CommonWordAnnotationRuby ->
             message.time == null &&
                 message.language == null &&
+                message.scheme == null &&
                 message.tokens.isEmpty()
 
         is CommonWordAnnotation -> message.rubies.isEmpty() &&
@@ -239,6 +242,7 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
         is CommonLineAnnotationRoman -> {
             visit("language", FieldShape.OPTIONAL, message.language)
             visit("text", FieldShape.SCALAR, message.text)
+            visit("scheme", FieldShape.OPTIONAL, message.scheme)
         }
 
         is CommonLineAnnotationTranslation -> {
@@ -304,12 +308,14 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
         is CommonWordAnnotationRoman -> {
             visit("time", FieldShape.MESSAGE, message.time)
             visit("language", FieldShape.OPTIONAL, message.language)
+            visit("scheme", FieldShape.OPTIONAL, message.scheme)
             visit("tokens", FieldShape.LIST_MESSAGE, message.tokens)
         }
 
         is CommonWordAnnotationRuby -> {
             visit("time", FieldShape.MESSAGE, message.time)
             visit("language", FieldShape.OPTIONAL, message.language)
+            visit("scheme", FieldShape.OPTIONAL, message.scheme)
             visit("tokens", FieldShape.LIST_MESSAGE, message.tokens)
         }
 
@@ -448,6 +454,7 @@ internal fun readField(message: Any, name: String): Any? {
         is CommonLineAnnotationRoman -> when (name) {
             "language" -> message.language
             "text" -> message.text
+            "scheme" -> message.scheme
             else -> null
         }
 
@@ -524,6 +531,7 @@ internal fun readField(message: Any, name: String): Any? {
         is CommonWordAnnotationRoman -> when (name) {
             "time" -> message.time
             "language" -> message.language
+            "scheme" -> message.scheme
             "tokens" -> message.tokens
             else -> null
         }
@@ -531,6 +539,7 @@ internal fun readField(message: Any, name: String): Any? {
         is CommonWordAnnotationRuby -> when (name) {
             "time" -> message.time
             "language" -> message.language
+            "scheme" -> message.scheme
             "tokens" -> message.tokens
             else -> null
         }

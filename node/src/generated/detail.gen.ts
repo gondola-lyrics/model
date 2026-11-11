@@ -47,6 +47,7 @@ export const fieldsCommonLineAnnotationRoman: MessageFields<common.LineAnnotatio
   fields: [
     { name: 'language', shape: 'optional' },
     { name: 'text', shape: 'scalar' },
+    { name: 'scheme', shape: 'optional' },
   ],
 }
 
@@ -178,6 +179,7 @@ export const fieldsCommonWordAnnotationRoman: MessageFields<common.WordAnnotatio
   fields: [
     { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
     { name: 'language', shape: 'optional' },
+    { name: 'scheme', shape: 'optional' },
     { name: 'tokens', shape: 'list-message', message: fieldsCommonWordAnnotationToken },
   ],
 }
@@ -190,6 +192,7 @@ export const fieldsCommonWordAnnotationRuby: MessageFields<common.WordAnnotation
   fields: [
     { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
     { name: 'language', shape: 'optional' },
+    { name: 'scheme', shape: 'optional' },
     { name: 'tokens', shape: 'list-message', message: fieldsCommonWordAnnotationToken },
   ],
 }

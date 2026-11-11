@@ -45,11 +45,14 @@ message WordAnnotationRoman {
   // A set one falls within the range it would otherwise follow.
   TimeRange time = 1;
 
-  // Language (BCP 47 tag) or transliteration scheme of this item.
+  // Language of this item, as a BCP 47 tag.
   optional string language = 2;
 
+  // Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+  optional string scheme = 3;
+
   // Tokens composing the item in order.
-  repeated WordAnnotationToken tokens = 3;
+  repeated WordAnnotationToken tokens = 4;
 }
 
 // Ruby annotation of a single word, such as furigana.
@@ -58,15 +61,19 @@ message WordAnnotationRuby {
   // A set one falls within the range it would otherwise follow.
   TimeRange time = 1;
 
-  // Language (BCP 47 tag) or transliteration scheme of this item.
+  // Language of this item, as a BCP 47 tag.
   optional string language = 2;
 
+  // Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+  optional string scheme = 3;
+
   // Tokens composing the item in order.
-  repeated WordAnnotationToken tokens = 3;
+  repeated WordAnnotationToken tokens = 4;
 }
 
 // Annotations attached to a single word.
-// Each list holds one entry per language.
+// Ruby and roman lists hold one entry per language and scheme pair; translations hold one per language.
+// Unset and empty language or scheme values identify the same entry.
 message WordAnnotation {
   // Ruby annotations such as furigana.
   repeated WordAnnotationRuby rubies = 1;

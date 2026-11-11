@@ -35,9 +35,9 @@ fun isLanguageTag(tag: String): Boolean {
 /**
  * Collects the malformed language tags below a message, reading the tree from its schema: a `languages` list holds tags directly, while a field named `language` holds one tag.
  * Only a malformed tag is reported, since an unset or empty one is what the rule demanding a tag is for.
- * `exempt` names the fields that may hold a scheme instead, and `sealed` the fields another validator reads, so a tag is never reported twice.
+ * `sealed` names the fields another validator reads, so a tag is never reported twice.
  */
-private fun collectTagDiagnostics(message: Any, exempt: List<String>, sealed: List<String>, path: String): List<Diagnostic> {
+private fun collectTagDiagnostics(message: Any, sealed: List<String>, path: String): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
     visitFields(message) { name, shape, value ->
         if (name in sealed) {
@@ -46,7 +46,7 @@ private fun collectTagDiagnostics(message: Any, exempt: List<String>, sealed: Li
         val child = childPath(path, name)
         if (shape == FieldShape.LIST_MESSAGE) {
             (value as List<*>).forEachIndexed { index, item ->
-                diagnostics.addAll(collectTagDiagnostics(requireNotNull(item), exempt, sealed, "$child[$index]"))
+                diagnostics.addAll(collectTagDiagnostics(requireNotNull(item), sealed, "$child[$index]"))
             }
         } else if (shape == FieldShape.LIST_SCALAR && name == "languages") {
             (value as List<*>).forEachIndexed { index, item ->
@@ -55,8 +55,8 @@ private fun collectTagDiagnostics(message: Any, exempt: List<String>, sealed: Li
                 }
             }
         } else if (shape == FieldShape.MESSAGE && value != null) {
-            diagnostics.addAll(collectTagDiagnostics(value, exempt, sealed, child))
-        } else if ((shape == FieldShape.SCALAR || shape == FieldShape.OPTIONAL) && name == "language" && exempt.none { child.endsWith(it) }) {
+            diagnostics.addAll(collectTagDiagnostics(value, sealed, child))
+        } else if ((shape == FieldShape.SCALAR || shape == FieldShape.OPTIONAL) && name == "language") {
             if (value is String && value.isNotEmpty() && !isLanguageTag(value)) {
                 diagnostics.add(Diagnostic(child, DiagnosticCode.LanguageTagMalformed))
             }
@@ -70,8 +70,7 @@ private fun collectTagDiagnostics(message: Any, exempt: List<String>, sealed: Li
  * A line is validated on its own as well as under a lyric, so where it sits changes nothing and the path is the line's own.
  */
 internal fun validateLineTags(line: Any, path: String = ""): List<Diagnostic> {
-    // The fields holding a transliteration scheme rather than a tag, which no tag is written like; `romaji` and `Hepburn` name how a text is romanized.
-    return collectTagDiagnostics(line, listOf("annotation.romans.language"), emptyList(), path)
+    return collectTagDiagnostics(line, emptyList(), path)
 }
 
 /**
@@ -79,5 +78,5 @@ internal fun validateLineTags(line: Any, path: String = ""): List<Diagnostic> {
  * The lines are left to `validateLine`, which alone knows which fields a line's kind forbids.
  */
 internal fun validateLyricTags(lyric: Any): List<Diagnostic> {
-    return collectTagDiagnostics(lyric, emptyList(), listOf("lines"), "")
+    return collectTagDiagnostics(lyric, listOf("lines"), "")
 }

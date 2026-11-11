@@ -12,6 +12,69 @@ const lineTimed = (...lines: runtime.Line[]): runtime.Lyric => {
 }
 
 describe('validate', () => {
+  it('keys roman and ruby annotations by language and scheme', () => {
+    const identities = [
+      { language: 'JA-Latn', scheme: 'HEPBURN' },
+      { language: 'ja-latn', scheme: 'kunrei' },
+      { language: 'ja', scheme: 'hepburn' },
+      { language: 'ja-latn', scheme: 'hepburn' },
+      { language: 'ja-latn' },
+      { language: 'JA-LATN', scheme: '' },
+    ]
+    const word = runtime.makeWordAnnotation({
+      rubies: identities.map((identity) => runtime.makeWordAnnotationRuby(identity)),
+      romans: identities.map((identity) => runtime.makeWordAnnotationRoman(identity)),
+      translations: ['zh-Hans', 'ZH-HANS'].map((language) => runtime.makeWordAnnotationTranslation({ language, text: 'translation' })),
+    })
+    const line = runtime.makeLineAnnotation({
+      romans: identities.map((identity) => runtime.makeLineAnnotationRoman({ ...identity, text: 'roman' })),
+      translations: ['zh-Hans', 'ZH-HANS'].map((language) => runtime.makeLineAnnotationTranslation({ language, text: 'translation' })),
+    })
+    deepStrictEqual(runtime.validateWordAnnotation(word), [
+      { path: 'rubies[3]', code: 'line.word.annotation.rubies.duplicate' },
+      { path: 'rubies[5]', code: 'line.word.annotation.rubies.duplicate' },
+      { path: 'romans[3]', code: 'line.word.annotation.romans.duplicate' },
+      { path: 'romans[5]', code: 'line.word.annotation.romans.duplicate' },
+      { path: 'translations[1]', code: 'line.word.annotation.translations.language.duplicate' },
+    ])
+    deepStrictEqual(runtime.validateLineAnnotation(line), [
+      { path: 'romans[3]', code: 'line.annotation.romans.duplicate' },
+      { path: 'romans[5]', code: 'line.annotation.romans.duplicate' },
+      { path: 'translations[1]', code: 'line.annotation.translations.language.duplicate' },
+    ])
+  })
+
+  it('validates annotation languages independently of scheme identifiers', () => {
+    for (const language of ['ja-latn', 'ja_Latn']) {
+      const identity = { language, scheme: 'custom_romanization' }
+      const line = runtime.makeLineNormal({
+        time: runtime.makeTimeRange({ start: 0, end: 1000 }),
+        content: runtime.makeLineContentWords([
+          runtime.makeWordNormal({
+            text: 'x',
+            time: runtime.makeTimeRange({ start: 0, end: 1000 }),
+            annotation: runtime.makeWordAnnotation({
+              rubies: [runtime.makeWordAnnotationRuby({ ...identity, tokens: [runtime.makeWordAnnotationToken({ text: 'shi' })] })],
+              romans: [runtime.makeWordAnnotationRoman({ ...identity, tokens: [runtime.makeWordAnnotationToken({ text: 'shi' })] })],
+            }),
+          }),
+        ]),
+        annotation: runtime.makeLineAnnotation({ romans: [runtime.makeLineAnnotationRoman({ ...identity, text: 'shi' })] }),
+      })
+      const diagnostics = runtime.validateLine(line, '', runtime.Timing.WORD)
+      deepStrictEqual(
+        diagnostics.map((diagnostic) => [diagnostic.path, diagnostic.code]).sort(),
+        language === 'ja-latn'
+          ? []
+          : [
+              ['annotation.romans[0].language', 'language.tag.malformed'],
+              ['content.words[0].annotation.romans[0].language', 'language.tag.malformed'],
+              ['content.words[0].annotation.rubies[0].language', 'language.tag.malformed'],
+            ],
+      )
+    }
+  })
+
   it('accepts a word-level lyric', () => {
     const lines = [
       runtime.makeLineNormal({

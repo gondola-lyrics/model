@@ -22,11 +22,14 @@ enum LineType {
 
 // Romanized transliteration of a whole line.
 message LineAnnotationRoman {
-  // Language (BCP 47 tag) or transliteration scheme of this item.
+  // Language of this item, as a BCP 47 tag.
   optional string language = 1;
 
   // Romanized text.
   string text = 2;
+
+  // Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+  optional string scheme = 3;
 }
 
 // Translation of a whole line into another language.
@@ -40,7 +43,8 @@ message LineAnnotationTranslation {
 
 // Line-level annotations explicitly present in the source.
 // Aggregations of word annotations are never stored here.
-// Each list holds one entry per language.
+// Romans hold one entry per language and scheme pair; translations hold one per language.
+// Unset and empty language or scheme values identify the same entry.
 message LineAnnotation {
   // Romanized transliteration.
   repeated LineAnnotationRoman romans = 1;

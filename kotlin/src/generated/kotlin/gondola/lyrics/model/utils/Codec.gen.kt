@@ -112,6 +112,10 @@ internal fun encodeCommonLineAnnotationRoman(w: WireWriter, src: CommonLineAnnot
         w.tag(18)
         w.string(src.text)
     }
+    src.scheme?.let {
+        w.tag(26)
+        w.string(it)
+    }
 }
 
 @JvmSynthetic
@@ -268,8 +272,12 @@ internal fun encodeCommonWordAnnotationRoman(w: WireWriter, src: CommonWordAnnot
         w.tag(18)
         w.string(it)
     }
+    src.scheme?.let {
+        w.tag(26)
+        w.string(it)
+    }
     for (item in src.tokens) {
-        w.message(26, ::encodeCommonWordAnnotationToken, item)
+        w.message(34, ::encodeCommonWordAnnotationToken, item)
     }
 }
 
@@ -280,8 +288,12 @@ internal fun encodeCommonWordAnnotationRuby(w: WireWriter, src: CommonWordAnnota
         w.tag(18)
         w.string(it)
     }
+    src.scheme?.let {
+        w.tag(26)
+        w.string(it)
+    }
     for (item in src.tokens) {
-        w.message(26, ::encodeCommonWordAnnotationToken, item)
+        w.message(34, ::encodeCommonWordAnnotationToken, item)
     }
 }
 
@@ -574,11 +586,13 @@ private class CommonAgentState {
 private class CommonLineAnnotationRomanState {
     var language: String? = null
     var text: String = ""
+    var scheme: String? = null
 
     fun finish(): CommonLineAnnotationRoman {
         return CommonLineAnnotationRoman(
             language = language,
             text = text,
+            scheme = scheme,
         )
     }
 }
@@ -726,12 +740,14 @@ private class CommonWordAnnotationTranslationState {
 private class CommonWordAnnotationRomanState {
     var time: CommonTimeRangeState? = null
     var language: String? = null
+    var scheme: String? = null
     val tokens = ArrayList<CommonWordAnnotationTokenState>()
 
     fun finish(): CommonWordAnnotationRoman {
         return CommonWordAnnotationRoman(
             time = time?.finish(),
             language = language,
+            scheme = scheme,
             tokens = tokens.map { it.finish() },
         )
     }
@@ -740,12 +756,14 @@ private class CommonWordAnnotationRomanState {
 private class CommonWordAnnotationRubyState {
     var time: CommonTimeRangeState? = null
     var language: String? = null
+    var scheme: String? = null
     val tokens = ArrayList<CommonWordAnnotationTokenState>()
 
     fun finish(): CommonWordAnnotationRuby {
         return CommonWordAnnotationRuby(
             time = time?.finish(),
             language = language,
+            scheme = scheme,
             tokens = tokens.map { it.finish() },
         )
     }
@@ -1048,6 +1066,7 @@ private fun mergeCommonLineAnnotationRoman(r: WireReader, state: CommonLineAnnot
         when (r.tag()) {
             10 -> state.language = r.string()
             18 -> state.text = r.string()
+            26 -> state.scheme = r.string()
             else -> r.skip()
         }
     }
@@ -1335,7 +1354,9 @@ private fun mergeCommonWordAnnotationRoman(r: WireReader, state: CommonWordAnnot
 
             18 -> state.language = r.string()
 
-            26 -> {
+            26 -> state.scheme = r.string()
+
+            34 -> {
                 val item = CommonWordAnnotationTokenState()
                 val end = r.enter()
                 mergeCommonWordAnnotationToken(r, item)
@@ -1367,7 +1388,9 @@ private fun mergeCommonWordAnnotationRuby(r: WireReader, state: CommonWordAnnota
 
             18 -> state.language = r.string()
 
-            26 -> {
+            26 -> state.scheme = r.string()
+
+            34 -> {
                 val item = CommonWordAnnotationTokenState()
                 val end = r.enter()
                 mergeCommonWordAnnotationToken(r, item)

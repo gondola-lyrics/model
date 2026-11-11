@@ -8,10 +8,15 @@ import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.Timing
 import gondola.lyrics.model.common.WordType
 import gondola.lyrics.model.common.deriveLineLanguages
+import gondola.lyrics.model.common.deriveLineRomans
 import gondola.lyrics.model.common.getTimeRangeDuration
 import gondola.lyrics.model.common.makeAgent
+import gondola.lyrics.model.common.makeLineAnnotationRoman
 import gondola.lyrics.model.common.makeText
 import gondola.lyrics.model.common.makeTimeRange
+import gondola.lyrics.model.common.makeWordAnnotation
+import gondola.lyrics.model.common.makeWordAnnotationRoman
+import gondola.lyrics.model.common.makeWordAnnotationToken
 import gondola.lyrics.model.common.resolveDiagnosticPath
 import gondola.lyrics.model.common.resolveLineAgents
 import gondola.lyrics.model.common.validateTimeRange
@@ -30,6 +35,43 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
 class HelpersTest {
+    @Test
+    fun derivesRomansSeparatelyBySchemeInFirstAppearanceOrder() {
+        val first = makeWordAnnotation(
+            romans = listOf(
+                makeWordAnnotationRoman(language = "JA-Latn", scheme = "HEPBURN", tokens = listOf(makeWordAnnotationToken(text = "shi"))),
+                makeWordAnnotationRoman(language = "ja-latn", scheme = "kunrei", tokens = listOf(makeWordAnnotationToken(text = "si"))),
+                makeWordAnnotationRoman(language = "ja-latn", tokens = listOf(makeWordAnnotationToken(text = "default"))),
+            ),
+        )
+        val last = makeWordAnnotation(
+            romans = listOf(
+                makeWordAnnotationRoman(language = "ja-latn", scheme = "KUNREI", tokens = listOf(makeWordAnnotationToken(text = "ti"))),
+                makeWordAnnotationRoman(language = "JA-LATN", scheme = "hepburn", tokens = listOf(makeWordAnnotationToken(text = "chi"))),
+                makeWordAnnotationRoman(language = "ja-latn", scheme = "", tokens = listOf(makeWordAnnotationToken(text = "text"))),
+            ),
+        )
+        val words = listOf(
+            makeWordSpace(text = " "),
+            makeWordNormal(text = "x", annotation = first),
+            makeWordSpace(text = "  "),
+            makeWordNormal(text = "omitted"),
+            makeWordNormal(text = "y", annotation = last),
+            makeWordSpace(text = " "),
+        )
+        val expected = listOf(
+            makeLineAnnotationRoman(language = "ja-latn", scheme = "hepburn", text = "shi chi"),
+            makeLineAnnotationRoman(language = "ja-latn", scheme = "kunrei", text = "si ti"),
+            makeLineAnnotationRoman(language = "ja-latn", text = "default text"),
+        )
+        assertEquals(expected, deriveLineRomans(makeLineContentWords(words)))
+        val stored = gondola.lyrics.model.storage.LineContent(
+            words = words.map { gondola.lyrics.model.storage.Word(type = it.type, text = it.text, annotation = it.annotation) },
+        )
+        assertEquals(expected, deriveLineRomans(stored))
+        assertEquals("HEPBURN", first.romans[0].scheme)
+    }
+
     @Test
     fun derivesLowercasedLineLanguagesWithoutRepeats() {
         val line = makeLineNormal(languages = listOf("JA-JP", "ja-jp", "EN"))

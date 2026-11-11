@@ -143,6 +143,10 @@ export const encodeCommonLineAnnotationRoman = (w: WireWriter, v: common.LineAnn
     w.tag(18)
     w.string(v.text)
   }
+  if (v.scheme !== undefined) {
+    w.tag(26)
+    w.string(v.scheme)
+  }
 }
 
 export const decodeCommonLineAnnotationRoman = (r: WireReader, m: common.LineAnnotationRoman): void => {
@@ -153,6 +157,9 @@ export const decodeCommonLineAnnotationRoman = (r: WireReader, m: common.LineAnn
         break
       case 18:
         m.text = r.string()
+        break
+      case 26:
+        m.scheme = r.string()
         break
       default:
         r.skip()
@@ -541,8 +548,12 @@ export const encodeCommonWordAnnotationRoman = (w: WireWriter, v: common.WordAnn
     w.tag(18)
     w.string(v.language)
   }
+  if (v.scheme !== undefined) {
+    w.tag(26)
+    w.string(v.scheme)
+  }
   for (const item of v.tokens) {
-    w.message(26, encodeCommonWordAnnotationToken, item)
+    w.message(34, encodeCommonWordAnnotationToken, item)
   }
 }
 
@@ -559,7 +570,10 @@ export const decodeCommonWordAnnotationRoman = (r: WireReader, m: common.WordAnn
       case 18:
         m.language = r.string()
         break
-      case 26: {
+      case 26:
+        m.scheme = r.string()
+        break
+      case 34: {
         const item = createCommonWordAnnotationToken()
         const end = r.enter()
         decodeCommonWordAnnotationToken(r, item)
@@ -581,8 +595,12 @@ export const encodeCommonWordAnnotationRuby = (w: WireWriter, v: common.WordAnno
     w.tag(18)
     w.string(v.language)
   }
+  if (v.scheme !== undefined) {
+    w.tag(26)
+    w.string(v.scheme)
+  }
   for (const item of v.tokens) {
-    w.message(26, encodeCommonWordAnnotationToken, item)
+    w.message(34, encodeCommonWordAnnotationToken, item)
   }
 }
 
@@ -599,7 +617,10 @@ export const decodeCommonWordAnnotationRuby = (r: WireReader, m: common.WordAnno
       case 18:
         m.language = r.string()
         break
-      case 26: {
+      case 26:
+        m.scheme = r.string()
+        break
+      case 34: {
         const item = createCommonWordAnnotationToken()
         const end = r.enter()
         decodeCommonWordAnnotationToken(r, item)

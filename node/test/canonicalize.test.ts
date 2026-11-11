@@ -58,6 +58,25 @@ describe('canonicalize', () => {
     deepStrictEqual(runtime.canonicalizeLyric(once), once)
   })
 
+  it('canonicalizes annotation schemes while preserving constructor input', () => {
+    for (const scheme of ['HEPBURN', '']) {
+      const word = runtime.makeWordAnnotation({
+        romans: [runtime.makeWordAnnotationRoman({ language: 'JA-Latn', scheme, tokens: [runtime.makeWordAnnotationToken({ text: 'shi' })] })],
+        rubies: [runtime.makeWordAnnotationRuby({ language: 'JA-Latn', scheme, tokens: [runtime.makeWordAnnotationToken({ text: 'shi' })] })],
+      })
+      const line = runtime.makeLineAnnotation({ romans: [runtime.makeLineAnnotationRoman({ language: 'JA-Latn', scheme, text: 'shi' })] })
+      const canonicalWord = runtime.canonicalizeWordAnnotation(word)
+      const canonicalLine = runtime.canonicalizeLineAnnotation(line)
+      const expected = { language: 'ja-latn', scheme: scheme === '' ? undefined : 'hepburn' }
+      for (const item of [canonicalWord.romans[0]!, canonicalWord.rubies[0]!, canonicalLine.romans[0]!]) {
+        deepStrictEqual({ language: item.language, scheme: item.scheme }, expected)
+      }
+      for (const item of [word.romans[0]!, word.rubies[0]!, line.romans[0]!]) {
+        deepStrictEqual({ language: item.language, scheme: item.scheme }, { language: 'JA-Latn', scheme })
+      }
+    }
+  })
+
   // Returning a copy is the stated contract, and a subobject carried over untouched is how it was broken before.
   it('shares no mutable node with the lyric it was given', () => {
     const lyric = buildLyric()

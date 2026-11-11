@@ -16,11 +16,6 @@ const LANGUAGE_PATTERN = /^[a-z]{2,8}$/
 const MAX_TAG_LENGTH = 35
 
 /**
- * The fields holding a transliteration scheme rather than a tag, which no tag is written like; `romaji` and `Hepburn` name how a text is romanized.
- */
-const TRANSLITERATION_FIELDS: readonly string[] = ['annotation.romans.language']
-
-/**
  * Reports whether a tag is a well-formed BCP 47 language tag.
  * Only the shape is read, so `qqq` passes: whether a subtag is registered belongs to the registry rather than to this schema.
  * Tags are compared case-insensitively by the schema, and stored in lower case by its own rule, so a tag is read in lower case here.
@@ -37,15 +32,9 @@ export const isLanguageTag = (tag: string): boolean => {
 /**
  * Collects the malformed language tags below a message, reading the tree from its schema: a `languages` list holds tags directly, while a field named `language` holds one tag.
  * Only a malformed tag is reported, since an unset or empty one is what the rule demanding a tag is for.
- * `exempt` names the fields that may hold a scheme instead, and `sealed` the fields another validator reads, so a tag is never reported twice.
+ * `sealed` names the fields another validator reads, so a tag is never reported twice.
  */
-const collectTagDiagnostics = (
-  schema: MessageFields<any>,
-  message: unknown,
-  exempt: readonly string[],
-  sealed: readonly string[],
-  path: string,
-): Diagnostic[] => {
+const collectTagDiagnostics = (schema: MessageFields<any>, message: unknown, sealed: readonly string[], path: string): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   const entries = message as Record<string, unknown>
   for (const field of schema.fields) {
@@ -56,12 +45,12 @@ const collectTagDiagnostics = (
     if (field.shape === 'message') {
       const value = entries[field.name]
       if (value !== undefined) {
-        diagnostics.push(...collectTagDiagnostics(field.message, value, exempt, sealed, child))
+        diagnostics.push(...collectTagDiagnostics(field.message, value, sealed, child))
       }
     } else if (field.shape === 'list-message') {
       const values = entries[field.name] as readonly unknown[]
       values.forEach((value, i) => {
-        diagnostics.push(...collectTagDiagnostics(field.message, value, exempt, sealed, `${child}[${i}]`))
+        diagnostics.push(...collectTagDiagnostics(field.message, value, sealed, `${child}[${i}]`))
       })
     } else if (field.shape === 'list-scalar' && field.name === 'languages') {
       const values = entries[field.name] as readonly string[]
@@ -70,11 +59,7 @@ const collectTagDiagnostics = (
           diagnostics.push({ path: `${child}[${i}]`, code: DiagnosticCode.LanguageTagMalformed })
         }
       })
-    } else if (
-      (field.shape === 'scalar' || field.shape === 'optional') &&
-      field.name === 'language' &&
-      !exempt.some((name) => child.endsWith(name))
-    ) {
+    } else if ((field.shape === 'scalar' || field.shape === 'optional') && field.name === 'language') {
       const value = entries[field.name] as string | undefined
       if (value !== undefined && value !== '' && !isLanguageTag(value)) {
         diagnostics.push({ path: child, code: DiagnosticCode.LanguageTagMalformed })
@@ -89,7 +74,7 @@ const collectTagDiagnostics = (
  * A line is validated on its own as well as under a lyric, so where it sits changes nothing and the path is the line's own.
  */
 export const validateLineTags = (schema: MessageFields<any>, line: unknown, path = ''): Diagnostic[] => {
-  return collectTagDiagnostics(schema, line, TRANSLITERATION_FIELDS, [], path)
+  return collectTagDiagnostics(schema, line, [], path)
 }
 
 /**
@@ -97,5 +82,5 @@ export const validateLineTags = (schema: MessageFields<any>, line: unknown, path
  * The lines are left to `validateLine`, which alone knows which fields a line's kind forbids.
  */
 export const validateLyricTags = (schema: MessageFields<any>, lyric: unknown): Diagnostic[] => {
-  return collectTagDiagnostics(schema, lyric, [], ['lines'], '')
+  return collectTagDiagnostics(schema, lyric, ['lines'], '')
 }

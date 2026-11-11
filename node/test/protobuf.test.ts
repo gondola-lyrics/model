@@ -32,11 +32,13 @@ const fromHex = (hex: string): Uint8Array => {
 const annotation = () => {
   return runtime.makeWordAnnotation({
     rubies: [
+      runtime.makeWordAnnotationRuby({ language: 'zh-latn', scheme: 'pinyin', tokens: [runtime.makeWordAnnotationToken({ text: 'han' })] }),
       runtime.makeWordAnnotationRuby({ language: 'ja', time: runtime.makeTimeRange({}), tokens: [runtime.makeWordAnnotationToken({ text: 'あ' })] }),
     ],
     romans: [
       runtime.makeWordAnnotationRoman({
-        language: 'romaji',
+        language: 'ja-latn',
+        scheme: 'hepburn',
         tokens: [runtime.makeWordAnnotationToken({ time: runtime.makeTimeRange({ start: 1, end: 0 }), text: 'a' })],
       }),
     ],
@@ -62,7 +64,7 @@ const meta = () => {
 
 const lineAnnotation = () => {
   return runtime.makeLineAnnotation({
-    romans: [runtime.makeLineAnnotationRoman({ language: 'romaji', text: 'r' })],
+    romans: [runtime.makeLineAnnotationRoman({ language: 'ja-latn', scheme: 'hepburn', text: 'r' })],
     translations: [runtime.makeLineAnnotationTranslation({ language: 'zh', text: '译' })],
   })
 }

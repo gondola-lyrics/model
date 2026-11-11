@@ -151,10 +151,18 @@ export const childPath = (parent: string, child: string): string => {
 }
 
 /**
- * Lowercases a language tag to canonical form, treating an empty or unset tag as unset.
+ * Lowercases a language tag or scheme identifier, treating an empty or unset value as unset.
  */
 export const lowerTag = (tag: string | undefined): string | undefined => {
   return tag ? tag.toLowerCase() : undefined
+}
+
+/**
+ * Keys an annotation by its language and scheme without case, treating empty and unset values alike.
+ * Tuple encoding avoids requiring a reserved separator in scheme identifiers.
+ */
+export const getAnnotationKey = (item: { language?: string | undefined; scheme?: string | undefined }): string => {
+  return JSON.stringify([lowerTag(item.language), lowerTag(item.scheme)])
 }
 
 /**

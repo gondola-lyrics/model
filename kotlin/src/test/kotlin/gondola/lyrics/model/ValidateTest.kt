@@ -4,9 +4,19 @@ import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.Meta
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.makeLineAnnotation
+import gondola.lyrics.model.common.makeLineAnnotationRoman
+import gondola.lyrics.model.common.makeLineAnnotationTranslation
 import gondola.lyrics.model.common.makeTimeRange
+import gondola.lyrics.model.common.makeWordAnnotation
+import gondola.lyrics.model.common.makeWordAnnotationRoman
+import gondola.lyrics.model.common.makeWordAnnotationRuby
+import gondola.lyrics.model.common.makeWordAnnotationToken
+import gondola.lyrics.model.common.makeWordAnnotationTranslation
+import gondola.lyrics.model.common.validateLineAnnotation
 import gondola.lyrics.model.common.validateMeta
 import gondola.lyrics.model.common.validateTimeRange
+import gondola.lyrics.model.common.validateWordAnnotation
 import gondola.lyrics.model.runtime.LanguageUsage
 import gondola.lyrics.model.runtime.Line
 import gondola.lyrics.model.runtime.Lyric
@@ -20,6 +30,7 @@ import gondola.lyrics.model.runtime.makeLyric
 import gondola.lyrics.model.runtime.makeWordNormal
 import gondola.lyrics.model.runtime.makeWordSpace
 import gondola.lyrics.model.runtime.validateLanguageUsage
+import gondola.lyrics.model.runtime.validateLine
 import gondola.lyrics.model.runtime.validateLyric
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -41,6 +52,90 @@ private fun List<Diagnostic>.asPairs(): List<Pair<String, String>> {
 }
 
 class ValidateTest {
+    @Test
+    fun keysRomanAndRubyAnnotationsByLanguageAndScheme() {
+        val identities = listOf(
+            "JA-Latn" to "HEPBURN",
+            "ja-latn" to "kunrei",
+            "ja" to "hepburn",
+            "ja-latn" to "hepburn",
+            "ja-latn" to null,
+            "JA-LATN" to "",
+        )
+        val word = makeWordAnnotation(
+            rubies = identities.map { (language, scheme) -> makeWordAnnotationRuby(language = language, scheme = scheme) },
+            romans = identities.map { (language, scheme) -> makeWordAnnotationRoman(language = language, scheme = scheme) },
+            translations = listOf("zh-Hans", "ZH-HANS").map { makeWordAnnotationTranslation(language = it, text = "translation") },
+        )
+        val line = makeLineAnnotation(
+            romans = identities.map { (language, scheme) -> makeLineAnnotationRoman(language = language, scheme = scheme, text = "roman") },
+            translations = listOf("zh-Hans", "ZH-HANS").map { makeLineAnnotationTranslation(language = it, text = "translation") },
+        )
+        assertEquals(
+            listOf(
+                "rubies[3]" to "line.word.annotation.rubies.duplicate",
+                "rubies[5]" to "line.word.annotation.rubies.duplicate",
+                "romans[3]" to "line.word.annotation.romans.duplicate",
+                "romans[5]" to "line.word.annotation.romans.duplicate",
+                "translations[1]" to "line.word.annotation.translations.language.duplicate",
+            ),
+            validateWordAnnotation(word).asPairs(),
+        )
+        assertEquals(
+            listOf(
+                "romans[3]" to "line.annotation.romans.duplicate",
+                "romans[5]" to "line.annotation.romans.duplicate",
+                "translations[1]" to "line.annotation.translations.language.duplicate",
+            ),
+            validateLineAnnotation(line).asPairs(),
+        )
+    }
+
+    @Test
+    fun validatesAnnotationLanguagesIndependentlyOfSchemes() {
+        for (language in listOf("ja-latn", "ja_Latn")) {
+            val scheme = "custom_romanization"
+            val line = makeLineNormal(
+                time = makeTimeRange(start = 0, end = 1000),
+                content = makeLineContentWords(
+                    listOf(
+                        makeWordNormal(
+                            text = "x",
+                            time = makeTimeRange(start = 0, end = 1000),
+                            annotation = makeWordAnnotation(
+                                rubies = listOf(
+                                    makeWordAnnotationRuby(
+                                        language = language,
+                                        scheme = scheme,
+                                        tokens = listOf(makeWordAnnotationToken(text = "shi")),
+                                    ),
+                                ),
+                                romans = listOf(
+                                    makeWordAnnotationRoman(
+                                        language = language,
+                                        scheme = scheme,
+                                        tokens = listOf(makeWordAnnotationToken(text = "shi")),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                annotation = makeLineAnnotation(romans = listOf(makeLineAnnotationRoman(language = language, scheme = scheme, text = "shi"))),
+            )
+            val expected = if (language == "ja-latn") {
+                emptyList()
+            } else {
+                listOf(
+                    "annotation.romans[0].language" to "language.tag.malformed",
+                    "content.words[0].annotation.romans[0].language" to "language.tag.malformed",
+                    "content.words[0].annotation.rubies[0].language" to "language.tag.malformed",
+                )
+            }
+            assertEquals(expected, validateLine(line, timing = Timing.TIMING_WORD).asPairs().sortedBy { it.first })
+        }
+    }
+
     @Test
     fun reportsNativeTimeBoundsOutsideSchemaDomain() {
         assertEquals(

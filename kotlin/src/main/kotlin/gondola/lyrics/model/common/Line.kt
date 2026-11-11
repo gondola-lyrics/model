@@ -5,6 +5,7 @@ package gondola.lyrics.model.common
 import gondola.lyrics.model.utils.canonicalizeList
 import gondola.lyrics.model.utils.childPath
 import gondola.lyrics.model.utils.findDuplicates
+import gondola.lyrics.model.utils.getAnnotationKey
 import gondola.lyrics.model.utils.lowerTag
 import gondola.lyrics.model.runtime.Line as RuntimeLine
 import gondola.lyrics.model.runtime.LineBackground as RuntimeLineBackground
@@ -149,13 +150,12 @@ public fun makeLineAnnotation(
 }
 
 /**
- * Validates a LineAnnotation: each of its lists holds one entry per language, so a language may not repeat within one.
+ * Validates a LineAnnotation: romans are unique by language and scheme, and translations by language.
  */
 public fun validateLineAnnotation(annotation: LineAnnotation, path: String = ""): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
-    // Reports every entry of one list whose language an earlier entry already took, treating an unset and an empty tag as the same default language.
-    findDuplicates(annotation.romans) { lowerTag(it.language) ?: "" }.forEach { index ->
-        diagnostics.add(Diagnostic(childPath(path, "romans[$index]"), DiagnosticCode.LineAnnotationRomansLanguageDuplicate))
+    findDuplicates(annotation.romans) { getAnnotationKey(it.language, it.scheme) }.forEach { index ->
+        diagnostics.add(Diagnostic(childPath(path, "romans[$index]"), DiagnosticCode.LineAnnotationRomansDuplicate))
     }
     findDuplicates(annotation.translations) { lowerTag(it.language) ?: "" }.forEach { index ->
         diagnostics.add(Diagnostic(childPath(path, "translations[$index]"), DiagnosticCode.LineAnnotationTranslationsLanguageDuplicate))
@@ -166,8 +166,8 @@ public fun validateLineAnnotation(annotation: LineAnnotation, path: String = "")
 /**
  * Creates a LineAnnotationRoman, a romanized transliteration of a whole line.
  */
-public fun makeLineAnnotationRoman(language: String? = null, text: String = ""): LineAnnotationRoman {
-    return LineAnnotationRoman(language = language, text = text)
+public fun makeLineAnnotationRoman(language: String? = null, text: String = "", scheme: String? = null): LineAnnotationRoman {
+    return LineAnnotationRoman(language = language, text = text, scheme = scheme)
 }
 
 /**
@@ -178,10 +178,10 @@ public fun makeLineAnnotationTranslation(language: String? = null, text: String 
 }
 
 /**
- * Returns a copy of the roman annotation with its language lowercased.
+ * Returns a copy of the roman annotation with its language and scheme lowercased.
  */
 public fun canonicalizeLineAnnotationRoman(roman: LineAnnotationRoman): LineAnnotationRoman {
-    return roman.copy(language = lowerTag(roman.language))
+    return roman.copy(language = lowerTag(roman.language), scheme = lowerTag(roman.scheme))
 }
 
 /**
@@ -202,9 +202,9 @@ public fun canonicalizeLineAnnotation(annotation: LineAnnotation): LineAnnotatio
 }
 
 private fun deriveWordRomans(words: List<WordView>): List<LineAnnotationRoman> {
-    val languages = words.flatMap { word -> word.annotation?.romans?.map { lowerTag(it.language) } ?: emptyList() }.distinct()
+    val keys = words.flatMap { word -> word.annotation?.romans?.map { getAnnotationKey(it.language, it.scheme) } ?: emptyList() }.distinct()
     val romans = mutableListOf<LineAnnotationRoman>()
-    for (language in languages) {
+    for ((language, scheme) in keys) {
         val joined = StringBuilder()
         var spaced = false
         for (word in words) {
@@ -212,7 +212,7 @@ private fun deriveWordRomans(words: List<WordView>): List<LineAnnotationRoman> {
                 spaced = true
                 continue
             }
-            val roman = word.annotation?.romans?.firstOrNull { lowerTag(it.language) == language }
+            val roman = word.annotation?.romans?.firstOrNull { lowerTag(it.language) == language && lowerTag(it.scheme) == scheme }
             val text = roman?.let(::getAnnotationItemText) ?: ""
             if (text.isNotEmpty()) {
                 if (joined.isNotEmpty() && spaced) {
@@ -223,23 +223,23 @@ private fun deriveWordRomans(words: List<WordView>): List<LineAnnotationRoman> {
             }
         }
         if (joined.isNotEmpty()) {
-            romans.add(makeLineAnnotationRoman(language, joined.toString()))
+            romans.add(makeLineAnnotationRoman(language = language, text = joined.toString(), scheme = scheme))
         }
     }
     return romans
 }
 
 /**
- * Derives line-level romans from the content's words, one per language in order of first appearance; the result is for display and must never be stored on the line.
- * Words lacking a roman in that language are skipped, and any spaces between two romanized words collapse to a single U+0020.
+ * Derives line-level romans from the content's words, one per language and scheme pair in order of first appearance; the result is for display and must never be stored on the line.
+ * Words lacking a roman for that pair are skipped, and any spaces between two romanized words collapse to a single U+0020.
  */
 public fun deriveLineRomans(content: StorageLineContent?): List<LineAnnotationRoman> {
     return deriveWordRomans(content?.words?.map { it.asWordView() } ?: emptyList())
 }
 
 /**
- * Derives line-level romans from the content's words, one per language in order of first appearance; the result is for display and must never be stored on the line.
- * Words lacking a roman in that language are skipped, and any spaces between two romanized words collapse to a single U+0020.
+ * Derives line-level romans from the content's words, one per language and scheme pair in order of first appearance; the result is for display and must never be stored on the line.
+ * Words lacking a roman for that pair are skipped, and any spaces between two romanized words collapse to a single U+0020.
  */
 public fun deriveLineRomans(content: RuntimeLineContent?): List<LineAnnotationRoman> {
     return deriveWordRomans(content?.words?.map { it.asWordView() } ?: emptyList())

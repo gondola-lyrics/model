@@ -1,12 +1,10 @@
 import type { MakeInit } from '@root/utils'
-import type { LineAnnotation, LineAnnotationRoman, LineAnnotationTranslation, TimeRange } from '@root/generated/common/index.gen'
+import type { LineAnnotation, LineAnnotationRoman, LineAnnotationTranslation, TimeRange, WordAnnotationRoman } from '@root/generated/common/index.gen'
 import type { AnyWord } from './word'
 import type { Diagnostic } from './diagnostic'
 
 import { Timing, WordType } from '@root/generated/common/index.gen'
-import { DiagnosticCode } from './diagnostic'
-
-import { canonicalizeList, childPath, findDuplicates, lowerTag, withInit } from '@root/utils'
+import { canonicalizeList, childPath, findDuplicates, getAnnotationKey, lowerTag, withInit } from '@root/utils'
 import {
   createCommonLineAnnotation,
   createCommonLineAnnotationRoman,
@@ -14,6 +12,8 @@ import {
   fieldsCommonLineAnnotationRoman,
   fieldsCommonLineAnnotationTranslation,
 } from '@root/generated/detail.gen'
+
+import { DiagnosticCode } from './diagnostic'
 import { getAnnotationItemText, getWordsLanguages, getWordsText, validateWords } from './word'
 
 /**
@@ -87,20 +87,16 @@ export const makeLineAnnotation = (init?: MakeInit<LineAnnotation>): LineAnnotat
 }
 
 /**
- * Validates a LineAnnotation: each of its lists holds one entry per language, so a language may not repeat within one.
+ * Validates a LineAnnotation: romans are unique by language and scheme, and translations by language.
  */
 export const validateLineAnnotation = (annotation: LineAnnotation, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
-  /**
-   * Reports every entry of one list whose language an earlier entry already took, treating an unset and an empty tag as the same default language.
-   */
-  const checkLanguages = (items: { language?: string | undefined }[], field: string, code: DiagnosticCode): void => {
-    findDuplicates(items, (item) => lowerTag(item.language) ?? '').forEach((i) => {
-      diagnostics.push({ path: childPath(path, `${field}[${i}]`), code })
-    })
-  }
-  checkLanguages(annotation.romans, 'romans', DiagnosticCode.LineAnnotationRomansLanguageDuplicate)
-  checkLanguages(annotation.translations, 'translations', DiagnosticCode.LineAnnotationTranslationsLanguageDuplicate)
+  findDuplicates(annotation.romans, getAnnotationKey).forEach((i) => {
+    diagnostics.push({ path: childPath(path, `romans[${i}]`), code: DiagnosticCode.LineAnnotationRomansDuplicate })
+  })
+  findDuplicates(annotation.translations, (item) => lowerTag(item.language) ?? '').forEach((i) => {
+    diagnostics.push({ path: childPath(path, `translations[${i}]`), code: DiagnosticCode.LineAnnotationTranslationsLanguageDuplicate })
+  })
   return diagnostics
 }
 
@@ -119,10 +115,10 @@ export const makeLineAnnotationTranslation = (init?: MakeInit<LineAnnotationTran
 }
 
 /**
- * Returns a copy of the roman annotation with its language lowercased.
+ * Returns a copy of the roman annotation with its language and scheme lowercased.
  */
 export const canonicalizeLineAnnotationRoman = (roman: LineAnnotationRoman): LineAnnotationRoman => {
-  return { ...roman, language: lowerTag(roman.language) }
+  return { ...roman, language: lowerTag(roman.language), scheme: lowerTag(roman.scheme) }
 }
 
 /**
@@ -144,14 +140,19 @@ export const canonicalizeLineAnnotation = (annotation: LineAnnotation): LineAnno
 }
 
 /**
- * Derives line-level romans from the content's words, one per language in order of first appearance; the result is for display and must never be stored on the line.
- * Words lacking a roman in that language are skipped, and any spaces between two romanized words collapse to a single U+0020.
+ * Derives line-level romans from the content's words, one per language and scheme pair in order of first appearance; the result is for display and must never be stored on the line.
+ * Words lacking a roman for that pair are skipped, and any spaces between two romanized words collapse to a single U+0020.
  */
 export const deriveLineRomans = (content: AnyLineContent | undefined): LineAnnotationRoman[] => {
   const words = content?.words ?? []
-  const languages = new Set(words.flatMap((word) => word.annotation?.romans.map((roman) => lowerTag(roman.language)) ?? []))
+  const variants = new Map<string, WordAnnotationRoman>()
+  for (const word of words) {
+    for (const roman of word.annotation?.romans ?? []) {
+      variants.set(getAnnotationKey(roman), roman)
+    }
+  }
   const romans: LineAnnotationRoman[] = []
-  for (const language of languages) {
+  for (const [key, variant] of variants) {
     let joined = ''
     let spaced = false
     for (const word of words) {
@@ -159,7 +160,7 @@ export const deriveLineRomans = (content: AnyLineContent | undefined): LineAnnot
         spaced = true
         continue
       }
-      const roman = word.annotation?.romans.find((item) => lowerTag(item.language) === language)
+      const roman = word.annotation?.romans.find((item) => getAnnotationKey(item) === key)
       const text = roman ? getAnnotationItemText(roman) : ''
       if (text !== '') {
         joined += joined !== '' && spaced ? ` ${text}` : text
@@ -167,7 +168,7 @@ export const deriveLineRomans = (content: AnyLineContent | undefined): LineAnnot
       }
     }
     if (joined !== '') {
-      romans.push(makeLineAnnotationRoman({ language, text: joined }))
+      romans.push(makeLineAnnotationRoman({ language: lowerTag(variant.language), scheme: lowerTag(variant.scheme), text: joined }))
     }
   }
   return romans

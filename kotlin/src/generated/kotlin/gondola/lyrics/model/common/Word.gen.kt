@@ -80,9 +80,13 @@ public data class WordAnnotationRoman(
      */
     val time: TimeRange? = null,
     /**
-     * Language (BCP 47 tag) or transliteration scheme of this item.
+     * Language of this item, as a BCP 47 tag.
      */
     val language: String? = null,
+    /**
+     * Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+     */
+    val scheme: String? = null,
     /**
      * Tokens composing the item in order.
      */
@@ -99,9 +103,13 @@ public data class WordAnnotationRuby(
      */
     val time: TimeRange? = null,
     /**
-     * Language (BCP 47 tag) or transliteration scheme of this item.
+     * Language of this item, as a BCP 47 tag.
      */
     val language: String? = null,
+    /**
+     * Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+     */
+    val scheme: String? = null,
     /**
      * Tokens composing the item in order.
      */
@@ -110,7 +118,8 @@ public data class WordAnnotationRuby(
 
 /**
  * Annotations attached to a single word.
- * Each list holds one entry per language.
+ * Ruby and roman lists hold one entry per language and scheme pair; translations hold one per language.
+ * Unset and empty language or scheme values identify the same entry.
  */
 public data class WordAnnotation(
     /**

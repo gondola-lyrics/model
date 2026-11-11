@@ -5,10 +5,18 @@ import gondola.lyrics.model.common.Meta
 import gondola.lyrics.model.common.PartType
 import gondola.lyrics.model.common.Timing
 import gondola.lyrics.model.common.WordType
+import gondola.lyrics.model.common.canonicalizeLineAnnotation
+import gondola.lyrics.model.common.canonicalizeWordAnnotation
+import gondola.lyrics.model.common.makeLineAnnotation
+import gondola.lyrics.model.common.makeLineAnnotationRoman
 import gondola.lyrics.model.common.makePart
 import gondola.lyrics.model.common.makeText
 import gondola.lyrics.model.common.makeTimeRange
 import gondola.lyrics.model.common.makeUnknownEntry
+import gondola.lyrics.model.common.makeWordAnnotation
+import gondola.lyrics.model.common.makeWordAnnotationRoman
+import gondola.lyrics.model.common.makeWordAnnotationRuby
+import gondola.lyrics.model.common.makeWordAnnotationToken
 import gondola.lyrics.model.runtime.LineContent
 import gondola.lyrics.model.runtime.Lyric
 import gondola.lyrics.model.runtime.LyricStatus
@@ -79,6 +87,40 @@ class CanonicalizeTest {
     fun isIdempotent() {
         val once = canonicalizeLyric(buildLyric())
         assertEquals(once, canonicalizeLyric(once))
+    }
+
+    @Test
+    fun canonicalizesAnnotationSchemesWhilePreservingConstructorInput() {
+        for (scheme in listOf("HEPBURN", "")) {
+            val word = makeWordAnnotation(
+                romans = listOf(
+                    makeWordAnnotationRoman(language = "JA-Latn", scheme = scheme, tokens = listOf(makeWordAnnotationToken(text = "shi"))),
+                ),
+                rubies = listOf(
+                    makeWordAnnotationRuby(language = "JA-Latn", scheme = scheme, tokens = listOf(makeWordAnnotationToken(text = "shi"))),
+                ),
+            )
+            val line = makeLineAnnotation(romans = listOf(makeLineAnnotationRoman(language = "JA-Latn", scheme = scheme, text = "shi")))
+            val canonicalWord = canonicalizeWordAnnotation(word)
+            val canonicalLine = canonicalizeLineAnnotation(line)
+            val expectedScheme = if (scheme.isEmpty()) null else "hepburn"
+            assertEquals(
+                List(3) { "ja-latn" to expectedScheme },
+                listOf(
+                    canonicalWord.romans[0].language to canonicalWord.romans[0].scheme,
+                    canonicalWord.rubies[0].language to canonicalWord.rubies[0].scheme,
+                    canonicalLine.romans[0].language to canonicalLine.romans[0].scheme,
+                ),
+            )
+            assertEquals(
+                List(3) { "JA-Latn" to scheme },
+                listOf(
+                    word.romans[0].language to word.romans[0].scheme,
+                    word.rubies[0].language to word.rubies[0].scheme,
+                    line.romans[0].language to line.romans[0].scheme,
+                ),
+            )
+        }
     }
 
     @Test

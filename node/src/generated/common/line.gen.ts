@@ -25,13 +25,17 @@ export enum LineType {
  */
 export type LineAnnotationRoman = {
   /**
-   * Language (BCP 47 tag) or transliteration scheme of this item.
+   * Language of this item, as a BCP 47 tag.
    */
   language?: string | undefined
   /**
    * Romanized text.
    */
   text: string
+  /**
+   * Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+   */
+  scheme?: string | undefined
 }
 
 /**
@@ -51,7 +55,8 @@ export type LineAnnotationTranslation = {
 /**
  * Line-level annotations explicitly present in the source.
  * Aggregations of word annotations are never stored here.
- * Each list holds one entry per language.
+ * Romans hold one entry per language and scheme pair; translations hold one per language.
+ * Unset and empty language or scheme values identify the same entry.
  */
 export type LineAnnotation = {
   /**

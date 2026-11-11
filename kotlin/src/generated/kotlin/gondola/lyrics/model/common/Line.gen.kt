@@ -48,13 +48,17 @@ public class LineType(@JvmField public val value: Int) {
  */
 public data class LineAnnotationRoman(
     /**
-     * Language (BCP 47 tag) or transliteration scheme of this item.
+     * Language of this item, as a BCP 47 tag.
      */
     val language: String? = null,
     /**
      * Romanized text.
      */
     val text: String = "",
+    /**
+     * Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+     */
+    val scheme: String? = null,
 )
 
 /**
@@ -74,7 +78,8 @@ public data class LineAnnotationTranslation(
 /**
  * Line-level annotations explicitly present in the source.
  * Aggregations of word annotations are never stored here.
- * Each list holds one entry per language.
+ * Romans hold one entry per language and scheme pair; translations hold one per language.
+ * Unset and empty language or scheme values identify the same entry.
  */
 public data class LineAnnotation(
     /**

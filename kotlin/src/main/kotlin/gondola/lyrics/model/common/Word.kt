@@ -6,6 +6,7 @@ import gondola.lyrics.model.utils.canonicalizeField
 import gondola.lyrics.model.utils.canonicalizeList
 import gondola.lyrics.model.utils.childPath
 import gondola.lyrics.model.utils.findDuplicates
+import gondola.lyrics.model.utils.getAnnotationKey
 import gondola.lyrics.model.utils.isTimeRangeUncovered
 import gondola.lyrics.model.utils.isUnresolved
 import gondola.lyrics.model.utils.lowerTag
@@ -75,9 +76,10 @@ public fun makeWordAnnotationToken(time: TimeRange? = null, text: String = ""): 
 public fun makeWordAnnotationRoman(
     time: TimeRange? = null,
     language: String? = null,
+    scheme: String? = null,
     tokens: List<WordAnnotationToken> = emptyList(),
 ): WordAnnotationRoman {
-    return WordAnnotationRoman(time = time, language = language, tokens = tokens)
+    return WordAnnotationRoman(time = time, language = language, scheme = scheme, tokens = tokens)
 }
 
 /**
@@ -93,9 +95,10 @@ public fun makeWordAnnotationTranslation(language: String? = null, text: String 
 public fun makeWordAnnotationRuby(
     time: TimeRange? = null,
     language: String? = null,
+    scheme: String? = null,
     tokens: List<WordAnnotationToken> = emptyList(),
 ): WordAnnotationRuby {
-    return WordAnnotationRuby(time = time, language = language, tokens = tokens)
+    return WordAnnotationRuby(time = time, language = language, scheme = scheme, tokens = tokens)
 }
 
 /**
@@ -110,21 +113,13 @@ public fun makeWordAnnotation(
 }
 
 /**
- * Validates a WordAnnotation: each of its lists holds one entry per language, and every ruby and roman item, and every token within them, must carry a valid time when it carries one at all.
+ * Validates a WordAnnotation: rubies and romans are unique by language and scheme, and translations by language.
+ * Every ruby and roman item, and every token within them, must carry a valid time when it carries one at all.
  * An item or token without a time inherits one, so its absence is never a problem here.
  * `time` is the range the items inherit, i.e. the annotated word's where the lyric's precision puts one on it at all; an item carrying its own falls within it, while a token falls within whichever range its item resolves to and so is held to one either way.
  */
 public fun validateWordAnnotation(annotation: WordAnnotation, path: String = "", time: TimeRange? = null): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
-
-    /**
-     * Reports every entry of one list whose language an earlier entry already took, treating an unset and an empty tag as the same default language.
-     */
-    fun <T> checkLanguages(items: List<T>, field: String, code: DiagnosticCode, language: (T) -> String?) {
-        findDuplicates(items) { lowerTag(language(it)) ?: "" }.forEach { index ->
-            diagnostics.add(Diagnostic(childPath(path, "$field[$index]"), code))
-        }
-    }
 
     /**
      * Validates the time of one timed annotation item, and of every token it holds, against both its own domain and the range containing it.
@@ -150,9 +145,15 @@ public fun validateWordAnnotation(annotation: WordAnnotation, path: String = "",
             }
         }
     }
-    checkLanguages(annotation.rubies, "rubies", DiagnosticCode.LineWordAnnotationRubiesLanguageDuplicate) { it.language }
-    checkLanguages(annotation.romans, "romans", DiagnosticCode.LineWordAnnotationRomansLanguageDuplicate) { it.language }
-    checkLanguages(annotation.translations, "translations", DiagnosticCode.LineWordAnnotationTranslationsLanguageDuplicate) { it.language }
+    findDuplicates(annotation.rubies) { getAnnotationKey(it.language, it.scheme) }.forEach { index ->
+        diagnostics.add(Diagnostic(childPath(path, "rubies[$index]"), DiagnosticCode.LineWordAnnotationRubiesDuplicate))
+    }
+    findDuplicates(annotation.romans) { getAnnotationKey(it.language, it.scheme) }.forEach { index ->
+        diagnostics.add(Diagnostic(childPath(path, "romans[$index]"), DiagnosticCode.LineWordAnnotationRomansDuplicate))
+    }
+    findDuplicates(annotation.translations) { lowerTag(it.language) ?: "" }.forEach { index ->
+        diagnostics.add(Diagnostic(childPath(path, "translations[$index]"), DiagnosticCode.LineWordAnnotationTranslationsLanguageDuplicate))
+    }
     annotation.rubies.forEachIndexed { index, item ->
         validateItem(item.time, item.tokens, childPath(path, "rubies[$index]"))
     }
@@ -274,21 +275,23 @@ public fun canonicalizeWordAnnotationToken(token: WordAnnotationToken): WordAnno
 }
 
 /**
- * Returns a copy of the roman annotation with its language lowercased and its tokens canonicalized.
+ * Returns a copy of the roman annotation with its language and scheme lowercased and its tokens canonicalized.
  */
 public fun canonicalizeWordAnnotationRoman(roman: WordAnnotationRoman): WordAnnotationRoman {
     return roman.copy(
         language = lowerTag(roman.language),
+        scheme = lowerTag(roman.scheme),
         tokens = canonicalizeList(roman.tokens, ::canonicalizeWordAnnotationToken),
     )
 }
 
 /**
- * Returns a copy of the ruby annotation with its language lowercased and its tokens canonicalized.
+ * Returns a copy of the ruby annotation with its language and scheme lowercased and its tokens canonicalized.
  */
 public fun canonicalizeWordAnnotationRuby(ruby: WordAnnotationRuby): WordAnnotationRuby {
     return ruby.copy(
         language = lowerTag(ruby.language),
+        scheme = lowerTag(ruby.scheme),
         tokens = canonicalizeList(ruby.tokens, ::canonicalizeWordAnnotationToken),
     )
 }

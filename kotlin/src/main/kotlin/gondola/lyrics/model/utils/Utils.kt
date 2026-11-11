@@ -40,10 +40,17 @@ internal fun childPath(parent: String, child: String): String {
 }
 
 /**
- * Lowercases a language tag to canonical form, treating an empty or unset tag as unset.
+ * Lowercases a language tag or scheme identifier, treating an empty or unset value as unset.
  */
 internal fun lowerTag(tag: String?): String? {
     return tag?.takeIf { it.isNotEmpty() }?.lowercase()
+}
+
+/**
+ * Keys an annotation by its language and scheme without case, treating empty and unset values alike.
+ */
+internal fun getAnnotationKey(language: String?, scheme: String?): Pair<String?, String?> {
+    return lowerTag(language) to lowerTag(scheme)
 }
 
 /**
@@ -103,8 +110,8 @@ internal fun isTimeRangeUncovered(range: TimeRange?, parent: TimeRange?): Boolea
 /**
  * Collects the indexes of entries whose key an earlier entry already took, so a list holding one entry per key can report every repeat without reordering or merging anything.
  */
-internal fun <T> findDuplicates(items: List<T>, key: (T) -> String): List<Int> {
-    val seen = mutableSetOf<String>()
+internal fun <T, K> findDuplicates(items: List<T>, key: (T) -> K): List<Int> {
+    val seen = mutableSetOf<K>()
     return items.mapIndexedNotNull { index, item -> if (seen.add(key(item))) null else index }
 }
 

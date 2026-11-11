@@ -3,11 +3,17 @@ package gondola.lyrics.model
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet
 import com.google.protobuf.Descriptors
 import com.google.protobuf.DynamicMessage
+import gondola.lyrics.model.common.LineAnnotation
+import gondola.lyrics.model.common.LineAnnotationRoman
 import gondola.lyrics.model.common.Meta
 import gondola.lyrics.model.common.Text
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.Timing
 import gondola.lyrics.model.common.UnknownEntry
+import gondola.lyrics.model.common.WordAnnotation
+import gondola.lyrics.model.common.WordAnnotationRoman
+import gondola.lyrics.model.common.WordAnnotationRuby
+import gondola.lyrics.model.common.WordAnnotationToken
 import gondola.lyrics.model.common.WordType
 import gondola.lyrics.model.common.makeMeta
 import gondola.lyrics.model.common.makeTimeRange
@@ -153,6 +159,11 @@ class CodecTest {
 
     @Test
     fun matchesOfficialCodecForBothLayers() {
+        val wordAnnotation = WordAnnotation(
+            rubies = listOf(WordAnnotationRuby(language = "zh-latn", scheme = "pinyin", tokens = listOf(WordAnnotationToken(text = "han")))),
+            romans = listOf(WordAnnotationRoman(language = "ja-latn", scheme = "hepburn", tokens = listOf(WordAnnotationToken(text = "shi")))),
+        )
+        val lineAnnotation = LineAnnotation(romans = listOf(LineAnnotationRoman(language = "ja-latn", scheme = "hepburn", text = "shi")))
         val meta = Meta(
             offset = -1500,
             duration = 4294967295L,
@@ -169,7 +180,12 @@ class CodecTest {
             meta = meta,
             extra = mapOf("\$private" to "kept"),
             lines = listOf(
-                Line(content = LineContent(words = listOf(Word(type = WordType(99), language = "", text = "x", emphasis = WordEmphasis())))),
+                Line(
+                    content = LineContent(
+                        words = listOf(Word(type = WordType(99), language = "", text = "x", emphasis = WordEmphasis(), annotation = wordAnnotation)),
+                    ),
+                    annotation = lineAnnotation,
+                ),
             ),
         )
         val stored = StorageLyric(
@@ -181,7 +197,10 @@ class CodecTest {
             extra = mapOf("\$private" to "kept"),
             lines = listOf(
                 StorageLine(
-                    content = StorageLineContent(words = listOf(StorageWord(type = WordType(99), language = "", text = "x", emphasis = false))),
+                    content = StorageLineContent(
+                        words = listOf(StorageWord(type = WordType(99), language = "", text = "x", emphasis = false, annotation = wordAnnotation)),
+                    ),
+                    annotation = lineAnnotation,
                 ),
             ),
         )
@@ -193,6 +212,29 @@ class CodecTest {
             "unknowns" to
                 listOf(official("lyric.common.UnknownEntry", "key" to "k", "value" to "v"), official("lyric.common.UnknownEntry", "key" to "k")),
             "titles" to listOf(official("lyric.common.Text", "text" to "\uD83D\uDE00")),
+        )
+        val officialWordAnnotation = official(
+            "lyric.common.WordAnnotation",
+            "rubies" to listOf(
+                official(
+                    "lyric.common.WordAnnotationRuby",
+                    "language" to "zh-latn",
+                    "scheme" to "pinyin",
+                    "tokens" to listOf(official("lyric.common.WordAnnotationToken", "text" to "han")),
+                ),
+            ),
+            "romans" to listOf(
+                official(
+                    "lyric.common.WordAnnotationRoman",
+                    "language" to "ja-latn",
+                    "scheme" to "hepburn",
+                    "tokens" to listOf(official("lyric.common.WordAnnotationToken", "text" to "shi")),
+                ),
+            ),
+        )
+        val officialLineAnnotation = official(
+            "lyric.common.LineAnnotation",
+            "romans" to listOf(official("lyric.common.LineAnnotationRoman", "language" to "ja-latn", "scheme" to "hepburn", "text" to "shi")),
         )
         for (layer in listOf("runtime", "storage")) {
             val emphasis = if (layer == "runtime") official("lyric.runtime.WordEmphasis") else false
@@ -208,8 +250,18 @@ class CodecTest {
                         "lyric.$layer.Line",
                         "content" to official(
                             "lyric.$layer.LineContent",
-                            "words" to listOf(official("lyric.$layer.Word", "type" to 99, "language" to "", "text" to "x", "emphasis" to emphasis)),
+                            "words" to listOf(
+                                official(
+                                    "lyric.$layer.Word",
+                                    "type" to 99,
+                                    "language" to "",
+                                    "text" to "x",
+                                    "emphasis" to emphasis,
+                                    "annotation" to officialWordAnnotation,
+                                ),
+                            ),
                         ),
+                        "annotation" to officialLineAnnotation,
                     ),
                 ),
             ) + if (layer == "runtime") listOf("status" to 2) else emptyList()

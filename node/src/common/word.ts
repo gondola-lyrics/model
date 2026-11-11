@@ -10,14 +10,13 @@ import type {
 import type { Diagnostic } from './diagnostic'
 
 import { Timing, WordType } from '@root/generated/common/index.gen'
-import { DiagnosticCode } from './diagnostic'
-
 import {
   canonicalizeField,
   canonicalizeList,
   childPath,
   copyMessage,
   findDuplicates,
+  getAnnotationKey,
   isTimeRangeUncovered,
   isUnresolved,
   lowerTag,
@@ -35,6 +34,8 @@ import {
   fieldsCommonWordAnnotationToken,
   fieldsCommonWordAnnotationTranslation,
 } from '@root/generated/detail.gen'
+
+import { DiagnosticCode } from './diagnostic'
 import { validateTimeRange } from './time'
 
 /**
@@ -100,20 +101,13 @@ export const makeWordAnnotation = (init?: MakeInit<WordAnnotation>): WordAnnotat
 }
 
 /**
- * Validates a WordAnnotation: each of its lists holds one entry per language, and every ruby and roman item, and every token within them, must carry a valid time when it carries one at all.
+ * Validates a WordAnnotation: rubies and romans are unique by language and scheme, and translations by language.
+ * Every ruby and roman item, and every token within them, must carry a valid time when it carries one at all.
  * An item or token without a time inherits one, so its absence is never a problem here.
  * `time` is the range the items inherit, i.e. the annotated word's where the lyric's precision puts one on it at all; an item carrying its own falls within it, while a token falls within whichever range its item resolves to and so is held to one either way.
  */
 export const validateWordAnnotation = (annotation: WordAnnotation, path = '', time?: TimeRange): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
-  /**
-   * Reports every entry of one list whose language an earlier entry already took, treating an unset and an empty tag as the same default language.
-   */
-  const checkLanguages = (items: { language?: string | undefined }[], field: string, code: DiagnosticCode): void => {
-    findDuplicates(items, (item) => lowerTag(item.language) ?? '').forEach((i) => {
-      diagnostics.push({ path: childPath(path, `${field}[${i}]`), code })
-    })
-  }
   /**
    * Validates the time of every item in one timed annotation list, and of every token those items hold, against both its own domain and the range containing it.
    */
@@ -140,9 +134,15 @@ export const validateWordAnnotation = (annotation: WordAnnotation, path = '', ti
       })
     })
   }
-  checkLanguages(annotation.rubies, 'rubies', DiagnosticCode.LineWordAnnotationRubiesLanguageDuplicate)
-  checkLanguages(annotation.romans, 'romans', DiagnosticCode.LineWordAnnotationRomansLanguageDuplicate)
-  checkLanguages(annotation.translations, 'translations', DiagnosticCode.LineWordAnnotationTranslationsLanguageDuplicate)
+  findDuplicates(annotation.rubies, getAnnotationKey).forEach((i) => {
+    diagnostics.push({ path: childPath(path, `rubies[${i}]`), code: DiagnosticCode.LineWordAnnotationRubiesDuplicate })
+  })
+  findDuplicates(annotation.romans, getAnnotationKey).forEach((i) => {
+    diagnostics.push({ path: childPath(path, `romans[${i}]`), code: DiagnosticCode.LineWordAnnotationRomansDuplicate })
+  })
+  findDuplicates(annotation.translations, (item) => lowerTag(item.language) ?? '').forEach((i) => {
+    diagnostics.push({ path: childPath(path, `translations[${i}]`), code: DiagnosticCode.LineWordAnnotationTranslationsLanguageDuplicate })
+  })
   validateItems(annotation.rubies, 'rubies')
   validateItems(annotation.romans, 'romans')
   return diagnostics
@@ -224,25 +224,27 @@ export const canonicalizeWordAnnotationToken = (token: WordAnnotationToken): Wor
 }
 
 /**
- * Returns a copy of the roman annotation with its language lowercased and its tokens canonicalized.
+ * Returns a copy of the roman annotation with its language and scheme lowercased and its tokens canonicalized.
  */
 export const canonicalizeWordAnnotationRoman = (roman: WordAnnotationRoman): WordAnnotationRoman => {
   return {
     ...roman,
     time: copyMessage(roman.time),
     language: lowerTag(roman.language),
+    scheme: lowerTag(roman.scheme),
     tokens: canonicalizeList(fieldsCommonWordAnnotationToken, roman.tokens, canonicalizeWordAnnotationToken),
   }
 }
 
 /**
- * Returns a copy of the ruby annotation with its language lowercased and its tokens canonicalized.
+ * Returns a copy of the ruby annotation with its language and scheme lowercased and its tokens canonicalized.
  */
 export const canonicalizeWordAnnotationRuby = (ruby: WordAnnotationRuby): WordAnnotationRuby => {
   return {
     ...ruby,
     time: copyMessage(ruby.time),
     language: lowerTag(ruby.language),
+    scheme: lowerTag(ruby.scheme),
     tokens: canonicalizeList(fieldsCommonWordAnnotationToken, ruby.tokens, canonicalizeWordAnnotationToken),
   }
 }

@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import { deepStrictEqual } from 'node:assert/strict'
 
-import { runtime } from '@root/index'
+import { runtime, storage } from '@root/index'
 
 describe('derive line languages', () => {
   // Returning the line's own array let a caller mutate the line through the result.
@@ -23,6 +23,39 @@ describe('derive line languages', () => {
       ]),
     })
     deepStrictEqual(runtime.deriveLineLanguages(line), ['en'])
+  })
+})
+
+describe('derive line romans', () => {
+  it('keeps schemes separate while preserving first appearance and word spacing', () => {
+    const first = runtime.makeWordAnnotation({
+      romans: [
+        runtime.makeWordAnnotationRoman({ language: 'JA-Latn', scheme: 'HEPBURN', tokens: [runtime.makeWordAnnotationToken({ text: 'shi' })] }),
+        runtime.makeWordAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', tokens: [runtime.makeWordAnnotationToken({ text: 'si' })] }),
+        runtime.makeWordAnnotationRoman({ language: 'ja-latn', tokens: [runtime.makeWordAnnotationToken({ text: 'default' })] }),
+      ],
+    })
+    const last = runtime.makeWordAnnotation({
+      romans: [
+        runtime.makeWordAnnotationRoman({ language: 'ja-latn', scheme: 'KUNREI', tokens: [runtime.makeWordAnnotationToken({ text: 'ti' })] }),
+        runtime.makeWordAnnotationRoman({ language: 'JA-LATN', scheme: 'hepburn', tokens: [runtime.makeWordAnnotationToken({ text: 'chi' })] }),
+        runtime.makeWordAnnotationRoman({ language: 'ja-latn', scheme: '', tokens: [runtime.makeWordAnnotationToken({ text: 'text' })] }),
+      ],
+    })
+    const words = [
+      storage.makeWordSpace({ text: ' ' }),
+      storage.makeWordNormal({ text: 'x', annotation: first }),
+      storage.makeWordSpace({ text: '  ' }),
+      storage.makeWordNormal({ text: 'omitted' }),
+      storage.makeWordNormal({ text: 'y', annotation: last }),
+      storage.makeWordSpace({ text: ' ' }),
+    ]
+    deepStrictEqual(runtime.deriveLineRomans(storage.makeLineContentWords(words)), [
+      runtime.makeLineAnnotationRoman({ language: 'ja-latn', scheme: 'hepburn', text: 'shi chi' }),
+      runtime.makeLineAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', text: 'si ti' }),
+      runtime.makeLineAnnotationRoman({ language: 'ja-latn', text: 'default text' }),
+    ])
+    deepStrictEqual(first.romans[0]?.scheme, 'HEPBURN')
   })
 })
 
