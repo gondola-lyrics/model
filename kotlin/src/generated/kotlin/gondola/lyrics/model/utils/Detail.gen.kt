@@ -97,6 +97,7 @@ internal fun isDefault(message: Any): Boolean {
 
         is CommonPart ->
             message.type.value == 0 &&
+                message.id == null &&
                 message.raw == null
 
         is CommonTimeRange ->
@@ -287,6 +288,7 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
 
         is CommonPart -> {
             visit("type", FieldShape.ENUM, message.type)
+            visit("id", FieldShape.OPTIONAL, message.id)
             visit("raw", FieldShape.OPTIONAL, message.raw)
         }
 
@@ -506,6 +508,7 @@ internal fun readField(message: Any, name: String): Any? {
 
         is CommonPart -> when (name) {
             "type" -> message.type.value
+            "id" -> message.id
             "raw" -> message.raw
             else -> null
         }

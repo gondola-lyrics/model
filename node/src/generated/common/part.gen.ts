@@ -52,13 +52,18 @@ export enum PartType {
 
 /**
  * The structural section a line belongs to.
- * A section is the run of adjacent lines carrying the same type and the same raw.
+ * A non-empty id identifies one contiguous section within the lyric, whose lines share the same type and raw.
+ * Without an id, adjacent lines with no id and the same type and raw form one section.
  */
 export type Part = {
   /**
    * Structural type of the section.
    */
   type: PartType
+  /**
+   * Identifier of the section, compared exactly; unset or empty means none.
+   */
+  id?: string | undefined
   /**
    * The source's own word for this type; unset means the type was inferred rather than stated.
    */

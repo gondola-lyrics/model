@@ -438,8 +438,12 @@ export const encodeCommonPart = (w: WireWriter, v: common.Part): void => {
     w.tag(8)
     w.int32(v.type)
   }
-  if (v.raw !== undefined) {
+  if (v.id !== undefined) {
     w.tag(18)
+    w.string(v.id)
+  }
+  if (v.raw !== undefined) {
+    w.tag(26)
     w.string(v.raw)
   }
 }
@@ -451,6 +455,9 @@ export const decodeCommonPart = (r: WireReader, m: common.Part): void => {
         m.type = r.int32()
         break
       case 18:
+        m.id = r.string()
+        break
+      case 26:
         m.raw = r.string()
         break
       default:

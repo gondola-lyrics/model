@@ -39,6 +39,8 @@ import gondola.lyrics.model.storage.Lyric as StorageLyric
 import gondola.lyrics.model.storage.Word as StorageWord
 import gondola.lyrics.model.storage.canonicalizeLyric as canonicalizeStorageLyric
 import gondola.lyrics.model.storage.encode as encodeStorage
+import gondola.lyrics.model.storage.makeLineContentText as makeStorageLineContentText
+import gondola.lyrics.model.storage.makeLineNormal as makeStorageLineNormal
 import gondola.lyrics.model.storage.makeLyric as makeStorageLyric
 
 class CanonicalizeTest {
@@ -47,7 +49,7 @@ class CanonicalizeTest {
             makeLineNormal(
                 time = makeTimeRange(start = 1000, end = 2000),
                 languages = listOf("EN"),
-                part = makePart(type = PartType.PART_TYPE_VERSE, raw = "Verse 1"),
+                part = makePart(type = PartType.PART_TYPE_VERSE, id = "Verse-A", raw = "Verse 1"),
                 content = makeLineContentWords(
                     listOf(
                         makeWordNormal(
@@ -72,15 +74,24 @@ class CanonicalizeTest {
 
     @Test
     fun lowercasesFormatProfileAndTags() {
-        val canonical = canonicalizeLyric(buildLyric())
+        val lyric = buildLyric()
+        val canonical = canonicalizeLyric(lyric)
         assertEquals("ttml", canonical.format)
         assertEquals("amll", canonical.profile)
         assertEquals(listOf("en"), canonical.lines[0].languages)
         assertEquals("en", assertNotNull(canonical.lines[0].content).words[0].language)
+        assertEquals("Verse-A", canonical.lines[0].part?.id)
 
-        val persisted = canonicalizeStorageLyric(makeStorageLyric(format = "TTML", profile = "ITUNES"))
+        val persisted = canonicalizeStorageLyric(
+            makeStorageLyric(
+                format = "TTML",
+                profile = "ITUNES",
+                lines = listOf(makeStorageLineNormal(part = lyric.lines[0].part, content = makeStorageLineContentText("hi"))),
+            ),
+        )
         assertEquals("ttml", persisted.format)
         assertEquals("itunes", persisted.profile)
+        assertEquals("Verse-A", persisted.lines[0].part?.id)
     }
 
     @Test

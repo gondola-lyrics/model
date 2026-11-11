@@ -89,7 +89,7 @@ const runtimeLyric = (): runtime.Lyric => {
       runtime.makeLineNormal({
         id: 'l',
         time: runtime.makeTimeRange({ start: 0, end: 0 }),
-        part: runtime.makePart({ type: runtime.PartType.CHORUS, raw: '' }),
+        part: runtime.makePart({ type: runtime.PartType.CHORUS, id: 'Chorus-A', raw: '' }),
         agents: ['a'],
         languages: ['en', ''],
         content: runtime.makeLineContentWords([
@@ -131,7 +131,7 @@ const storageLyric = (): storage.Lyric => {
       storage.makeLineNormal({
         id: 'l',
         time: storage.makeTimeRange({ start: 0 }),
-        part: storage.makePart({ type: storage.PartType.OTHER, raw: 'x' }),
+        part: storage.makePart({ type: storage.PartType.OTHER, id: 'Section-B', raw: 'x' }),
         agents: ['a'],
         languages: ['en'],
         content: storage.makeLineContentWords([

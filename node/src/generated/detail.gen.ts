@@ -134,6 +134,7 @@ export const createCommonMeta = (): common.Meta => {
 export const fieldsCommonPart: MessageFields<common.Part> = {
   fields: [
     { name: 'type', shape: 'enum' },
+    { name: 'id', shape: 'optional' },
     { name: 'raw', shape: 'optional' },
   ],
 }

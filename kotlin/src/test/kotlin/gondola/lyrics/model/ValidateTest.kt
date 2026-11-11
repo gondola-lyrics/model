@@ -2,11 +2,14 @@ package gondola.lyrics.model
 
 import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.Meta
+import gondola.lyrics.model.common.Part
+import gondola.lyrics.model.common.PartType
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.Timing
 import gondola.lyrics.model.common.makeLineAnnotation
 import gondola.lyrics.model.common.makeLineAnnotationRoman
 import gondola.lyrics.model.common.makeLineAnnotationTranslation
+import gondola.lyrics.model.common.makePart
 import gondola.lyrics.model.common.makeTimeRange
 import gondola.lyrics.model.common.makeWordAnnotation
 import gondola.lyrics.model.common.makeWordAnnotationRoman
@@ -51,7 +54,71 @@ private fun List<Diagnostic>.asPairs(): List<Pair<String, String>> {
     return map { it.path to it.code.value }
 }
 
+private fun validatePartsInBothLayers(parts: List<Part?>): List<List<Diagnostic>> {
+    val played = makeLyric(
+        timing = Timing.TIMING_NONE,
+        status = LyricStatus.LYRIC_STATUS_VALID,
+        lines = parts.map { makeLineNormal(part = it, content = makeLineContentText("line")) },
+    )
+    val stored = makeStorageLyric(
+        timing = Timing.TIMING_NONE,
+        lines = parts.map { makeStorageLineNormal(part = it, content = makeStorageLineContentText("line")) },
+    )
+    return listOf(validateLyric(played), validateStorageLyric(stored))
+}
+
 class ValidateTest {
+    @Test
+    fun allowsConsistentPartIdsAcrossAdjacentLinesWithExactComparison() {
+        val part = makePart(type = PartType.PART_TYPE_CHORUS, id = "Chorus", raw = "chorus")
+        val parts = listOf(
+            part,
+            part.copy(),
+            part.copy(id = "chorus"),
+            part.copy(id = null),
+            part.copy(id = ""),
+            null,
+            makePart(type = PartType.PART_TYPE_VERSE, raw = "Verse 1"),
+            makePart(type = PartType.PART_TYPE_VERSE, raw = "Verse 2"),
+        )
+        for (diagnostics in validatePartsInBothLayers(parts)) {
+            assertEquals(emptyList(), diagnostics)
+        }
+    }
+
+    @Test
+    fun reportsInconsistentTypeOrRawForSamePartId() {
+        val part = makePart(type = PartType.PART_TYPE_CHORUS, id = "Chorus", raw = "chorus")
+        val parts = listOf(
+            part,
+            part.copy(type = PartType.PART_TYPE_VERSE),
+            part.copy(raw = "Chorus"),
+            makePart(type = PartType.PART_TYPE_CHORUS, id = "Other"),
+            makePart(type = PartType.PART_TYPE_CHORUS, id = "Other", raw = ""),
+        )
+        for (diagnostics in validatePartsInBothLayers(parts)) {
+            assertEquals(
+                listOf(
+                    "lines[1].part" to "lyric.part.mismatch",
+                    "lines[2].part" to "lyric.part.mismatch",
+                    "lines[4].part" to "lyric.part.mismatch",
+                ),
+                diagnostics.asPairs(),
+            )
+        }
+    }
+
+    @Test
+    fun reportsReusedPartIdOnlyAtStartOfNewRun() {
+        val part = makePart(type = PartType.PART_TYPE_CHORUS, id = "Chorus", raw = "chorus")
+        val separators = listOf(part.copy(id = "Other"), null, part.copy(id = ""), part.copy(id = null))
+        for (separator in separators) {
+            for (diagnostics in validatePartsInBothLayers(listOf(part, separator, part, part))) {
+                assertEquals(listOf("lines[2].part.id" to "lyric.part.id.reused"), diagnostics.asPairs())
+            }
+        }
+    }
+
     @Test
     fun keysRomanAndRubyAnnotationsByLanguageAndScheme() {
         val identities = listOf(

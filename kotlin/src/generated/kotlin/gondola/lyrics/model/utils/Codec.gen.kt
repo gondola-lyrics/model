@@ -226,8 +226,12 @@ internal fun encodeCommonPart(w: WireWriter, src: CommonPart) {
         w.tag(8)
         w.int32(src.type.value)
     }
-    src.raw?.let {
+    src.id?.let {
         w.tag(18)
+        w.string(it)
+    }
+    src.raw?.let {
+        w.tag(26)
         w.string(it)
     }
 }
@@ -691,11 +695,13 @@ private class CommonMetaState {
 
 private class CommonPartState {
     var type: CommonPartType = CommonPartType.PART_TYPE_UNSPECIFIED
+    var id: String? = null
     var raw: String? = null
 
     fun finish(): CommonPart {
         return CommonPart(
             type = type,
+            id = id,
             raw = raw,
         )
     }
@@ -1271,7 +1277,8 @@ private fun mergeCommonPart(r: WireReader, state: CommonPartState) {
     while (r.more()) {
         when (r.tag()) {
             8 -> state.type = CommonPartType(r.int32())
-            18 -> state.raw = r.string()
+            18 -> state.id = r.string()
+            26 -> state.raw = r.string()
             else -> r.skip()
         }
     }

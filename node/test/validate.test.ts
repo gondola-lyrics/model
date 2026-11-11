@@ -11,7 +11,65 @@ const lineTimed = (...lines: runtime.Line[]): runtime.Lyric => {
   return runtime.makeLyric({ format: 'lrc', timing: runtime.Timing.LINE, status: runtime.LyricStatus.VALID, lines })
 }
 
+const validatePartsInBothLayers = (parts: (runtime.Part | undefined)[]): runtime.Diagnostic[][] => {
+  const played = runtime.makeLyric({
+    timing: runtime.Timing.NONE,
+    status: runtime.LyricStatus.VALID,
+    lines: parts.map((part) => runtime.makeLineNormal({ part, content: runtime.makeLineContentText('line') })),
+  })
+  const stored = storage.makeLyric({
+    timing: storage.Timing.NONE,
+    lines: parts.map((part) => storage.makeLineNormal({ part, content: storage.makeLineContentText('line') })),
+  })
+  return [runtime.validateLyric(played), storage.validateLyric(stored)]
+}
+
 describe('validate', () => {
+  it('allows consistent part ids across adjacent lines and compares ids exactly', () => {
+    const part = runtime.makePart({ type: runtime.PartType.CHORUS, id: 'Chorus', raw: 'chorus' })
+    const parts = [
+      part,
+      { ...part },
+      { ...part, id: 'chorus' },
+      { ...part, id: undefined },
+      { ...part, id: '' },
+      undefined,
+      runtime.makePart({ type: runtime.PartType.VERSE, raw: 'Verse 1' }),
+      runtime.makePart({ type: runtime.PartType.VERSE, raw: 'Verse 2' }),
+    ]
+    for (const diagnostics of validatePartsInBothLayers(parts)) {
+      deepStrictEqual(diagnostics, [])
+    }
+  })
+
+  it('reports inconsistent type or raw for the same part id', () => {
+    const part = runtime.makePart({ type: runtime.PartType.CHORUS, id: 'Chorus', raw: 'chorus' })
+    const parts = [
+      part,
+      { ...part, type: runtime.PartType.VERSE },
+      { ...part, raw: 'Chorus' },
+      runtime.makePart({ type: runtime.PartType.CHORUS, id: 'Other' }),
+      runtime.makePart({ type: runtime.PartType.CHORUS, id: 'Other', raw: '' }),
+    ]
+    for (const diagnostics of validatePartsInBothLayers(parts)) {
+      deepStrictEqual(diagnostics, [
+        { path: 'lines[1].part', code: 'lyric.part.mismatch' },
+        { path: 'lines[2].part', code: 'lyric.part.mismatch' },
+        { path: 'lines[4].part', code: 'lyric.part.mismatch' },
+      ])
+    }
+  })
+
+  it('reports a part id reused after another section only at the new run', () => {
+    const part = runtime.makePart({ type: runtime.PartType.CHORUS, id: 'Chorus', raw: 'chorus' })
+    const separators = [{ ...part, id: 'Other' }, undefined, { ...part, id: '' }, { ...part, id: undefined }]
+    for (const separator of separators) {
+      for (const diagnostics of validatePartsInBothLayers([part, separator, part, part])) {
+        deepStrictEqual(diagnostics, [{ path: 'lines[2].part.id', code: 'lyric.part.id.reused' }])
+      }
+    }
+  })
+
   it('keys roman and ruby annotations by language and scheme', () => {
     const identities = [
       { language: 'JA-Latn', scheme: 'HEPBURN' },

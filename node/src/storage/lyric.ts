@@ -20,6 +20,7 @@ import { read, write } from '@root/utils/wire'
 import { decodeStorageLyric, encodeStorageLyric } from '@root/generated/codec.gen'
 import { createStorageLyric, fieldsCommonAgent, fieldsCommonMeta, fieldsStorageLine, fieldsStorageLyric } from '@root/generated/detail.gen'
 import { canonicalizeAgent, canonicalizeMeta, validateAgent, validateMeta } from '@root/common'
+import { validateLyricParts } from '@root/common/part'
 import { validateLyricTags } from '@root/common/tag'
 
 import { canonicalizeLine, orderLine, validateLine } from './line'
@@ -169,6 +170,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
   findUnordered(lyric.lines, (line) => line.time).forEach((i) => {
     diagnostics.push({ path: `lines[${i}]`, code: DiagnosticCode.LyricLinesUnordered })
   })
+  diagnostics.push(...validateLyricParts(lyric.lines.map((line) => line.part)))
   // A rule that already spoke about a path keeps the sweep off it, and validateAgent reports an all-default agent at the agent rather than inside it.
   const covered = diagnostics.map((diagnostic) => diagnostic.path)
   lyric.agents.forEach((agent, i) => covered.push(`agents[${i}]`))

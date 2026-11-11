@@ -13,6 +13,7 @@ import gondola.lyrics.model.common.Timing
 import gondola.lyrics.model.common.canonicalizeAgent
 import gondola.lyrics.model.common.canonicalizeMeta
 import gondola.lyrics.model.common.validateAgent
+import gondola.lyrics.model.common.validateLyricParts
 import gondola.lyrics.model.common.validateLyricTags
 import gondola.lyrics.model.common.validateMeta
 import gondola.lyrics.model.utils.SEMVER_PATTERN
@@ -192,6 +193,7 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
     for (index in findUnordered(lyric.lines) { line -> line.time }) {
         diagnostics += Diagnostic("lines[$index]", DiagnosticCode.LyricLinesUnordered)
     }
+    diagnostics += validateLyricParts(lyric.lines.map { it.part })
     // A rule that already spoke about a path keeps the sweep off it, and validateAgent reports an all-default agent at the agent rather than inside it.
     val covered = diagnostics.map { it.path } + lyric.agents.indices.map { "agents[$it]" }
     for (path in findDefaultEntries(lyric, covered)) {

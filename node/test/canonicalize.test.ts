@@ -19,7 +19,7 @@ const buildLyric = (): runtime.Lyric => {
     runtime.makeLineNormal({
       time: runtime.makeTimeRange({ start: 1000, end: 2000 }),
       languages: ['EN'],
-      part: runtime.makePart({ type: runtime.PartType.VERSE, raw: 'Verse 1' }),
+      part: runtime.makePart({ type: runtime.PartType.VERSE, id: 'Verse-A', raw: 'Verse 1' }),
       content: runtime.makeLineContentWords([
         runtime.makeWordNormal({
           text: 'hi',
@@ -42,15 +42,24 @@ const buildLyric = (): runtime.Lyric => {
 
 describe('canonicalize', () => {
   it('lowercases the format, profile and tags', () => {
-    const canonical = runtime.canonicalizeLyric(buildLyric())
+    const lyric = buildLyric()
+    const canonical = runtime.canonicalizeLyric(lyric)
     deepStrictEqual(canonical.format, 'ttml')
     deepStrictEqual(canonical.profile, 'amll')
     deepStrictEqual(canonical.lines[0]?.languages, ['en'])
     deepStrictEqual(canonical.lines[0]?.content?.words[0]?.language, 'en')
+    deepStrictEqual(canonical.lines[0]?.part?.id, 'Verse-A')
 
-    const persisted = storage.canonicalizeLyric(storage.makeLyric({ format: 'TTML', profile: 'ITUNES' }))
+    const persisted = storage.canonicalizeLyric(
+      storage.makeLyric({
+        format: 'TTML',
+        profile: 'ITUNES',
+        lines: [storage.makeLineNormal({ part: lyric.lines[0]?.part, content: storage.makeLineContentText('hi') })],
+      }),
+    )
     deepStrictEqual(persisted.format, 'ttml')
     deepStrictEqual(persisted.profile, 'itunes')
+    deepStrictEqual(persisted.lines[0]?.part?.id, 'Verse-A')
   })
 
   it('is idempotent', () => {
