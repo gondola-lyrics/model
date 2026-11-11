@@ -7,19 +7,20 @@ import gondola.lyrics.model.common.WordAnnotation
 import gondola.lyrics.model.common.WordType
 
 /**
- * Whether a word is emphasized, and whether that was stated by the source or derived from the data.
+ * An emphasis decision and its origin, when known.
  * Emphasis asks for a swell when the word is sung, such as a syllable held longer than usual; it is not linguistic stress.
- * An all-default one is omitted, so a word the source stated as unemphasized reads as carrying no emphasis information.
+ * An empty message carries no decision and is omitted; explicitly set false values are preserved.
  */
 public data class WordEmphasis(
     /**
-     * Whether the word is emphasized.
+     * Whether the word is emphasized; unset means no decision.
      */
-    val value: Boolean = false,
+    val value: Boolean? = null,
     /**
-     * Whether this was derived rather than stated by the source.
+     * Whether the decision was derived rather than stated by the source; unset means its origin is unknown.
+     * A set origin requires a set value; only a known derived decision may be recalculated automatically.
      */
-    val derived: Boolean = false,
+    val derived: Boolean? = null,
 )
 
 /**

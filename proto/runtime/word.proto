@@ -9,15 +9,16 @@ option java_multiple_files = true;
 option java_outer_classname = "WordProto";
 option java_package = "gondola.lyrics.model.runtime";
 
-// Whether a word is emphasized, and whether that was stated by the source or derived from the data.
+// An emphasis decision and its origin, when known.
 // Emphasis asks for a swell when the word is sung, such as a syllable held longer than usual; it is not linguistic stress.
-// An all-default one is omitted, so a word the source stated as unemphasized reads as carrying no emphasis information.
+// An empty message carries no decision and is omitted; explicitly set false values are preserved.
 message WordEmphasis {
-  // Whether the word is emphasized.
-  bool value = 1;
+  // Whether the word is emphasized; unset means no decision.
+  optional bool value = 1;
 
-  // Whether this was derived rather than stated by the source.
-  bool derived = 2;
+  // Whether the decision was derived rather than stated by the source; unset means its origin is unknown.
+  // A set origin requires a set value; only a known derived decision may be recalculated automatically.
+  optional bool derived = 2;
 }
 
 // A sung word, or the separator between two words.

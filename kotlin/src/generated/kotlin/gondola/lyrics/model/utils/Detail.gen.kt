@@ -133,8 +133,8 @@ internal fun isDefault(message: Any): Boolean {
                 message.count == 0L
 
         is RuntimeWordEmphasis ->
-            message.value == false &&
-                message.derived == false
+            message.value == null &&
+                message.derived == null
 
         is RuntimeWord ->
             message.type.value == 0 &&
@@ -333,8 +333,8 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
         }
 
         is RuntimeWordEmphasis -> {
-            visit("value", FieldShape.SCALAR, message.value)
-            visit("derived", FieldShape.SCALAR, message.derived)
+            visit("value", FieldShape.OPTIONAL, message.value)
+            visit("derived", FieldShape.OPTIONAL, message.derived)
         }
 
         is RuntimeWord -> {

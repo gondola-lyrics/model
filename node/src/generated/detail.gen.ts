@@ -227,13 +227,13 @@ export const createRuntimeLanguageUsage = (): runtime.LanguageUsage => {
 
 export const fieldsRuntimeWordEmphasis: MessageFields<runtime.WordEmphasis> = {
   fields: [
-    { name: 'value', shape: 'scalar' },
-    { name: 'derived', shape: 'scalar' },
+    { name: 'value', shape: 'optional' },
+    { name: 'derived', shape: 'optional' },
   ],
 }
 
 export const createRuntimeWordEmphasis = (): runtime.WordEmphasis => {
-  return { value: false, derived: false }
+  return {  }
 }
 
 export const fieldsRuntimeWord: MessageFields<runtime.Word> = {

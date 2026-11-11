@@ -11,6 +11,7 @@ import gondola.lyrics.model.utils.isTimeRangeUncovered
 import gondola.lyrics.model.utils.isUnresolved
 import gondola.lyrics.model.utils.lowerTag
 import gondola.lyrics.model.runtime.Word as RuntimeWord
+import gondola.lyrics.model.runtime.WordEmphasis as RuntimeWordEmphasis
 import gondola.lyrics.model.storage.Word as StorageWord
 
 /**
@@ -23,6 +24,7 @@ internal data class WordView(
     val language: String?,
     val annotation: WordAnnotation?,
     val hasEmphasis: Boolean,
+    val emphasis: RuntimeWordEmphasis? = null,
 )
 
 internal fun StorageWord.asWordView(): WordView {
@@ -44,6 +46,7 @@ internal fun RuntimeWord.asWordView(): WordView {
         language,
         annotation,
         emphasis != null,
+        emphasis,
     )
 }
 
@@ -203,6 +206,10 @@ private fun validateWordView(word: WordView, path: String, timing: Timing): List
         // The range an item inherits is the word's own, so it is passed down only where the precision puts timing on the words at all.
         diagnostics.addAll(validateWordAnnotation(word.annotation, childPath(path, "annotation"), word.time.takeIf { ownsWordTimes(timing) }))
     }
+    val emphasis = word.emphasis
+    if (emphasis?.derived != null && emphasis.value == null) {
+        diagnostics.add(Diagnostic(childPath(path, "emphasis.value"), DiagnosticCode.LineWordEmphasisValueMissing))
+    }
     return diagnostics
 }
 
@@ -217,6 +224,7 @@ public fun validateWord(word: StorageWord, path: String = "", timing: Timing = T
 /**
  * Validates a Word: its kind must be resolved, a NORMAL word must carry non-empty text holding no separator, a SPACE word must carry a separator and nothing else, and any time and annotation it does carry must be valid.
  * `timing` is the lyric's declared precision, which says whether the word owns the range its annotation items inherit.
+ * An emphasis declaring its origin must also declare its value.
  */
 public fun validateWord(word: RuntimeWord, path: String = "", timing: Timing = Timing.TIMING_UNSPECIFIED): List<Diagnostic> {
     return validateWordView(word.asWordView(), path, timing)

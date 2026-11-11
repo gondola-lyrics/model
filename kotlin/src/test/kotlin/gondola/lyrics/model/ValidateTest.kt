@@ -19,17 +19,20 @@ import gondola.lyrics.model.common.makeWordAnnotationTranslation
 import gondola.lyrics.model.common.validateLineAnnotation
 import gondola.lyrics.model.common.validateMeta
 import gondola.lyrics.model.common.validateTimeRange
+import gondola.lyrics.model.common.validateWord
 import gondola.lyrics.model.common.validateWordAnnotation
 import gondola.lyrics.model.runtime.LanguageUsage
 import gondola.lyrics.model.runtime.Line
 import gondola.lyrics.model.runtime.Lyric
 import gondola.lyrics.model.runtime.LyricStatus
+import gondola.lyrics.model.runtime.canonicalizeLyric
 import gondola.lyrics.model.runtime.deriveLanguageUsages
 import gondola.lyrics.model.runtime.makeLineContentText
 import gondola.lyrics.model.runtime.makeLineContentWords
 import gondola.lyrics.model.runtime.makeLineInstrumental
 import gondola.lyrics.model.runtime.makeLineNormal
 import gondola.lyrics.model.runtime.makeLyric
+import gondola.lyrics.model.runtime.makeWordEmphasis
 import gondola.lyrics.model.runtime.makeWordNormal
 import gondola.lyrics.model.runtime.makeWordSpace
 import gondola.lyrics.model.runtime.validateLanguageUsage
@@ -68,6 +71,36 @@ private fun validatePartsInBothLayers(parts: List<Part?>): List<List<Diagnostic>
 }
 
 class ValidateTest {
+    @Test
+    fun requiresEmphasisDecisionWhenOriginIsSet() {
+        for (derived in listOf(false, true)) {
+            val line = makeLineNormal(
+                time = makeTimeRange(start = 1000, end = 5000),
+                content = makeLineContentWords(
+                    listOf(
+                        makeWordNormal(
+                            text = "ah",
+                            time = makeTimeRange(start = 1000, end = 5000),
+                            emphasis = makeWordEmphasis(derived = derived),
+                        ),
+                    ),
+                ),
+            )
+            val lyric = canonicalizeLyric(
+                makeLyric(timing = Timing.TIMING_WORD, status = LyricStatus.LYRIC_STATUS_VALID, lines = listOf(line)),
+            )
+            assertEquals(
+                listOf("lines[0].content.words[0].emphasis.value" to "line.word.emphasis.value.missing"),
+                validateLyric(lyric).asPairs(),
+            )
+            for (value in listOf(false, true)) {
+                assertEquals(emptyList(), validateWord(makeWordNormal(text = "ah", emphasis = makeWordEmphasis(value = value, derived = derived))))
+            }
+        }
+        assertEquals(emptyList(), validateWord(makeWordNormal(text = "ah", emphasis = makeWordEmphasis())))
+        assertEquals(emptyList(), validateWord(makeWordNormal(text = "ah", emphasis = makeWordEmphasis(value = false))))
+    }
+
     @Test
     fun allowsConsistentPartIdsAcrossAdjacentLinesWithExactComparison() {
         val part = makePart(type = PartType.PART_TYPE_CHORUS, id = "Chorus", raw = "chorus")

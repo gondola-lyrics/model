@@ -4,19 +4,20 @@ import type { TimeRange } from '../common/time.gen'
 import type { WordAnnotation, WordType } from '../common/word.gen'
 
 /**
- * Whether a word is emphasized, and whether that was stated by the source or derived from the data.
+ * An emphasis decision and its origin, when known.
  * Emphasis asks for a swell when the word is sung, such as a syllable held longer than usual; it is not linguistic stress.
- * An all-default one is omitted, so a word the source stated as unemphasized reads as carrying no emphasis information.
+ * An empty message carries no decision and is omitted; explicitly set false values are preserved.
  */
 export type WordEmphasis = {
   /**
-   * Whether the word is emphasized.
+   * Whether the word is emphasized; unset means no decision.
    */
-  value: boolean
+  value?: boolean | undefined
   /**
-   * Whether this was derived rather than stated by the source.
+   * Whether the decision was derived rather than stated by the source; unset means its origin is unknown.
+   * A set origin requires a set value; only a known derived decision may be recalculated automatically.
    */
-  derived: boolean
+  derived?: boolean | undefined
 }
 
 /**

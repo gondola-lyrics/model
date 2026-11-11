@@ -67,6 +67,30 @@ describe('canonicalize', () => {
     deepStrictEqual(runtime.canonicalizeLyric(once), once)
   })
 
+  it('preserves explicit emphasis decisions and origin while dropping empty emphasis', () => {
+    const emphases = [
+      runtime.makeWordEmphasis(),
+      runtime.makeWordEmphasis({ value: false }),
+      runtime.makeWordEmphasis({ value: true }),
+      runtime.makeWordEmphasis({ value: false, derived: false }),
+      runtime.makeWordEmphasis({ value: false, derived: true }),
+      runtime.makeWordEmphasis({ value: true, derived: false }),
+      runtime.makeWordEmphasis({ value: true, derived: true }),
+    ]
+    const canonical = emphases.map((emphasis) => {
+      return runtime.canonicalizeWord(runtime.makeWordNormal({ text: 'ah', emphasis })).emphasis
+    })
+    deepStrictEqual(canonical, [
+      undefined,
+      { value: false },
+      { value: true },
+      { value: false, derived: false },
+      { value: false, derived: true },
+      { value: true, derived: false },
+      { value: true, derived: true },
+    ])
+  })
+
   it('canonicalizes annotation schemes while preserving constructor input', () => {
     for (const scheme of ['HEPBURN', '']) {
       const word = runtime.makeWordAnnotation({

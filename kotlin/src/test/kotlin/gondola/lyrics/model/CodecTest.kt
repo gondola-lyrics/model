@@ -33,9 +33,12 @@ import gondola.lyrics.model.runtime.makeLineContentWords
 import gondola.lyrics.model.runtime.makeLineInstrumental
 import gondola.lyrics.model.runtime.makeLineNormal
 import gondola.lyrics.model.runtime.makeLyric
+import gondola.lyrics.model.runtime.makeWordEmphasis
 import gondola.lyrics.model.runtime.makeWordNormal
 import gondola.lyrics.model.runtime.makeWordSpace
+import gondola.lyrics.model.utils.decodeRuntimeWordEmphasis
 import gondola.lyrics.model.utils.decodeStorageLineContent
+import gondola.lyrics.model.utils.encodeRuntimeWordEmphasis
 import gondola.lyrics.model.utils.encodeStorageLineContent
 import gondola.lyrics.model.utils.read
 import gondola.lyrics.model.utils.write
@@ -151,6 +154,20 @@ class CodecTest {
     fun roundTripsRuntimeLyric() {
         val lyric = buildLyric()
         assertEquals(lyric, decode(encode(lyric)))
+    }
+
+    @Test
+    fun preservesOptionalEmphasisFieldsWithOfficialCodec() {
+        val values = listOf(null, false, true)
+        for (value in values) {
+            for (derived in values) {
+                val emphasis = makeWordEmphasis(value = value, derived = derived)
+                val fields = listOfNotNull(value?.let { "value" to it }, derived?.let { "derived" to it })
+                val bytes = official("lyric.runtime.WordEmphasis", *fields.toTypedArray()).toByteArray()
+                assertContentEquals(bytes, write(::encodeRuntimeWordEmphasis, emphasis))
+                assertEquals(emphasis, read(::decodeRuntimeWordEmphasis, bytes))
+            }
+        }
     }
 
     @Test

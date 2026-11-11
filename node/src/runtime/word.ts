@@ -29,14 +29,14 @@ export const makeWordSpace = (init?: Pick<MakeInit<Word>, 'text'>): Word => {
 }
 
 /**
- * Creates a WordEmphasis, whether a word is emphasized and whether that was derived rather than stated.
+ * Creates an emphasis decision without defaulting its value or origin; explicit false values are preserved.
  */
 export const makeWordEmphasis = (init?: MakeInit<WordEmphasis>): WordEmphasis => {
   return withInit(createRuntimeWordEmphasis(), init)
 }
 
 /**
- * Returns a copy of the word canonicalized, with its emphasis dropped when all-default.
+ * Returns a copy of the word canonicalized, dropping empty emphasis while preserving explicit false values.
  */
 export const canonicalizeWord = (word: Word): Word => {
   return { ...canonicalizeWordShared(word), emphasis: dropDefault(fieldsRuntimeWordEmphasis, copyMessage(word.emphasis)) }

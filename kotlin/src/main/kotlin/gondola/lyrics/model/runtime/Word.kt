@@ -36,14 +36,14 @@ public fun makeWordSpace(text: String = ""): Word {
 }
 
 /**
- * Creates a WordEmphasis, whether a word is emphasized and whether that was derived rather than stated.
+ * Creates an emphasis decision without defaulting its value or origin; explicit false values are preserved.
  */
-public fun makeWordEmphasis(value: Boolean = false, derived: Boolean = false): WordEmphasis {
+public fun makeWordEmphasis(value: Boolean? = null, derived: Boolean? = null): WordEmphasis {
     return WordEmphasis(value = value, derived = derived)
 }
 
 /**
- * Returns a copy of the word canonicalized, with its emphasis dropped when all-default.
+ * Returns a copy of the word canonicalized, dropping empty emphasis while preserving explicit false values.
  */
 public fun canonicalizeWord(word: Word): Word {
     return canonicalizeWordShared(word).copy(emphasis = dropDefault(word.emphasis))

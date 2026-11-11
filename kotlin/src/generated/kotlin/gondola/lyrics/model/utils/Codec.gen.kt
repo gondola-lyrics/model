@@ -328,13 +328,13 @@ internal fun encodeRuntimeLanguageUsage(w: WireWriter, src: RuntimeLanguageUsage
 
 @JvmSynthetic
 internal fun encodeRuntimeWordEmphasis(w: WireWriter, src: RuntimeWordEmphasis) {
-    if (src.value) {
+    src.value?.let {
         w.tag(8)
-        w.bool(src.value)
+        w.bool(it)
     }
-    if (src.derived) {
+    src.derived?.let {
         w.tag(16)
-        w.bool(src.derived)
+        w.bool(it)
     }
 }
 
@@ -802,8 +802,8 @@ private class RuntimeLanguageUsageState {
 }
 
 private class RuntimeWordEmphasisState {
-    var value: Boolean = false
-    var derived: Boolean = false
+    var value: Boolean? = null
+    var derived: Boolean? = null
 
     fun finish(): RuntimeWordEmphasis {
         return RuntimeWordEmphasis(

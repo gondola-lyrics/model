@@ -713,11 +713,11 @@ export const decodeRuntimeLanguageUsage = (r: WireReader, m: runtime.LanguageUsa
 }
 
 export const encodeRuntimeWordEmphasis = (w: WireWriter, v: runtime.WordEmphasis): void => {
-  if (v.value !== false) {
+  if (v.value !== undefined) {
     w.tag(8)
     w.bool(v.value)
   }
-  if (v.derived !== false) {
+  if (v.derived !== undefined) {
     w.tag(16)
     w.bool(v.derived)
   }

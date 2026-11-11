@@ -6,8 +6,8 @@ import { create, createFileRegistry, fromBinary, toBinary } from '@bufbuild/prot
 
 import { runtime, storage } from '@root/index'
 import { read, write } from '@root/utils/wire'
-import { decodeStorageLineContent, encodeStorageLineContent } from '@root/generated/codec.gen'
-import { createStorageLineContent } from '@root/generated/detail.gen'
+import { decodeRuntimeWordEmphasis, decodeStorageLineContent, encodeRuntimeWordEmphasis, encodeStorageLineContent } from '@root/generated/codec.gen'
+import { createRuntimeWordEmphasis, createStorageLineContent } from '@root/generated/detail.gen'
 
 /**
  * The same bytes every language's tests decode, covering presence: an explicit zero end, an empty language, a false and a true emphasis, an undeclared word type and an empty text.
@@ -158,6 +158,19 @@ const cases = [
 ] as const
 
 describe('protobuf', () => {
+  it('preserves optional emphasis fields with the official codec', () => {
+    const schema = official('lyric.runtime.WordEmphasis')
+    const values = [undefined, false, true]
+    for (const value of values) {
+      for (const derived of values) {
+        const emphasis = runtime.makeWordEmphasis({ value, derived })
+        const bytes = toBinary(schema, create(schema, emphasis))
+        deepStrictEqual(write(encodeRuntimeWordEmphasis, emphasis), bytes)
+        deepStrictEqual(read(createRuntimeWordEmphasis, decodeRuntimeWordEmphasis, bytes), emphasis)
+      }
+    }
+  })
+
   for (const { name, encode, decode, build } of cases) {
     it(`writes the bytes the official library writes for ${name}`, () => {
       const schema = official(name)

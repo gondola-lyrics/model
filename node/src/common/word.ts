@@ -7,6 +7,7 @@ import type {
   WordAnnotationToken,
   WordAnnotationTranslation,
 } from '@root/generated/common/index.gen'
+import type { WordEmphasis } from '@root/generated/runtime/index.gen'
 import type { Diagnostic } from './diagnostic'
 
 import { Timing, WordType } from '@root/generated/common/index.gen'
@@ -47,6 +48,7 @@ export type AnyWord = {
   text: string
   language?: string | undefined
   annotation?: WordAnnotation | undefined
+  emphasis?: boolean | WordEmphasis | undefined
 }
 
 /**
@@ -151,6 +153,7 @@ export const validateWordAnnotation = (annotation: WordAnnotation, path = '', ti
 /**
  * Validates a Word: its kind must be resolved, a NORMAL word must carry non-empty text holding no separator, a SPACE word must carry a separator and nothing else, and any time and annotation it does carry must be valid.
  * `timing` is the lyric's declared precision, which says whether the word owns the range its annotation items inherit.
+ * A runtime emphasis declaring its origin must also declare its value.
  */
 export const validateWord = (word: AnyWord, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -191,6 +194,10 @@ export const validateWord = (word: AnyWord, path = '', timing = Timing.UNSPECIFI
   if (word.annotation) {
     // The range an item inherits is the word's own, so it is passed down only where the precision puts timing on the words at all.
     diagnostics.push(...validateWordAnnotation(word.annotation, childPath(path, 'annotation'), ownsWordTimes(timing) ? word.time : undefined))
+  }
+  const emphasis = word.emphasis
+  if (typeof emphasis === 'object' && emphasis.derived !== undefined && emphasis.value === undefined) {
+    diagnostics.push({ path: childPath(path, 'emphasis.value'), code: DiagnosticCode.LineWordEmphasisValueMissing })
   }
   return diagnostics
 }

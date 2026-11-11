@@ -20,7 +20,9 @@ import gondola.lyrics.model.common.makeWordAnnotationToken
 import gondola.lyrics.model.runtime.LineContent
 import gondola.lyrics.model.runtime.Lyric
 import gondola.lyrics.model.runtime.LyricStatus
+import gondola.lyrics.model.runtime.WordEmphasis
 import gondola.lyrics.model.runtime.canonicalizeLyric
+import gondola.lyrics.model.runtime.canonicalizeWord
 import gondola.lyrics.model.runtime.deriveLanguageUsages
 import gondola.lyrics.model.runtime.encode
 import gondola.lyrics.model.runtime.makeLineContentWords
@@ -98,6 +100,32 @@ class CanonicalizeTest {
     fun isIdempotent() {
         val once = canonicalizeLyric(buildLyric())
         assertEquals(once, canonicalizeLyric(once))
+    }
+
+    @Test
+    fun preservesExplicitEmphasisDecisionsAndOriginWhileDroppingEmptyEmphasis() {
+        val emphases = listOf(
+            makeWordEmphasis(),
+            makeWordEmphasis(value = false),
+            makeWordEmphasis(value = true),
+            makeWordEmphasis(value = false, derived = false),
+            makeWordEmphasis(value = false, derived = true),
+            makeWordEmphasis(value = true, derived = false),
+            makeWordEmphasis(value = true, derived = true),
+        )
+        val canonical = emphases.map { canonicalizeWord(makeWordNormal(text = "ah", emphasis = it)).emphasis }
+        assertEquals(
+            listOf(
+                null,
+                WordEmphasis(value = false),
+                WordEmphasis(value = true),
+                WordEmphasis(value = false, derived = false),
+                WordEmphasis(value = false, derived = true),
+                WordEmphasis(value = true, derived = false),
+                WordEmphasis(value = true, derived = true),
+            ),
+            canonical,
+        )
     }
 
     @Test

@@ -61,6 +61,7 @@ export enum DiagnosticCode {
   LineWordAnnotationRomansDuplicate = 'line.word.annotation.romans.duplicate',
   LineWordAnnotationTranslationsLanguageDuplicate = 'line.word.annotation.translations.language.duplicate',
   LineWordEmphasisUnexpected = 'line.word.emphasis.unexpected',
+  LineWordEmphasisValueMissing = 'line.word.emphasis.value.missing',
   LyricVersionMalformed = 'lyric.version.malformed',
   LyricStatusUnspecified = 'lyric.status.unspecified',
   LyricTimingUnspecified = 'lyric.timing.unspecified',

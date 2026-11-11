@@ -25,6 +25,29 @@ const validatePartsInBothLayers = (parts: (runtime.Part | undefined)[]): runtime
 }
 
 describe('validate', () => {
+  it('requires an emphasis decision when its origin is set', () => {
+    for (const derived of [false, true]) {
+      const line = runtime.makeLineNormal({
+        time: runtime.makeTimeRange({ start: 1000, end: 5000 }),
+        content: runtime.makeLineContentWords([
+          runtime.makeWordNormal({
+            text: 'ah',
+            time: runtime.makeTimeRange({ start: 1000, end: 5000 }),
+            emphasis: runtime.makeWordEmphasis({ derived }),
+          }),
+        ]),
+      })
+      const lyric = runtime.canonicalizeLyric(runtime.makeLyric({ timing: runtime.Timing.WORD, status: runtime.LyricStatus.VALID, lines: [line] }))
+      deepStrictEqual(runtime.validateLyric(lyric), [{ path: 'lines[0].content.words[0].emphasis.value', code: 'line.word.emphasis.value.missing' }])
+      for (const value of [false, true]) {
+        const word = runtime.makeWordNormal({ text: 'ah', emphasis: runtime.makeWordEmphasis({ value, derived }) })
+        deepStrictEqual(runtime.validateWord(word), [])
+      }
+    }
+    deepStrictEqual(runtime.validateWord(runtime.makeWordNormal({ text: 'ah', emphasis: runtime.makeWordEmphasis() })), [])
+    deepStrictEqual(runtime.validateWord(runtime.makeWordNormal({ text: 'ah', emphasis: runtime.makeWordEmphasis({ value: false }) })), [])
+  })
+
   it('allows consistent part ids across adjacent lines and compares ids exactly', () => {
     const part = runtime.makePart({ type: runtime.PartType.CHORUS, id: 'Chorus', raw: 'chorus' })
     const parts = [
