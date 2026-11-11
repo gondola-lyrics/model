@@ -32,6 +32,7 @@ public data class LineBackground(
     val id: String = "",
     /**
      * Time range of this background line.
+     * A missing end may be completed according to the source format's timing policy.
      * The parent line's end covers it, while its start may precede the parent's.
      * It covers the range of every timed word, but need not start or end with them.
      */
@@ -69,6 +70,7 @@ public data class Line(
     val type: LineType = LineType.LINE_TYPE_UNSPECIFIED,
     /**
      * Time range of the line.
+     * A missing end may be completed according to the source format's timing policy.
      * It covers the range of every timed word, but need not start or end with them.
      */
     val time: TimeRange? = null,

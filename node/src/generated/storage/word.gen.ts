@@ -13,6 +13,7 @@ export type Word = {
   type: WordType
   /**
    * Time range of the word; unset when it is not sung.
+   * A missing end may be completed according to the source format's timing policy.
    */
   time?: TimeRange | undefined
   /**

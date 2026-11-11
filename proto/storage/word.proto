@@ -15,6 +15,7 @@ message Word {
   lyric.common.WordType type = 1;
 
   // Time range of the word; unset when it is not sung.
+  // A missing end may be completed according to the source format's timing policy.
   lyric.common.TimeRange time = 2;
 
   // Language of this word, as a BCP 47 tag; unset means undetermined.

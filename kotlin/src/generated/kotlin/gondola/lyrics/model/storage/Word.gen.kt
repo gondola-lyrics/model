@@ -16,6 +16,7 @@ public data class Word(
     val type: WordType = WordType.WORD_TYPE_UNSPECIFIED,
     /**
      * Time range of the word; unset when it is not sung.
+     * A missing end may be completed according to the source format's timing policy.
      */
     val time: TimeRange? = null,
     /**

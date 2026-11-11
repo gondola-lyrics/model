@@ -30,6 +30,7 @@ export type LineBackground = {
   id: string
   /**
    * Time range of this background line.
+   * A missing end may be completed according to the source format's timing policy.
    * The parent line's end covers it, while its start may precede the parent's.
    * It covers the range of every timed word, but need not start or end with them.
    */
@@ -67,6 +68,7 @@ export type Line = {
   type: LineType
   /**
    * Time range of the line.
+   * A missing end may be completed according to the source format's timing policy.
    * It covers the range of every timed word, but need not start or end with them.
    */
   time?: TimeRange | undefined

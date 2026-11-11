@@ -6,7 +6,7 @@ import type { Timing } from '../common/timing.gen'
 import type { Line } from './line.gen'
 
 /**
- * A lyric as persisted, carrying only what a source file actually stated.
+ * A persisted lyric with source content and timing completed to satisfy the model's range rules.
  * An empty submessage means the same as an unset one, except for TimeRange, which is a range even when all default.
  * A repeated field likewise never holds an entry that is all default, and preserves source order unless its own comment says otherwise.
  * Every agent id a line references, background lines included, must exist in `agents`.
