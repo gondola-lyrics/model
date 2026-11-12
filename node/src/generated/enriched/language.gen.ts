@@ -5,12 +5,12 @@
  */
 export type LanguageUsage = {
   /**
-   * BCP 47 tags are compared case-insensitively and are unique within the list.
+   * The BCP 47 tag is non-empty and unique within the list under case-insensitive comparison.
    */
   tag: string
   /**
    * A normal line contributes once when this tag appears on the line or any normal word.
-   * Explicit `und` tags count; missing or empty tags contribute nothing.
+   * Explicit `und` is counted; absent or empty source tags contribute nothing.
    */
   lineCount: number
 }

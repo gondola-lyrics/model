@@ -7,73 +7,72 @@ import type { LanguageUsage } from './language.gen'
 import type { Line } from './line.gen'
 
 /**
- * Parse validity of a lyric.
+ * Status records whether parsing succeeded.
  */
 export enum LyricStatus {
   /**
-   * Unspecified and unrecognized values are treated as missing.
+   * The parse result is unresolved; unrecognized values have the same meaning.
    */
   UNSPECIFIED = 0,
   /**
-   * Parsing the lyric failed; why is not carried here.
+   * Parsing failed; failure details are not stored here.
    */
   INVALID = 1,
   /**
-   * Parsed successfully; emptiness is derived from `lines`.
+   * Parsing succeeded; an empty lines list still represents a successful parse.
    */
   VALID = 2,
 }
 
 /**
- * Empty submessages are equivalent to unset, except TimeRange.
- * Repeated fields exclude all-default entries and preserve source order unless stated otherwise.
- * Every id in a line or background's `agent_ids` must reference an entry in `agents`.
- * Non-empty line ids are unique across all lines and backgrounds.
- * Non-empty BCP 47 tags must be well formed; comparison is case-insensitive and canonical form is lowercase.
+ * All-default submessages are equivalent to unset, except TimeRange; repeated fields exclude all-default entries.
+ * Lists preserve source order unless a field declares another order.
+ * Non-empty BCP 47 tags are well formed and case-insensitive, with lowercase canonical spelling.
  */
 export type Lyric = {
   /**
-   * Parse validity of the lyric.
-   * INVALID guarantees only version and status; remaining fields may be empty but still follow their normal rules.
+   * INVALID guarantees only version and status; any remaining data still follows its normal field rules.
    */
   status: LyricStatus
   /**
-   * Schema version of this data model, always set and formatted as a semantic version.
-   * Consumers sharing the same major version can read each other's output.
+   * The schema version is required and uses semantic-version syntax.
+   * Schema versions with the same major number are compatible.
    */
   version: string
   /**
-   * Source format identifier assigned by the parser; empty means unknown.
-   * Compared case-insensitively; canonical form is lowercase.
+   * The parser identifies the source format.
+   * Comparison is case-insensitive, canonical spelling is lowercase, and empty means unknown.
    */
   format: string
   /**
-   * Source-format dialect, scoped by `format` and identified by the parser.
-   * Compared case-insensitively; canonical form is lower case, and empty means unspecified.
+   * The parser identifies a dialect scoped by format.
+   * Comparison is case-insensitive, canonical spelling is lowercase, and empty means unspecified.
    */
   profile: string
   /**
-   * Declared timing level of the original lyric.
+   * The source declares the original text's timing level.
    */
   timing: TimingLevel
+  /**
+   * Optional metadata describes the song and lyric file.
+   */
   meta?: Meta | undefined
   /**
-   * Performing agents referenced by lines.
+   * Line and background agent_ids must reference identities in this list.
    */
   agents: Agent[]
   /**
-   * Lyric lines, ordered by TimeRange.start ascending.
-   * Every line except the last requires a known end; instrumental lines always require one.
+   * Timed lines are ordered by start time; untimed lines retain source order.
+   * In timed lyrics, every line except the last requires a known end.
    */
   lines: Line[]
   /**
-   * Language usage across normal lines, ordered by descending line_count and then by ascending tag.
-   * Each line contributes each tag once, using both its own tags and its normal words' tags.
-   * Space words, annotations and background lines never contribute.
+   * Entries are derived from normal lines and ordered by descending line_count, then ascending tag.
+   * Whitespace separators, annotations, and background lines do not contribute.
    */
   languageUsages: LanguageUsage[]
   /**
-   * Format-specific values without typed fields; consumers may interpret them by key.
+   * Format-specific attributes carry interpretable values without typed fields.
    */
   extra: Record<string, string>
 }

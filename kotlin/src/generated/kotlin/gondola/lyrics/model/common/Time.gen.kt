@@ -3,7 +3,7 @@
 package gondola.lyrics.model.common
 
 /**
- * Declared timing level of the original lyric.
+ * The level describes timing of the original text independently of annotation timing.
  */
 public class TimingLevel(@JvmField public val value: Int) {
     override fun equals(other: Any?): Boolean {
@@ -26,44 +26,41 @@ public class TimingLevel(@JvmField public val value: Int) {
 
     public companion object {
         /**
-         * The field was not set; treat it as missing rather than as a resolved level, as is every value this enum does not declare.
+         * The timing level is unresolved; unrecognized values have the same meaning.
          */
         @JvmField public val TIMING_LEVEL_UNSPECIFIED: TimingLevel = TimingLevel(0)
 
         /**
-         * Untimed; line and word TimeRange fields must be unset, so every line carries its content as plain text and no line is instrumental.
+         * Normal and background lines use whole-line text without line or word ranges; instrumental lines are excluded.
          */
         @JvmField public val TIMING_LEVEL_NONE: TimingLevel = TimingLevel(1)
 
         /**
-         * Timed at line level; every normal or background line carries a valid TimeRange and its content as plain text.
+         * Normal and background lines have time ranges and whole-line text.
          */
         @JvmField public val TIMING_LEVEL_LINE: TimingLevel = TimingLevel(2)
 
         /**
-         * Timed per word, where syllable-level sources also land.
-         * At least one normal or background line carries its content as words, each sung one holding a valid TimeRange; the rest may stay whole.
+         * Normal and background lines have time ranges, with at least one word-segmented line when lyric content is present.
+         * Sung words require time ranges; syllable timing uses this level, and other lines may remain whole.
          */
         @JvmField public val TIMING_LEVEL_WORD: TimingLevel = TimingLevel(3)
     }
 }
 
 /**
- * A half-open time range in milliseconds: a time t falls inside when start <= t < end.
- * An unknown end leaves the range open above, so it has no length.
- * An unset TimeRange means no timing at all.
- * An all-default TimeRange is a range of its own, never dropped for being all default.
- * Times exclude Meta.offset.
- * Values above 2^31-1 are invalid.
+ * Ranges use milliseconds and are half-open: start <= t < end.
+ * An unset range means no timing; a present all-default range starts at zero with an unknown end.
+ * Stored times exclude Meta.offset, and each endpoint is at most 2^31-1.
  */
 public data class TimeRange(
     /**
-     * Start time in milliseconds.
+     * The start is inclusive.
      */
     val start: Long = 0,
     /**
-     * End time in milliseconds; unset means unknown.
-     * An end below start is invalid, and one equal to start is a range no time falls inside.
+     * The exclusive end is unknown when unset, leaving the range open with no known duration.
+     * It must be at least start; equality produces an empty range.
      */
     val end: Long? = null,
 )

@@ -9,86 +9,90 @@ option java_multiple_files = true;
 option java_outer_classname = "WordProto";
 option java_package = "gondola.lyrics.model.document";
 
+// Word kinds distinguish sung text from whitespace separators.
 enum WordType {
-  // Unspecified and unrecognized values are treated as missing.
+  // The word kind is unresolved; unrecognized values have the same meaning.
   WORD_TYPE_UNSPECIFIED = 0;
 
-  // A sung word with non-empty text containing no Unicode White_Space characters.
+  // A sung word has non-empty text without Unicode White_Space characters.
   WORD_TYPE_NORMAL = 1;
 
-  // Only type and text are set; text is a non-empty sequence of Unicode White_Space characters.
+  // A separator has non-empty text containing only Unicode White_Space characters; only type and text may be set.
   WORD_TYPE_SPACE = 2;
 }
 
-// Translation of a single word into another language.
+// A translation is attached to one original word.
 message WordAnnotationTranslation {
-  // Target language of this translation, as a BCP 47 tag.
+  // The target BCP 47 tag identifies this translation variant; unset or empty means unspecified.
   optional string language = 1;
 
-  // Translated text for the whole word.
+  // Translation text applies to the whole word.
   string text = 2;
 }
 
-// Romanized transliteration of a single word.
+// Romanization is attached to one original word.
 message WordAnnotationRoman {
-  // Unset inherits the annotated word's time; an explicit range must fit within it.
+  // Unset time falls back to the word's range; an explicit range must fit within it.
   lyric.common.TimeRange time = 1;
 
-  // Language of this item, as a BCP 47 tag.
+  // The BCP 47 tag identifies this romanization variant; unset or empty means unspecified.
   optional string language = 2;
 
-  // Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+  // The transliteration scheme is case-insensitive; unset or empty means unspecified.
   optional string scheme = 3;
 
-  // Tokens composing the item in order.
-  // Unset token time inherits this item's effective range; explicit token ranges must fit within it.
+  // Source fragments concatenate in list order without added separators; empty text is allowed.
+  // Untimed fragments use this item's effective range; explicit fragment ranges must fit within it.
   repeated lyric.common.TextToken tokens = 4;
 }
 
-// Ruby annotation of a single word, such as furigana.
+// Ruby text, such as furigana, is attached to one original word.
 message WordAnnotationRuby {
-  // Unset inherits the annotated word's time; an explicit range must fit within it.
+  // Unset time falls back to the word's range; an explicit range must fit within it.
   lyric.common.TimeRange time = 1;
 
-  // Language of this item, as a BCP 47 tag.
+  // The BCP 47 tag identifies this ruby variant; unset or empty means unspecified.
   optional string language = 2;
 
-  // Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+  // The transliteration scheme is case-insensitive; unset or empty means unspecified.
   optional string scheme = 3;
 
-  // Tokens composing the item in order.
-  // Unset token time inherits this item's effective range; explicit token ranges must fit within it.
+  // Source fragments concatenate in list order without added separators; empty text is allowed.
+  // Untimed fragments use this item's effective range; explicit fragment ranges must fit within it.
   repeated lyric.common.TextToken tokens = 4;
 }
 
-// Ruby and roman entries are unique by language and scheme; translations are unique by language.
-// Unset and empty language or scheme values identify the same entry.
+// Variant keys compare language and scheme case-insensitively, treating empty values as unset.
 message WordAnnotation {
-  // Ruby annotations such as furigana.
+  // Each language and scheme pair identifies at most one ruby variant.
   repeated WordAnnotationRuby rubies = 1;
 
+  // Each language and scheme pair identifies at most one romanization variant.
   repeated WordAnnotationRoman romans = 2;
 
+  // Each target language identifies at most one translation variant.
   repeated WordAnnotationTranslation translations = 3;
 }
 
-// A sung word, or the separator between two words.
+// Words and whitespace separators preserve the original text.
 message Word {
+  // The kind controls text constraints and permitted fields.
   WordType type = 1;
 
-  // Time range of the word; unset when it is not sung.
+  // In word-timed lyrics, sung words require a range; whitespace separators have none.
   // A missing end may be completed according to the source format's timing policy.
   lyric.common.TimeRange time = 2;
 
-  // Language of this word, as a BCP 47 tag; unset means undetermined.
+  // This BCP 47 tag describes the original word; unset or empty means undetermined.
   optional string language = 3;
 
-  // Text of the word, exactly as the source wrote it.
+  // Original spelling is preserved, with whitespace constraints defined by the word kind.
   string text = 4;
 
+  // Optional annotations apply to this word.
   WordAnnotation annotation = 5;
 
-  // Whether the word is emphasized, as the source stated it; unset means no emphasis information.
-  // Emphasis asks for a swell when the word is sung, such as a syllable held longer than usual; it is not linguistic stress.
+  // A source-declared true or false decision is preserved; unset means no emphasis information.
+  // Vocal emphasis marks a swell or held syllable rather than linguistic stress.
   optional bool emphasis = 6;
 }

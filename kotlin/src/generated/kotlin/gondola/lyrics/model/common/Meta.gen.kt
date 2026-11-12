@@ -3,7 +3,7 @@
 package gondola.lyrics.model.common
 
 /**
- * Role someone is credited for.
+ * A credit role identifies a contribution to the song or recording.
  */
 public class CreditRole(@JvmField public val value: Int) {
     override fun equals(other: Any?): Boolean {
@@ -31,132 +31,131 @@ public class CreditRole(@JvmField public val value: Int) {
 
     public companion object {
         /**
-         * The field was not set; treat it as missing rather than as a resolved role, as is every value this enum does not declare.
+         * The role is unresolved; unrecognized values have the same meaning.
          */
         @JvmField public val CREDIT_ROLE_UNSPECIFIED: CreditRole = CreditRole(0)
 
         /**
-         * A role this enum does not cover; the source's own word is kept in `MetaCredit.raw`.
+         * A source-defined role outside this enum is recorded in `MetaCredit.raw`.
          */
         @JvmField public val CREDIT_ROLE_OTHER: CreditRole = CreditRole(1)
 
         /**
-         * Wrote the lyrics.
+         * The contributor wrote the lyrics.
          */
         @JvmField public val CREDIT_ROLE_LYRICIST: CreditRole = CreditRole(2)
 
         /**
-         * Wrote the music.
+         * The contributor composed the music.
          */
         @JvmField public val CREDIT_ROLE_COMPOSER: CreditRole = CreditRole(3)
 
         /**
-         * Arranged the music.
+         * The contributor arranged the music.
          */
         @JvmField public val CREDIT_ROLE_ARRANGER: CreditRole = CreditRole(4)
 
         /**
-         * Produced the recording.
+         * The contributor produced the recording.
          */
         @JvmField public val CREDIT_ROLE_PRODUCER: CreditRole = CreditRole(5)
 
         /**
-         * Performed the song.
+         * The contributor performed the song.
          */
         @JvmField public val CREDIT_ROLE_PERFORMER: CreditRole = CreditRole(6)
 
         /**
-         * Mixed the recording.
+         * The contributor mixed the recording.
          */
         @JvmField public val CREDIT_ROLE_MIXER: CreditRole = CreditRole(7)
 
         /**
-         * Mastered the recording.
+         * The contributor mastered the recording.
          */
         @JvmField public val CREDIT_ROLE_MASTERING: CreditRole = CreditRole(8)
     }
 }
 
 /**
- * A credit for the song itself.
+ * Contributors share one credited role in the song or recording.
  */
 public data class MetaCredit(
     /**
-     * Role of the credit.
+     * The role identifies the contribution credited to these names.
      */
     val role: CreditRole = CreditRole.CREDIT_ROLE_UNSPECIFIED,
     /**
-     * The source's own word for this role; unset means the role was inferred rather than stated.
+     * The source's role spelling is required for OTHER; unset means the role was inferred.
      */
     val raw: String? = null,
     /**
-     * Everyone credited for this role, one entry per person rather than one per language.
+     * Each entry names one contributor credited for this role.
      */
     val names: List<Text> = emptyList(),
 )
 
 /**
- * Identifiers this song carries on one external platform.
+ * External song identifiers are grouped by platform.
  */
 public data class MetaReference(
     /**
-     * Platform name, non-empty and compared case-insensitively; canonical form is lower case.
+     * The platform key is non-empty and case-insensitive; its canonical spelling is lowercase.
      */
     val platform: String = "",
     /**
-     * Identifiers on that platform, exactly as the platform writes them, non-empty.
+     * At least one identifier is required; every identifier is non-empty and preserves the platform's spelling.
      */
     val ids: List<String> = emptyList(),
 )
 
 /**
- * Metadata describing the song and the lyric file.
+ * Metadata describes the song and the lyric file.
  */
 public data class Meta(
     /**
-     * Unrecognized meta preserved by their original key.
+     * Unrecognized source metadata is retained in source order.
      */
     val unknowns: List<UnknownEntry> = emptyList(),
     /**
-     * Timeline offset in milliseconds, added to the playback clock before it is compared against a stored time; a positive value therefore makes the lyric appear earlier.
+     * This millisecond adjustment is added to the playback clock before comparing stored times; positive values make lyrics appear earlier.
      */
     val offset: Int = 0,
     /**
-     * Song duration in milliseconds; unset means unknown.
-     * Values above 2^31-1 are invalid.
+     * The song duration is measured in milliseconds; unset means unknown, and values above 2^31-1 are invalid.
      */
     val duration: Long? = null,
     /**
-     * Language the source declares for the whole lyric, as a BCP 47 tag; unset means the source declares none.
-     * It need not appear among the languages of the lines, since it is declared rather than derived from them.
+     * This is the source's whole-lyric BCP 47 tag; unset means none was declared.
+     * It may differ from the languages found in the lines.
      */
     val language: String? = null,
     /**
-     * Song titles, one entry per language.
+     * Song-title variants have at most one entry per language.
      */
     val titles: List<Text> = emptyList(),
     /**
-     * Song artists, one entry per artist rather than one per language.
+     * Each entry names one song artist.
      */
     val artists: List<Text> = emptyList(),
     /**
-     * Song albums, one entry per language.
+     * Album-name variants have at most one entry per language.
      */
     val albums: List<Text> = emptyList(),
     /**
-     * Authors or transcribers of the lyric file, not of the song, one entry per author rather than one per language.
+     * Each entry names an author or transcriber of the lyric file.
      */
     val authors: List<Text> = emptyList(),
     /**
-     * International Standard Recording Codes, compared without case or separators; canonical form is upper case with none.
+     * International Standard Recording Codes are compared without case or separators; canonical values are uppercase without separators.
      */
     val isrcs: List<String> = emptyList(),
     /**
-     * Song credits such as lyricist or composer.
+     * Contributors are grouped by their role in the song or recording.
      */
     val credits: List<MetaCredit> = emptyList(),
     /**
-     * Cross-platform references, one entry per platform.
+     * External identifiers have at most one entry per platform.
      */
     val references: List<MetaReference> = emptyList(),
 )

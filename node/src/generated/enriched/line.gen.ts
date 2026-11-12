@@ -5,154 +5,179 @@ import type { TextToken } from '../common/text.gen'
 import type { TimeRange } from '../common/time.gen'
 import type { Word } from './word.gen'
 
+/**
+ * Line kinds distinguish sung content from instrumental intervals.
+ */
 export enum LineType {
   /**
-   * Unspecified and unrecognized values are treated as missing.
+   * The line kind is unresolved; unrecognized values have the same meaning.
    */
   UNSPECIFIED = 0,
   /**
-   * A sung line, carrying its content as either words or plain text.
+   * A sung line carries word-segmented or whole-line content.
    */
   NORMAL = 1,
   /**
-   * An interval without singing, carrying only a time range and optional id and part.
-   * Requires a known end and timed lyrics.
-   * `part` tells whether the source stated it or it was derived from a gap in the timeline.
+   * An instrumental interval carries only a non-empty time range and optional id and part.
+   * Its end is known, and it is valid only in timed lyrics.
    */
   INSTRUMENTAL = 2,
 }
 
 /**
- * Exactly one of tokens or text must be set.
+ * A non-empty token list and a present text value are mutually exclusive, and one is required.
  */
 export type LineAnnotationRomanContent = {
   /**
-   * Non-empty source fragments in text order; at least one carries an explicit time range.
-   * Fragments concatenate without added separators, preserving their boundaries and whitespace.
-   * Unset token time follows the annotation, then the line; explicit ranges must fit a declared annotation range.
+   * Source fragments concatenate in list order without added separators or changes to whitespace.
+   * Each fragment has non-empty text, and at least one has an explicit time range.
    */
   tokens: TextToken[]
   /**
-   * Non-empty whole-line text without token segmentation.
+   * Non-empty whole-line romanization is stored without fragment segmentation.
    */
   text?: string | undefined
 }
 
+/**
+ * Romanized text is attached to the whole line.
+ */
 export type LineAnnotationRoman = {
   /**
-   * Language of this item, as a BCP 47 tag.
+   * The BCP 47 tag identifies this romanization variant; unset or empty means unspecified.
    */
   language?: string | undefined
   /**
-   * Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+   * The transliteration scheme is case-insensitive; unset or empty means unspecified.
    */
   scheme?: string | undefined
   /**
-   * An explicit range may differ from the original line's and must contain every explicitly timed token.
-   * Unset uses the line's range for text and untimed tokens; explicit token times remain independent.
+   * Unset time falls back to the line for whole-line text and untimed fragments; explicit fragment ranges remain independent of the line.
+   * An explicit annotation range may differ from the line and must contain every explicitly timed fragment.
    */
   time?: TimeRange | undefined
   /**
-   * Required, with exactly one content form.
+   * Romanization content is required.
    */
   content?: LineAnnotationRomanContent | undefined
 }
 
 /**
- * Translation of a whole line into another language.
+ * A translation is attached to the whole original line.
  */
 export type LineAnnotationTranslation = {
   /**
-   * Target language of this translation, as a BCP 47 tag.
+   * The target BCP 47 tag identifies this translation variant; unset or empty means unspecified.
    */
   language?: string | undefined
+  /**
+   * Translation text applies to the whole line.
+   */
   text: string
 }
 
 /**
- * Annotations explicitly attached to the whole line by the source.
- * Excludes aggregations of word annotations.
- * Roman entries are unique by language and scheme; translations are unique by language.
- * Unset and empty language or scheme values identify the same entry.
+ * Only source annotations attached to the whole line belong here; word aggregates are excluded.
+ * Variant keys compare language and scheme case-insensitively, treating empty values as unset.
  */
 export type LineAnnotation = {
+  /**
+   * Each language and scheme pair identifies at most one romanization variant.
+   */
   romans: LineAnnotationRoman[]
+  /**
+   * Each target language identifies at most one translation variant.
+   */
   translations: LineAnnotationTranslation[]
 }
 
 /**
- * Exactly one of words or text must be set.
+ * A non-empty word list and a present text value are mutually exclusive, and one is required.
  */
 export type LineContent = {
   /**
-   * Ordered words; each sung word requires a time range under TIMING_LEVEL_WORD.
+   * Source words and whitespace separators concatenate in list order without added separators.
    */
   words: Word[]
   /**
-   * Non-empty text for a line without word segmentation.
+   * A non-empty string represents a line without word segmentation.
    */
   text?: string | undefined
 }
 
 /**
- * Background vocals attached to a normal line, sharing its part.
- * Roman keys are exclusive between this background's annotation and its words' annotations.
+ * Background vocals attach to a sung line and share its structural section.
  */
 export type LineBackground = {
   /**
-   * Identifier of this background line; empty means none.
+   * An empty id means unspecified; non-empty ids are unique across all lyric lines and backgrounds.
    */
   id: string
   /**
-   * Time range of this background line.
-   * The parent line's end covers it, while its start may precede the parent's.
-   * Must contain every timed word; boundaries may extend beyond the words.
+   * The range contains every timed word and may start before the parent line, but cannot end after it.
    */
   time?: TimeRange | undefined
   /**
-   * The lead performer comes first.
-   * Multiple ids identify performers singing together; a named ensemble uses one GROUP agent.
+   * These ids reference Lyric.agents, with the lead performer first.
+   * Multiple ids represent voices singing together; a named ensemble uses one GROUP agent.
    */
   agentIds: string[]
   /**
-   * BCP 47 language tags of this line, each at most once.
+   * Each source-declared BCP 47 tag appears at most once.
    */
   languages: string[]
+  /**
+   * Sung content is required for the background line.
+   */
   content?: LineContent | undefined
+  /**
+   * Annotations apply to the background as a whole.
+   * A romanization's language and scheme key cannot also occur on its words.
+   */
   annotation?: LineAnnotation | undefined
 }
 
 /**
- * Roman keys are exclusive between this line's annotation and its words' annotations.
+ * A line represents sung content or an instrumental interval.
  */
 export type Line = {
   /**
-   * Identifier of the line; empty means none.
+   * An empty id means unspecified; non-empty ids are unique across all lyric lines and backgrounds.
    */
   id: string
+  /**
+   * The kind determines which fields may be present.
+   */
   type: LineType
   /**
-   * Time range of the line.
-   * Must contain every timed word; boundaries may extend beyond the words.
+   * The range contains every timed word and may extend beyond the word boundaries.
    */
   time?: TimeRange | undefined
   /**
-   * Structural section this line belongs to; unset means no part information.
+   * Unset means no structural section information.
+   * For instrumental lines, a present part marks a source declaration and an absent part marks a derived gap.
    */
   part?: Part | undefined
   /**
-   * The lead performer comes first.
-   * Multiple ids identify performers singing together; a named ensemble uses one GROUP agent.
+   * These ids reference Lyric.agents, with the lead performer first.
+   * Multiple ids represent voices singing together; a named ensemble uses one GROUP agent.
    */
   agentIds: string[]
   /**
-   * BCP 47 language tags of this line, each at most once.
+   * Each source-declared BCP 47 tag appears at most once.
    */
   languages: string[]
   /**
-   * Background lines attached to this line, ordered by TimeRange.start ascending.
+   * Background vocals are attached only to normal lines and are ordered by start time.
    */
   backgrounds: LineBackground[]
+  /**
+   * Sung lines require original content; instrumental lines have none.
+   */
   content?: LineContent | undefined
+  /**
+   * Annotations apply to the line as a whole and are absent on instrumental lines.
+   * A romanization's language and scheme key cannot also occur on the line's words.
+   */
   annotation?: LineAnnotation | undefined
 }

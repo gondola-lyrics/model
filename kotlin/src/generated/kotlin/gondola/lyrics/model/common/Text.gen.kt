@@ -3,34 +3,33 @@
 package gondola.lyrics.model.common
 
 /**
- * Text carrying an optional language tag.
- * A wanted language matches a tag when either extends the other on a subtag boundary, the longest shared prefix winning, and entries carrying no language are the fallback.
+ * Language matches follow subtag boundaries when either tag extends the other; the longest shared prefix wins, and untagged entries are the fallback.
  */
 public data class Text(
     /**
-     * BCP 47 language tag, compared case-insensitively; canonical form is lower case, and unset means unspecified or default.
+     * The BCP 47 tag is case-insensitive with lowercase canonical spelling; unset or empty means unspecified or default.
      */
     val language: String? = null,
     /**
-     * The text itself, non-empty.
+     * The text must be non-empty.
      */
     val text: String = "",
 )
 
 /**
- * Boundaries follow the source and need not match original words.
+ * Source fragment boundaries are preserved independently of original word boundaries.
  */
 public data class TextToken(
     /**
-     * Unset timing follows the containing annotation's rules; an explicit range is never filled field by field.
+     * Unset time follows the containing annotation's fallback; an explicit range is used as a whole without filling missing endpoints.
      */
     val time: TimeRange? = null,
     /**
-     * Text constraints are defined by the containing annotation.
+     * Fragment text is preserved, with constraints defined by the containing annotation.
      */
     val text: String = "",
     /**
-     * Fragment-specific attributes without typed fields.
+     * Fragment attributes preserve unknown keys and values without replacing typed fields.
      * Keys are non-empty and case-sensitive; values may be empty.
      */
     val extra: Map<String, String> = emptyMap(),

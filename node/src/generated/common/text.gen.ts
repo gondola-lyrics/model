@@ -3,34 +3,33 @@
 import type { TimeRange } from './time.gen'
 
 /**
- * Text carrying an optional language tag.
- * A wanted language matches a tag when either extends the other on a subtag boundary, the longest shared prefix winning, and entries carrying no language are the fallback.
+ * Language matches follow subtag boundaries when either tag extends the other; the longest shared prefix wins, and untagged entries are the fallback.
  */
 export type Text = {
   /**
-   * BCP 47 language tag, compared case-insensitively; canonical form is lower case, and unset means unspecified or default.
+   * The BCP 47 tag is case-insensitive with lowercase canonical spelling; unset or empty means unspecified or default.
    */
   language?: string | undefined
   /**
-   * The text itself, non-empty.
+   * The text must be non-empty.
    */
   text: string
 }
 
 /**
- * Boundaries follow the source and need not match original words.
+ * Source fragment boundaries are preserved independently of original word boundaries.
  */
 export type TextToken = {
   /**
-   * Unset timing follows the containing annotation's rules; an explicit range is never filled field by field.
+   * Unset time follows the containing annotation's fallback; an explicit range is used as a whole without filling missing endpoints.
    */
   time?: TimeRange | undefined
   /**
-   * Text constraints are defined by the containing annotation.
+   * Fragment text is preserved, with constraints defined by the containing annotation.
    */
   text: string
   /**
-   * Fragment-specific attributes without typed fields.
+   * Fragment attributes preserve unknown keys and values without replacing typed fields.
    * Keys are non-empty and case-sensitive; values may be empty.
    */
   extra: Record<string, string>

@@ -9,91 +9,90 @@ option java_multiple_files = true;
 option java_outer_classname = "MetaProto";
 option java_package = "gondola.lyrics.model.common";
 
-// Role someone is credited for.
+// A credit role identifies a contribution to the song or recording.
 enum CreditRole {
-  // The field was not set; treat it as missing rather than as a resolved role, as is every value this enum does not declare.
+  // The role is unresolved; unrecognized values have the same meaning.
   CREDIT_ROLE_UNSPECIFIED = 0;
 
-  // A role this enum does not cover; the source's own word is kept in `MetaCredit.raw`.
+  // A source-defined role outside this enum is recorded in `MetaCredit.raw`.
   CREDIT_ROLE_OTHER = 1;
 
-  // Wrote the lyrics.
+  // The contributor wrote the lyrics.
   CREDIT_ROLE_LYRICIST = 2;
 
-  // Wrote the music.
+  // The contributor composed the music.
   CREDIT_ROLE_COMPOSER = 3;
 
-  // Arranged the music.
+  // The contributor arranged the music.
   CREDIT_ROLE_ARRANGER = 4;
 
-  // Produced the recording.
+  // The contributor produced the recording.
   CREDIT_ROLE_PRODUCER = 5;
 
-  // Performed the song.
+  // The contributor performed the song.
   CREDIT_ROLE_PERFORMER = 6;
 
-  // Mixed the recording.
+  // The contributor mixed the recording.
   CREDIT_ROLE_MIXER = 7;
 
-  // Mastered the recording.
+  // The contributor mastered the recording.
   CREDIT_ROLE_MASTERING = 8;
 }
 
-// A credit for the song itself.
+// Contributors share one credited role in the song or recording.
 message MetaCredit {
-  // Role of the credit.
+  // The role identifies the contribution credited to these names.
   CreditRole role = 1;
 
-  // The source's own word for this role; unset means the role was inferred rather than stated.
+  // The source's role spelling is required for OTHER; unset means the role was inferred.
   optional string raw = 2;
 
-  // Everyone credited for this role, one entry per person rather than one per language.
+  // Each entry names one contributor credited for this role.
   repeated Text names = 3;
 }
 
-// Identifiers this song carries on one external platform.
+// External song identifiers are grouped by platform.
 message MetaReference {
-  // Platform name, non-empty and compared case-insensitively; canonical form is lower case.
+  // The platform key is non-empty and case-insensitive; its canonical spelling is lowercase.
   string platform = 1;
 
-  // Identifiers on that platform, exactly as the platform writes them, non-empty.
+  // At least one identifier is required; every identifier is non-empty and preserves the platform's spelling.
   repeated string ids = 2;
 }
 
-// Metadata describing the song and the lyric file.
+// Metadata describes the song and the lyric file.
 message Meta {
-  // Unrecognized meta preserved by their original key.
+  // Unrecognized source metadata is retained in source order.
   repeated UnknownEntry unknowns = 1;
 
-  // Timeline offset in milliseconds, added to the playback clock before it is compared against a stored time; a positive value therefore makes the lyric appear earlier.
+  // This millisecond adjustment is added to the playback clock before comparing stored times; positive values make lyrics appear earlier.
   sint32 offset = 2;
 
-  // Song duration in milliseconds; unset means unknown.
-  // Values above 2^31-1 are invalid.
+  // The song duration is measured in milliseconds; unset means unknown, and values above 2^31-1 are invalid.
   optional uint32 duration = 3;
 
-  // Language the source declares for the whole lyric, as a BCP 47 tag; unset means the source declares none.
-  // It need not appear among the languages of the lines, since it is declared rather than derived from them.
+  // This is the source's whole-lyric BCP 47 tag; unset means none was declared.
+  // It may differ from the languages found in the lines.
   optional string language = 4;
 
-  // Song titles, one entry per language.
+  // Song-title variants have at most one entry per language.
   repeated Text titles = 5;
 
-  // Song artists, one entry per artist rather than one per language.
+  // Each entry names one song artist.
   repeated Text artists = 6;
 
-  // Song albums, one entry per language.
+  // Album-name variants have at most one entry per language.
   repeated Text albums = 7;
 
-  // Authors or transcribers of the lyric file, not of the song, one entry per author rather than one per language.
+  // Each entry names an author or transcriber of the lyric file.
   repeated Text authors = 8;
 
-  // International Standard Recording Codes, compared without case or separators; canonical form is upper case with none.
+  // International Standard Recording Codes are compared without case or separators; canonical values are uppercase without separators.
   repeated string isrcs = 9;
 
-  // Song credits such as lyricist or composer.
+  // Contributors are grouped by their role in the song or recording.
   repeated MetaCredit credits = 10;
 
-  // Cross-platform references, one entry per platform.
+  // External identifiers have at most one entry per platform.
   repeated MetaReference references = 11;
 }

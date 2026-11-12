@@ -6,52 +6,51 @@ option java_multiple_files = true;
 option java_outer_classname = "PartProto";
 option java_package = "gondola.lyrics.model.common";
 
-// Structural type of a part.
+// Song sections are classified by their structural role.
 enum PartType {
-  // The field was not set; treat it as missing rather than as a resolved type, as is every value this enum does not declare.
+  // The section type is unresolved; unrecognized values have the same meaning.
   PART_TYPE_UNSPECIFIED = 0;
 
-  // A type this enum does not cover; the source's own word is kept in `Part.raw`.
+  // A source-defined section type outside this enum is recorded in `Part.raw`.
   PART_TYPE_OTHER = 1;
 
-  // Introductory section.
+  // An opening section introduces the song.
   PART_TYPE_INTRO = 2;
 
-  // Verse.
+  // A verse presents a stanza of the song.
   PART_TYPE_VERSE = 3;
 
-  // Section leading into the chorus.
+  // This section leads into the chorus.
   PART_TYPE_PRE_CHORUS = 4;
 
-  // Chorus.
+  // A chorus is a recurring main section of the song.
   PART_TYPE_CHORUS = 5;
 
-  // Section following the chorus.
+  // This section follows the chorus.
   PART_TYPE_POST_CHORUS = 6;
 
-  // Bridge.
+  // A bridge contrasts with the surrounding verse or chorus sections.
   PART_TYPE_BRIDGE = 7;
 
-  // Refrain.
+  // A refrain is a recurring line or passage within the song.
   PART_TYPE_REFRAIN = 8;
 
-  // Instrumental section, carried by the INSTRUMENTAL lines that cover it.
+  // An instrumental section is represented by the INSTRUMENTAL lines covering it.
   PART_TYPE_INSTRUMENTAL = 9;
 
-  // Closing section.
+  // A closing section ends the song.
   PART_TYPE_OUTRO = 10;
 }
 
-// The structural section a line belongs to.
-// A non-empty id identifies one contiguous section within the lyric, whose lines share the same type and raw.
-// Without an id, adjacent lines with no id and the same type and raw form one section.
+// A part describes the structural section containing a line.
 message Part {
-  // Structural type of the section.
+  // The resolved value classifies the section's structural role.
   PartType type = 1;
 
-  // Identifier of the section, compared exactly; unset or empty means none.
+  // A non-empty id is compared exactly and identifies a contiguous section whose lines share type and raw.
+  // Unset or empty means no id; adjacent lines without ids and with matching type and raw form one section.
   optional string id = 2;
 
-  // The source's own word for this type; unset means the type was inferred rather than stated.
+  // The source's type spelling is required for OTHER; unset means the type was inferred.
   optional string raw = 3;
 }

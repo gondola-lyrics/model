@@ -4,127 +4,126 @@ import type { Text } from './text.gen'
 import type { UnknownEntry } from './unknown.gen'
 
 /**
- * Role someone is credited for.
+ * A credit role identifies a contribution to the song or recording.
  */
 export enum CreditRole {
   /**
-   * The field was not set; treat it as missing rather than as a resolved role, as is every value this enum does not declare.
+   * The role is unresolved; unrecognized values have the same meaning.
    */
   UNSPECIFIED = 0,
   /**
-   * A role this enum does not cover; the source's own word is kept in `MetaCredit.raw`.
+   * A source-defined role outside this enum is recorded in `MetaCredit.raw`.
    */
   OTHER = 1,
   /**
-   * Wrote the lyrics.
+   * The contributor wrote the lyrics.
    */
   LYRICIST = 2,
   /**
-   * Wrote the music.
+   * The contributor composed the music.
    */
   COMPOSER = 3,
   /**
-   * Arranged the music.
+   * The contributor arranged the music.
    */
   ARRANGER = 4,
   /**
-   * Produced the recording.
+   * The contributor produced the recording.
    */
   PRODUCER = 5,
   /**
-   * Performed the song.
+   * The contributor performed the song.
    */
   PERFORMER = 6,
   /**
-   * Mixed the recording.
+   * The contributor mixed the recording.
    */
   MIXER = 7,
   /**
-   * Mastered the recording.
+   * The contributor mastered the recording.
    */
   MASTERING = 8,
 }
 
 /**
- * A credit for the song itself.
+ * Contributors share one credited role in the song or recording.
  */
 export type MetaCredit = {
   /**
-   * Role of the credit.
+   * The role identifies the contribution credited to these names.
    */
   role: CreditRole
   /**
-   * The source's own word for this role; unset means the role was inferred rather than stated.
+   * The source's role spelling is required for OTHER; unset means the role was inferred.
    */
   raw?: string | undefined
   /**
-   * Everyone credited for this role, one entry per person rather than one per language.
+   * Each entry names one contributor credited for this role.
    */
   names: Text[]
 }
 
 /**
- * Identifiers this song carries on one external platform.
+ * External song identifiers are grouped by platform.
  */
 export type MetaReference = {
   /**
-   * Platform name, non-empty and compared case-insensitively; canonical form is lower case.
+   * The platform key is non-empty and case-insensitive; its canonical spelling is lowercase.
    */
   platform: string
   /**
-   * Identifiers on that platform, exactly as the platform writes them, non-empty.
+   * At least one identifier is required; every identifier is non-empty and preserves the platform's spelling.
    */
   ids: string[]
 }
 
 /**
- * Metadata describing the song and the lyric file.
+ * Metadata describes the song and the lyric file.
  */
 export type Meta = {
   /**
-   * Unrecognized meta preserved by their original key.
+   * Unrecognized source metadata is retained in source order.
    */
   unknowns: UnknownEntry[]
   /**
-   * Timeline offset in milliseconds, added to the playback clock before it is compared against a stored time; a positive value therefore makes the lyric appear earlier.
+   * This millisecond adjustment is added to the playback clock before comparing stored times; positive values make lyrics appear earlier.
    */
   offset: number
   /**
-   * Song duration in milliseconds; unset means unknown.
-   * Values above 2^31-1 are invalid.
+   * The song duration is measured in milliseconds; unset means unknown, and values above 2^31-1 are invalid.
    */
   duration?: number | undefined
   /**
-   * Language the source declares for the whole lyric, as a BCP 47 tag; unset means the source declares none.
-   * It need not appear among the languages of the lines, since it is declared rather than derived from them.
+   * This is the source's whole-lyric BCP 47 tag; unset means none was declared.
+   * It may differ from the languages found in the lines.
    */
   language?: string | undefined
   /**
-   * Song titles, one entry per language.
+   * Song-title variants have at most one entry per language.
    */
   titles: Text[]
   /**
-   * Song artists, one entry per artist rather than one per language.
+   * Each entry names one song artist.
    */
   artists: Text[]
   /**
-   * Song albums, one entry per language.
+   * Album-name variants have at most one entry per language.
    */
   albums: Text[]
   /**
-   * Authors or transcribers of the lyric file, not of the song, one entry per author rather than one per language.
+   * Each entry names an author or transcriber of the lyric file.
    */
   authors: Text[]
   /**
-   * International Standard Recording Codes, compared without case or separators; canonical form is upper case with none.
+   * International Standard Recording Codes are compared without case or separators; canonical values are uppercase without separators.
    */
   isrcs: string[]
   /**
-   * Song credits such as lyricist or composer.
+   * Contributors are grouped by their role in the song or recording.
    */
   credits: MetaCredit[]
   /**
-   * Cross-platform references, one entry per platform.
+   * External identifiers have at most one entry per platform.
    */
   references: MetaReference[]
 }

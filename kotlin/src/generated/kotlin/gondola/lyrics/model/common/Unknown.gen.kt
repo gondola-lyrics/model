@@ -3,16 +3,15 @@
 package gondola.lyrics.model.common
 
 /**
- * A key-value pair the model has no typed field for, kept so that a round trip loses nothing.
- * Order is significant and one key may appear more than once.
+ * Unrecognized source metadata retains entry order and allows repeated keys.
  */
 public data class UnknownEntry(
     /**
-     * Key, exactly as the source wrote it.
+     * The key preserves its original source spelling.
      */
     val key: String = "",
     /**
-     * Value, exactly as the source wrote it.
+     * The value preserves its original source text.
      */
     val value: String = "",
 )

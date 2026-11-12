@@ -3,116 +3,130 @@
 import type { TextToken } from '../common/text.gen'
 import type { TimeRange } from '../common/time.gen'
 
+/**
+ * Word kinds distinguish sung text from whitespace separators.
+ */
 export enum WordType {
   /**
-   * Unspecified and unrecognized values are treated as missing.
+   * The word kind is unresolved; unrecognized values have the same meaning.
    */
   UNSPECIFIED = 0,
   /**
-   * A sung word with non-empty text containing no Unicode White_Space characters.
+   * A sung word has non-empty text without Unicode White_Space characters.
    */
   NORMAL = 1,
   /**
-   * Only type and text are set; text is a non-empty sequence of Unicode White_Space characters.
+   * A separator has non-empty text containing only Unicode White_Space characters; only type and text may be set.
    */
   SPACE = 2,
 }
 
 /**
- * Translation of a single word into another language.
+ * A translation is attached to one original word.
  */
 export type WordAnnotationTranslation = {
   /**
-   * Target language of this translation, as a BCP 47 tag.
+   * The target BCP 47 tag identifies this translation variant; unset or empty means unspecified.
    */
   language?: string | undefined
   /**
-   * Translated text for the whole word.
+   * Translation text applies to the whole word.
    */
   text: string
 }
 
 /**
- * Romanized transliteration of a single word.
+ * Romanization is attached to one original word.
  */
 export type WordAnnotationRoman = {
   /**
-   * Unset inherits the annotated word's time; an explicit range must fit within it.
+   * Unset time falls back to the word's range; an explicit range must fit within it.
    */
   time?: TimeRange | undefined
   /**
-   * Language of this item, as a BCP 47 tag.
+   * The BCP 47 tag identifies this romanization variant; unset or empty means unspecified.
    */
   language?: string | undefined
   /**
-   * Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+   * The transliteration scheme is case-insensitive; unset or empty means unspecified.
    */
   scheme?: string | undefined
   /**
-   * Tokens composing the item in order.
-   * Unset token time inherits this item's effective range; explicit token ranges must fit within it.
+   * Source fragments concatenate in list order without added separators; empty text is allowed.
+   * Untimed fragments use this item's effective range; explicit fragment ranges must fit within it.
    */
   tokens: TextToken[]
 }
 
 /**
- * Ruby annotation of a single word, such as furigana.
+ * Ruby text, such as furigana, is attached to one original word.
  */
 export type WordAnnotationRuby = {
   /**
-   * Unset inherits the annotated word's time; an explicit range must fit within it.
+   * Unset time falls back to the word's range; an explicit range must fit within it.
    */
   time?: TimeRange | undefined
   /**
-   * Language of this item, as a BCP 47 tag.
+   * The BCP 47 tag identifies this ruby variant; unset or empty means unspecified.
    */
   language?: string | undefined
   /**
-   * Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+   * The transliteration scheme is case-insensitive; unset or empty means unspecified.
    */
   scheme?: string | undefined
   /**
-   * Tokens composing the item in order.
-   * Unset token time inherits this item's effective range; explicit token ranges must fit within it.
+   * Source fragments concatenate in list order without added separators; empty text is allowed.
+   * Untimed fragments use this item's effective range; explicit fragment ranges must fit within it.
    */
   tokens: TextToken[]
 }
 
 /**
- * Ruby and roman entries are unique by language and scheme; translations are unique by language.
- * Unset and empty language or scheme values identify the same entry.
+ * Variant keys compare language and scheme case-insensitively, treating empty values as unset.
  */
 export type WordAnnotation = {
   /**
-   * Ruby annotations such as furigana.
+   * Each language and scheme pair identifies at most one ruby variant.
    */
   rubies: WordAnnotationRuby[]
+  /**
+   * Each language and scheme pair identifies at most one romanization variant.
+   */
   romans: WordAnnotationRoman[]
+  /**
+   * Each target language identifies at most one translation variant.
+   */
   translations: WordAnnotationTranslation[]
 }
 
 /**
- * A sung word, or the separator between two words.
+ * Words and whitespace separators preserve the original text.
  */
 export type Word = {
+  /**
+   * The kind controls text constraints and permitted fields.
+   */
   type: WordType
   /**
-   * Time range of the word; unset when it is not sung.
+   * In word-timed lyrics, sung words require a range; whitespace separators have none.
    * A missing end may be completed according to the source format's timing policy.
    */
   time?: TimeRange | undefined
   /**
-   * Language of this word, as a BCP 47 tag; unset means undetermined.
+   * This BCP 47 tag describes the original word; unset or empty means undetermined.
    */
   language?: string | undefined
   /**
-   * Text of the word, exactly as the source wrote it.
+   * Original spelling is preserved, with whitespace constraints defined by the word kind.
    */
   text: string
+  /**
+   * Optional annotations apply to this word.
+   */
   annotation?: WordAnnotation | undefined
   /**
-   * Whether the word is emphasized, as the source stated it; unset means no emphasis information.
-   * Emphasis asks for a swell when the word is sung, such as a syllable held longer than usual; it is not linguistic stress.
+   * A source-declared true or false decision is preserved; unset means no emphasis information.
+   * Vocal emphasis marks a swell or held syllable rather than linguistic stress.
    */
   emphasis?: boolean | undefined
 }

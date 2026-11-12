@@ -5,6 +5,9 @@ package gondola.lyrics.model.enriched
 import gondola.lyrics.model.common.TextToken
 import gondola.lyrics.model.common.TimeRange
 
+/**
+ * Word kinds distinguish sung text from whitespace separators.
+ */
 public class WordType(@JvmField public val value: Int) {
     override fun equals(other: Any?): Boolean {
         return other is WordType && other.value == value
@@ -25,132 +28,141 @@ public class WordType(@JvmField public val value: Int) {
 
     public companion object {
         /**
-         * Unspecified and unrecognized values are treated as missing.
+         * The word kind is unresolved; unrecognized values have the same meaning.
          */
         @JvmField public val WORD_TYPE_UNSPECIFIED: WordType = WordType(0)
 
         /**
-         * A sung word with non-empty text containing no Unicode White_Space characters.
+         * A sung word has non-empty text without Unicode White_Space characters.
          */
         @JvmField public val WORD_TYPE_NORMAL: WordType = WordType(1)
 
         /**
-         * Only type and text are set; text is a non-empty sequence of Unicode White_Space characters.
+         * A separator has non-empty text containing only Unicode White_Space characters; only type and text may be set.
          */
         @JvmField public val WORD_TYPE_SPACE: WordType = WordType(2)
     }
 }
 
 /**
- * Translation of a single word into another language.
+ * A translation is attached to one original word.
  */
 public data class WordAnnotationTranslation(
     /**
-     * Target language of this translation, as a BCP 47 tag.
+     * The target BCP 47 tag identifies this translation variant; unset or empty means unspecified.
      */
     val language: String? = null,
     /**
-     * Translated text for the whole word.
+     * Translation text applies to the whole word.
      */
     val text: String = "",
 )
 
 /**
- * Romanized transliteration of a single word.
+ * Romanization is attached to one original word.
  */
 public data class WordAnnotationRoman(
     /**
-     * Unset inherits the annotated word's time; an explicit range must fit within it.
+     * Unset time falls back to the word's range; an explicit range must fit within it.
      */
     val time: TimeRange? = null,
     /**
-     * Language of this item, as a BCP 47 tag.
+     * The BCP 47 tag identifies this romanization variant; unset or empty means unspecified.
      */
     val language: String? = null,
     /**
-     * Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+     * The transliteration scheme is case-insensitive; unset or empty means unspecified.
      */
     val scheme: String? = null,
     /**
-     * Tokens composing the item in order.
-     * Unset token time inherits this item's effective range; explicit token ranges must fit within it.
+     * Source fragments concatenate in list order without added separators; empty text is allowed.
+     * Untimed fragments use this item's effective range; explicit fragment ranges must fit within it.
      */
     val tokens: List<TextToken> = emptyList(),
 )
 
 /**
- * Ruby annotation of a single word, such as furigana.
+ * Ruby text, such as furigana, is attached to one original word.
  */
 public data class WordAnnotationRuby(
     /**
-     * Unset inherits the annotated word's time; an explicit range must fit within it.
+     * Unset time falls back to the word's range; an explicit range must fit within it.
      */
     val time: TimeRange? = null,
     /**
-     * Language of this item, as a BCP 47 tag.
+     * The BCP 47 tag identifies this ruby variant; unset or empty means unspecified.
      */
     val language: String? = null,
     /**
-     * Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+     * The transliteration scheme is case-insensitive; unset or empty means unspecified.
      */
     val scheme: String? = null,
     /**
-     * Tokens composing the item in order.
-     * Unset token time inherits this item's effective range; explicit token ranges must fit within it.
+     * Source fragments concatenate in list order without added separators; empty text is allowed.
+     * Untimed fragments use this item's effective range; explicit fragment ranges must fit within it.
      */
     val tokens: List<TextToken> = emptyList(),
 )
 
 /**
- * Ruby and roman entries are unique by language and scheme; translations are unique by language.
- * Unset and empty language or scheme values identify the same entry.
+ * Variant keys compare language and scheme case-insensitively, treating empty values as unset.
  */
 public data class WordAnnotation(
     /**
-     * Ruby annotations such as furigana.
+     * Each language and scheme pair identifies at most one ruby variant.
      */
     val rubies: List<WordAnnotationRuby> = emptyList(),
+    /**
+     * Each language and scheme pair identifies at most one romanization variant.
+     */
     val romans: List<WordAnnotationRoman> = emptyList(),
+    /**
+     * Each target language identifies at most one translation variant.
+     */
     val translations: List<WordAnnotationTranslation> = emptyList(),
 )
 
 /**
- * An emphasis decision and its origin, when known.
- * Emphasis asks for a swell when the word is sung, such as a syllable held longer than usual; it is not linguistic stress.
- * An empty message carries no decision and is omitted; explicitly set false values are preserved.
+ * Vocal emphasis marks a swell or held syllable rather than linguistic stress.
  */
 public data class WordEmphasis(
     /**
-     * Whether the word is emphasized; unset means no decision.
+     * True enables emphasis and false disables it; unset means no decision.
      */
     val value: Boolean? = null,
     /**
-     * True for a derived decision, false for a source declaration, unset for unknown origin.
-     * Requires value when set; only derived decisions may be recalculated automatically.
+     * True marks a derived decision eligible for recalculation; false marks a source declaration, and unset means unknown origin.
+     * A recorded origin requires a value.
      */
     val derived: Boolean? = null,
 )
 
 /**
- * A sung word, or the separator between two words.
+ * Words and whitespace separators preserve the original text.
  */
 public data class Word(
+    /**
+     * The kind controls text constraints and permitted fields.
+     */
     val type: WordType = WordType.WORD_TYPE_UNSPECIFIED,
     /**
-     * Time range of the word; unset when it is not sung.
+     * In word-timed lyrics, sung words require a range; whitespace separators have none.
      */
     val time: TimeRange? = null,
     /**
-     * Language of this word, as a BCP 47 tag; unset means undetermined.
+     * This BCP 47 tag describes the original word; unset or empty means undetermined.
      */
     val language: String? = null,
     /**
-     * Text of the word, exactly as the source wrote it.
+     * Original spelling is preserved, with whitespace constraints defined by the word kind.
      */
     val text: String = "",
+    /**
+     * Optional annotations apply to this word.
+     */
     val annotation: WordAnnotation? = null,
     /**
-     * Emphasis of the word; unset means no emphasis information.
+     * A vocal-emphasis decision may record its origin; unset means no emphasis information.
      */
     val emphasis: WordEmphasis? = null,
 )

@@ -3,46 +3,46 @@
 import type { Text } from './text.gen'
 
 /**
- * Performing type of an agent.
+ * Agent types classify the form of a performing voice.
  */
 export enum AgentType {
   /**
-   * The field was not set; treat it as missing rather than as a resolved type, as is every value this enum does not declare.
+   * The type is unresolved; unrecognized values have the same meaning.
    */
   UNSPECIFIED = 0,
   /**
-   * A type this enum does not cover; the source's own word is kept in `Agent.raw`.
+   * A source-defined type outside this enum is recorded in `Agent.raw`.
    */
   OTHER = 1,
   /**
-   * A single person.
+   * One person supplies the performing voice.
    */
   PERSON = 2,
   /**
-   * A group of voices, such as a duet, harmony or chorus.
+   * An ensemble of voices is represented as one agent, such as a duet or chorus.
    */
   GROUP = 3,
 }
 
 /**
- * Someone performing some of the lyric, referenced by the lines they sing.
- * An agent is never linked to a MetaCredit, even when both name the same person.
+ * Lines reference the identity of a performing voice.
+ * Agent identity is independent of song credits, even when both name the same person.
  */
 export type Agent = {
   /**
-   * Identifier of the agent, non-empty and unique within the lyric.
+   * The reference key is non-empty and unique within the lyric.
    */
   id: string
   /**
-   * Performing type of the agent.
+   * The resolved classification describes the performing voice.
    */
   type: AgentType
   /**
-   * The source's own word for this type; unset means the type was inferred rather than stated.
+   * The source's type spelling is required for OTHER; unset means the type was inferred.
    */
   raw?: string | undefined
   /**
-   * Display names of the agent, one entry per language rather than one per member.
+   * Display names have at most one variant per language for the entire agent.
    */
   names: Text[]
 }
