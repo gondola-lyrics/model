@@ -186,7 +186,7 @@ internal fun isDefault(message: Any): Boolean {
 
         is EnrichedLanguageUsage ->
             message.tag == "" &&
-                message.count == 0L
+                message.lineCount == 0L
 
         is EnrichedWordAnnotationTranslation ->
             message.language == null &&
@@ -266,7 +266,7 @@ internal fun isDefault(message: Any): Boolean {
                 message.timing.value == 0 &&
                 message.meta == null &&
                 message.extra.isEmpty() &&
-                message.languages.isEmpty() &&
+                message.languageUsages.isEmpty() &&
                 message.agents.isEmpty() &&
                 message.lines.isEmpty()
 
@@ -434,7 +434,7 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
 
         is EnrichedLanguageUsage -> {
             visit("tag", FieldShape.SCALAR, message.tag)
-            visit("count", FieldShape.SCALAR, message.count)
+            visit("lineCount", FieldShape.SCALAR, message.lineCount)
         }
 
         is EnrichedWordAnnotationTranslation -> {
@@ -532,7 +532,7 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("timing", FieldShape.ENUM, message.timing)
             visit("meta", FieldShape.MESSAGE, message.meta)
             visit("extra", FieldShape.MAP, message.extra)
-            visit("languages", FieldShape.LIST_MESSAGE, message.languages)
+            visit("languageUsages", FieldShape.LIST_MESSAGE, message.languageUsages)
             visit("agents", FieldShape.LIST_MESSAGE, message.agents)
             visit("lines", FieldShape.LIST_MESSAGE, message.lines)
         }
@@ -721,7 +721,7 @@ internal fun readField(message: Any, name: String): Any? {
 
         is EnrichedLanguageUsage -> when (name) {
             "tag" -> message.tag
-            "count" -> message.count
+            "lineCount" -> message.lineCount
             else -> null
         }
 
@@ -833,7 +833,7 @@ internal fun readField(message: Any, name: String): Any? {
             "timing" -> message.timing.value
             "meta" -> message.meta
             "extra" -> message.extra
-            "languages" -> message.languages
+            "languageUsages" -> message.languageUsages
             "agents" -> message.agents
             "lines" -> message.lines
             else -> null

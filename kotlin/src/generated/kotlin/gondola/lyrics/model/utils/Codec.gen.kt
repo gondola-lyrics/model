@@ -448,9 +448,9 @@ internal fun encodeEnrichedLanguageUsage(w: WireWriter, src: EnrichedLanguageUsa
         w.tag(10)
         w.string(src.tag)
     }
-    if (src.count != 0L) {
+    if (src.lineCount != 0L) {
         w.tag(16)
-        w.uint32(src.count)
+        w.uint32(src.lineCount)
     }
 }
 
@@ -670,7 +670,7 @@ internal fun encodeEnrichedLyric(w: WireWriter, src: EnrichedLyric) {
     }
     src.meta?.let { w.message(50, ::encodeCommonMeta, it) }
     w.stringMap(58, src.extra)
-    for (item in src.languages) {
+    for (item in src.languageUsages) {
         w.message(66, ::encodeEnrichedLanguageUsage, item)
     }
     for (item in src.agents) {
@@ -1034,12 +1034,12 @@ private class DocumentLyricState {
 
 private class EnrichedLanguageUsageState {
     var tag: String = ""
-    var count: Long = 0L
+    var lineCount: Long = 0L
 
     fun finish(): EnrichedLanguageUsage {
         return EnrichedLanguageUsage(
             tag = tag,
-            count = count,
+            lineCount = lineCount,
         )
     }
 }
@@ -1252,7 +1252,7 @@ private class EnrichedLyricState {
     var timing: CommonTimingLevel = CommonTimingLevel.TIMING_LEVEL_UNSPECIFIED
     var meta: CommonMetaState? = null
     val extra = LinkedHashMap<String, String>()
-    val languages = ArrayList<EnrichedLanguageUsageState>()
+    val languageUsages = ArrayList<EnrichedLanguageUsageState>()
     val agents = ArrayList<CommonAgentState>()
     val lines = ArrayList<EnrichedLineState>()
 
@@ -1265,7 +1265,7 @@ private class EnrichedLyricState {
             timing = timing,
             meta = meta?.finish(),
             extra = extra,
-            languages = languages.map { it.finish() },
+            languageUsages = languageUsages.map { it.finish() },
             agents = agents.map { it.finish() },
             lines = lines.map { it.finish() },
         )
@@ -1964,7 +1964,7 @@ private fun mergeEnrichedLanguageUsage(r: WireReader, state: EnrichedLanguageUsa
     while (r.more()) {
         when (r.tag()) {
             10 -> state.tag = r.string()
-            16 -> state.count = r.uint32()
+            16 -> state.lineCount = r.uint32()
             else -> r.skip()
         }
     }
@@ -2419,7 +2419,7 @@ private fun mergeEnrichedLyric(r: WireReader, state: EnrichedLyricState) {
                 val end = r.enter()
                 mergeEnrichedLanguageUsage(r, item)
                 r.leave(end)
-                state.languages.add(item)
+                state.languageUsages.add(item)
             }
 
             74 -> {

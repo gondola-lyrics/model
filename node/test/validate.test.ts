@@ -315,7 +315,7 @@ describe('validate', () => {
       format: 'lrc',
       timing: TimingLevel.WORD,
       status: EnrichedLyricStatus.VALID,
-      languages: deriveEnrichedLanguageUsages(lines),
+      languageUsages: deriveEnrichedLanguageUsages(lines),
       lines,
     })
     deepStrictEqual(validateEnrichedLyric(lyric), [])
@@ -336,7 +336,7 @@ describe('validate', () => {
     deepStrictEqual(validateDocumentLyric(lyric), [{ path: 'timing', code: 'lyric.timing.unspecified' }])
   })
 
-  it('reports undeclared languages and an unsplit word', () => {
+  it('reports missing language usages and an unsplit word', () => {
     const lyric = makeEnrichedLyric({
       format: 'lrc',
       timing: TimingLevel.WORD,
@@ -352,7 +352,7 @@ describe('validate', () => {
       ],
     })
     deepStrictEqual(validateEnrichedLyric(lyric), [
-      { path: 'languages', code: 'lyric.languages.mismatch' },
+      { path: 'languageUsages', code: 'lyric.language_usages.mismatch' },
       { path: 'lines[0].content.words[0].text', code: 'word.text.separator' },
     ])
   })

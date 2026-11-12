@@ -6,12 +6,12 @@ option java_multiple_files = true;
 option java_outer_classname = "LanguageProto";
 option java_package = "gondola.lyrics.model.enriched";
 
-// How many normal lines declare one language.
+// Languages are counted independently, so line counts may sum to more than the number of normal lines.
 message LanguageUsage {
-  // BCP 47 language tag, unique within the list when compared case-insensitively.
-  // Explicit `und` tags count like any other tag; missing or empty tags contribute nothing.
+  // BCP 47 tags are compared case-insensitively and are unique within the list.
   string tag = 1;
 
-  // Number of normal lines declaring this tag on the line or a normal word, counted once per line.
-  uint32 count = 2;
+  // A normal line contributes once when this tag appears on the line or any normal word.
+  // Explicit `und` tags count; missing or empty tags contribute nothing.
+  uint32 line_count = 2;
 }

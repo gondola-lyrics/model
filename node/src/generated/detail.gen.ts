@@ -306,12 +306,12 @@ export const createDocumentLyric = (): document.Lyric => {
 export const fieldsEnrichedLanguageUsage: MessageFields<enriched.LanguageUsage> = {
   fields: [
     { name: 'tag', shape: 'scalar' },
-    { name: 'count', shape: 'scalar' },
+    { name: 'lineCount', shape: 'scalar' },
   ],
 }
 
 export const createEnrichedLanguageUsage = (): enriched.LanguageUsage => {
-  return { tag: '', count: 0 }
+  return { tag: '', lineCount: 0 }
 }
 
 export const fieldsEnrichedWordAnnotationTranslation: MessageFields<enriched.WordAnnotationTranslation> = {
@@ -488,12 +488,12 @@ export const fieldsEnrichedLyric: MessageFields<enriched.Lyric> = {
     { name: 'timing', shape: 'enum' },
     { name: 'meta', shape: 'message', message: fieldsCommonMeta },
     { name: 'extra', shape: 'map' },
-    { name: 'languages', shape: 'list-message', message: fieldsEnrichedLanguageUsage },
+    { name: 'languageUsages', shape: 'list-message', message: fieldsEnrichedLanguageUsage },
     { name: 'agents', shape: 'list-message', message: fieldsCommonAgent },
     { name: 'lines', shape: 'list-message', message: fieldsEnrichedLine },
   ],
 }
 
 export const createEnrichedLyric = (): enriched.Lyric => {
-  return { version: '', format: '', profile: '', status: 0, timing: 0, extra: {}, languages: [], agents: [], lines: [] }
+  return { version: '', format: '', profile: '', status: 0, timing: 0, extra: {}, languageUsages: [], agents: [], lines: [] }
 }

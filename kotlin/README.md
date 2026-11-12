@@ -160,7 +160,7 @@ val played = makeEnrichedLyric(
     // Include the parser's status.
     status = LyricStatus.LYRIC_STATUS_VALID,
     // Stored usages must match the declarations on normal lines and their normal words.
-    languages = deriveEnrichedLanguageUsages(listOf(interlude, sung)),
+    languageUsages = deriveEnrichedLanguageUsages(listOf(interlude, sung)),
     lines = listOf(interlude, sung),
 )
 
@@ -224,7 +224,7 @@ val brokenPlayed = makeEnrichedLyric(
 )
 
 validateEnrichedLyric(brokenPlayed).map { it.path to it.code.value }
-// => [(languages, lyric.languages.mismatch), (lines[0].content.words[0].text, word.text.separator)]
+// => [(languageUsages, lyric.language_usages.mismatch), (lines[0].content.words[0].text, word.text.separator)]
 ```
 
 API details are documented in the source comments. Download the matching `-sources.jar` in IntelliJ IDEA or Android Studio to read helper KDoc and generated model documentation. Field semantics are also available in the [Proto definitions](https://github.com/gondola-lyrics/model/tree/main/proto).

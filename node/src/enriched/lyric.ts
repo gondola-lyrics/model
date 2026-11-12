@@ -47,7 +47,7 @@ export const makeEnrichedLyric = (
     timing: init.timing,
     meta: init.meta,
     extra: init.extra,
-    languages: init.languages,
+    languageUsages: init.languageUsages,
     agents: init.agents,
     lines: init.lines,
   })
@@ -92,11 +92,11 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
   diagnostics.push(...validateLyricTags(fieldsEnrichedLyric, lyric))
 
   const languageTags = new Set<string>()
-  lyric.languages.forEach((usage, i) => {
-    const path = `languages[${i}]`
+  lyric.languageUsages.forEach((usage, i) => {
+    const path = `languageUsages[${i}]`
     const tag = usage.tag.toLowerCase()
     if (languageTags.has(tag)) {
-      diagnostics.push({ path, code: DiagnosticCode.LyricLanguageTagDuplicate })
+      diagnostics.push({ path, code: DiagnosticCode.LyricLanguageUsagesTagDuplicate })
     }
     languageTags.add(tag)
     diagnostics.push(...validateEnrichedLanguageUsage(usage, path))
@@ -104,11 +104,11 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
 
   // The usages are derived from the lines, so the stored list must be exactly what deriving them yields, order included.
   const derived = deriveEnrichedLanguageUsages(lyric.lines)
-  const sameLanguages =
-    lyric.languages.length === derived.length &&
-    lyric.languages.every((usage, i) => usage.tag === derived[i]?.tag && usage.count === derived[i]?.count)
-  if (!sameLanguages) {
-    diagnostics.push({ path: 'languages', code: DiagnosticCode.LyricLanguagesMismatch })
+  const sameLanguageUsages =
+    lyric.languageUsages.length === derived.length &&
+    lyric.languageUsages.every((usage, i) => usage.tag === derived[i]?.tag && usage.lineCount === derived[i]?.lineCount)
+  if (!sameLanguageUsages) {
+    diagnostics.push({ path: 'languageUsages', code: DiagnosticCode.LyricLanguageUsagesMismatch })
   }
 
   const untimed = lyric.timing === TimingLevel.NONE
@@ -222,7 +222,7 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
 export const orderEnrichedLyric = (lyric: Lyric): Lyric => {
   return {
     ...lyric,
-    languages: orderEnrichedLanguageUsages(lyric.languages),
+    languageUsages: orderEnrichedLanguageUsages(lyric.languageUsages),
     lines: [...lyric.lines].sort(byTime((line) => line.time)).map(orderEnrichedLine),
   }
 }
@@ -239,7 +239,7 @@ export const canonicalizeEnrichedLyric = (lyric: Lyric): Lyric => {
     profile: lyric.profile.toLowerCase(),
     meta: canonicalizeField(fieldsCommonMeta, lyric.meta, canonicalizeMeta),
     extra: { ...lyric.extra },
-    languages: canonicalizeEnrichedLanguageUsages(lyric.languages),
+    languageUsages: canonicalizeEnrichedLanguageUsages(lyric.languageUsages),
     agents: canonicalizeList(fieldsCommonAgent, lyric.agents, canonicalizeAgent),
     lines: canonicalizeList(fieldsEnrichedLine, lyric.lines, canonicalizeEnrichedLine).sort(byTime((line) => line.time)),
   }

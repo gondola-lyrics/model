@@ -179,7 +179,7 @@ const played = makeEnrichedLyric({
   // Include the parser's status.
   status: EnrichedLyricStatus.VALID,
   // Language usages must match the declarations on normal lines and their normal words.
-  languages: deriveEnrichedLanguageUsages([interlude, sung]),
+  languageUsages: deriveEnrichedLanguageUsages([interlude, sung]),
   lines: [interlude, sung],
 })
 
@@ -226,7 +226,7 @@ const brokenPlayed = makeEnrichedLyric({
   format: 'lrc',
   timing: TimingLevel.WORD,
   status: EnrichedLyricStatus.VALID,
-  // languages is not declared
+  // languageUsages is not declared
   lines: [
     makeEnrichedLineNormal({
       time: makeTimeRange({ start: 163908, end: 169347 }),
@@ -245,7 +245,7 @@ const brokenPlayed = makeEnrichedLyric({
 
 validateEnrichedLyric(brokenPlayed)
 // => [
-//      { path: 'languages', code: 'lyric.languages.mismatch' },
+//      { path: 'languageUsages', code: 'lyric.language_usages.mismatch' },
 //      { path: 'lines[0].content.words[0].text', code: 'word.text.separator' },
 //    ]
 ```

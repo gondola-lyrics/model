@@ -70,7 +70,7 @@ class CanonicalizeTest {
             profile = "AMLL",
             timing = TimingLevel.TIMING_LEVEL_WORD,
             status = LyricStatus.LYRIC_STATUS_VALID,
-            languages = deriveEnrichedLanguageUsages(lines),
+            languageUsages = deriveEnrichedLanguageUsages(lines),
             lines = lines,
         )
     }

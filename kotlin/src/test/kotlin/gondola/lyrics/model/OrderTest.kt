@@ -32,13 +32,13 @@ class OrderTest {
     // Comparing tags by codepoint sorted every capitalized tag ahead of every lowercase one.
     @Test
     fun comparesLanguageTagsWithoutCase() {
-        val languages = listOf(makeEnrichedLanguageUsage(tag = "Zh", count = 1), makeEnrichedLanguageUsage(tag = "ja", count = 1))
+        val languages = listOf(makeEnrichedLanguageUsage(tag = "Zh", lineCount = 1), makeEnrichedLanguageUsage(tag = "ja", lineCount = 1))
         assertEquals(listOf("ja", "Zh"), orderEnrichedLanguageUsages(languages).map { it.tag })
     }
 
     @Test
-    fun ordersLanguageUsagesByDescendingCount() {
-        val languages = listOf(makeEnrichedLanguageUsage(tag = "en", count = 1), makeEnrichedLanguageUsage(tag = "ja", count = 3))
+    fun ordersLanguageUsagesByDescendingLineCount() {
+        val languages = listOf(makeEnrichedLanguageUsage(tag = "en", lineCount = 1), makeEnrichedLanguageUsage(tag = "ja", lineCount = 3))
         assertEquals(listOf("ja", "en"), orderEnrichedLanguageUsages(languages).map { it.tag })
     }
 }

@@ -83,11 +83,11 @@ public data class Lyric(
      */
     val extra: Map<String, String> = emptyMap(),
     /**
-     * Declared languages across normal lines, ordered by descending count and then by ascending tag.
+     * Language usage across normal lines, ordered by descending line_count and then by ascending tag.
      * Each line contributes each tag once, using both its own tags and its normal words' tags.
      * Space words, annotations and background lines never contribute.
      */
-    val languages: List<LanguageUsage> = emptyList(),
+    val languageUsages: List<LanguageUsage> = emptyList(),
     /**
      * Performing agents referenced by lines.
      */

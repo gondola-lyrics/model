@@ -38,7 +38,7 @@ public fun makeEnrichedLyric(
     timing: TimingLevel = TimingLevel.TIMING_LEVEL_UNSPECIFIED,
     meta: Meta? = null,
     extra: Map<String, String> = emptyMap(),
-    languages: List<LanguageUsage> = emptyList(),
+    languageUsages: List<LanguageUsage> = emptyList(),
     agents: List<Agent> = emptyList(),
     lines: List<Line> = emptyList(),
 ): Lyric {
@@ -53,7 +53,7 @@ public fun makeEnrichedLyric(
         timing = timing,
         meta = meta,
         extra = extra,
-        languages = languages,
+        languageUsages = languageUsages,
         agents = agents,
         lines = lines,
     )
@@ -91,20 +91,20 @@ public fun validateEnrichedLyric(lyric: Lyric): List<Diagnostic> {
     // Every tag outside the lines is read here, since a line's own are read by validateEnrichedLine, which knows the fields its kind forbids.
     diagnostics += validateLyricTags(lyric)
     val languageTags = mutableSetOf<String>()
-    lyric.languages.forEachIndexed { index, usage ->
-        val path = "languages[$index]"
+    lyric.languageUsages.forEachIndexed { index, usage ->
+        val path = "languageUsages[$index]"
         if (!languageTags.add(usage.tag.lowercase())) {
-            diagnostics += Diagnostic(path, DiagnosticCode.LyricLanguageTagDuplicate)
+            diagnostics += Diagnostic(path, DiagnosticCode.LyricLanguageUsagesTagDuplicate)
         }
         diagnostics += validateEnrichedLanguageUsage(usage, path)
     }
     // The usages are derived from the lines, so the stored list must be exactly what deriving them yields, order included.
     val derived = deriveEnrichedLanguageUsages(lyric.lines)
-    val sameLanguages = lyric.languages.size == derived.size && lyric.languages.zip(derived).all { (usage, expected) ->
-        usage.tag == expected.tag && usage.count == expected.count
+    val sameLanguageUsages = lyric.languageUsages.size == derived.size && lyric.languageUsages.zip(derived).all { (usage, expected) ->
+        usage.tag == expected.tag && usage.lineCount == expected.lineCount
     }
-    if (!sameLanguages) {
-        diagnostics += Diagnostic("languages", DiagnosticCode.LyricLanguagesMismatch)
+    if (!sameLanguageUsages) {
+        diagnostics += Diagnostic("languageUsages", DiagnosticCode.LyricLanguageUsagesMismatch)
     }
     val untimed = lyric.timing == TimingLevel.TIMING_LEVEL_NONE
     val lineTimed = lyric.timing == TimingLevel.TIMING_LEVEL_LINE
@@ -230,7 +230,7 @@ public fun validateEnrichedLyric(lyric: Lyric): List<Diagnostic> {
 public fun orderEnrichedLyric(lyric: Lyric): Lyric {
     return lyric.copy(
         lines = lyric.lines.sortedWith(byTime { line -> line.time }).map(::orderEnrichedLine),
-        languages = orderEnrichedLanguageUsages(lyric.languages),
+        languageUsages = orderEnrichedLanguageUsages(lyric.languageUsages),
     )
 }
 
@@ -245,7 +245,7 @@ public fun canonicalizeEnrichedLyric(lyric: Lyric): Lyric {
         extra = lyric.extra.toMap(),
         agents = canonicalizeList(lyric.agents, ::canonicalizeAgent),
         lines = canonicalizeList(lyric.lines, ::canonicalizeEnrichedLine).sortedWith(byTime { line -> line.time }),
-        languages = canonicalizeEnrichedLanguageUsages(lyric.languages),
+        languageUsages = canonicalizeEnrichedLanguageUsages(lyric.languageUsages),
     )
 }
 

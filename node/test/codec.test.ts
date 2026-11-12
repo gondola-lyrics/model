@@ -42,7 +42,7 @@ const buildLyric = (): EnrichedLyric => {
     format: 'lrc',
     timing: TimingLevel.WORD,
     status: EnrichedLyricStatus.VALID,
-    languages: deriveEnrichedLanguageUsages(lines),
+    languageUsages: deriveEnrichedLanguageUsages(lines),
     lines,
   })
 }

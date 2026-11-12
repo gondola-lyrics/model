@@ -9,7 +9,7 @@ import { LineType as DocumentLineType, WordType as DocumentWordType } from '@roo
 import { LineType, WordType } from '@root/generated/enriched/index.gen'
 
 /**
- * The count field spans the uint32 domain.
+ * Line counts use the full uint32 range.
  */
 const MAX_COUNT = 2 ** 32 - 1
 const NORMAL_LINE_TYPES: ReadonlySet<number> = new Set([LineType.NORMAL, DocumentLineType.NORMAL])
@@ -22,14 +22,14 @@ type LanguageLine = {
 }
 
 /**
- * Creates a count of normal lines declaring one language.
+ * Creates a language usage measured in normal lines.
  */
 export const makeEnrichedLanguageUsage = (init?: MakeInit<LanguageUsage>): LanguageUsage => {
   return withInit(createEnrichedLanguageUsage(), init)
 }
 
 /**
- * Checks that the language tag is well formed and the count fits uint32.
+ * Checks that the language tag is well formed and the line count fits uint32.
  */
 export const validateEnrichedLanguageUsage = (usage: LanguageUsage, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -38,26 +38,27 @@ export const validateEnrichedLanguageUsage = (usage: LanguageUsage, path = ''): 
   } else if (!isLanguageTag(usage.tag)) {
     diagnostics.push({ path: childPath(path, 'tag'), code: DiagnosticCode.LanguageTagMalformed })
   }
-  const count = checkNumberDomain(usage.count, 0, MAX_COUNT)
-  if (count === 'invalid') {
-    diagnostics.push({ path: childPath(path, 'count'), code: DiagnosticCode.LanguageUsageCountInvalid })
-  } else if (count === 'overflow') {
-    diagnostics.push({ path: childPath(path, 'count'), code: DiagnosticCode.LanguageUsageCountOverflow })
+  const domain = checkNumberDomain(usage.lineCount, 0, MAX_COUNT)
+  if (domain === 'invalid') {
+    diagnostics.push({ path: childPath(path, 'lineCount'), code: DiagnosticCode.LanguageUsageLineCountInvalid })
+  } else if (domain === 'overflow') {
+    diagnostics.push({ path: childPath(path, 'lineCount'), code: DiagnosticCode.LanguageUsageLineCountOverflow })
   }
   return diagnostics
 }
 
 /**
- * Orders language counts descending, then tags case-insensitively ascending.
+ * Orders line counts descending, then tags case-insensitively ascending.
  */
-export const orderEnrichedLanguageUsages = (languages: LanguageUsage[]): LanguageUsage[] => {
-  return [...languages].sort((a, b) => b.count - a.count || compareTags(a.tag, b.tag))
+export const orderEnrichedLanguageUsages = (languageUsages: LanguageUsage[]): LanguageUsage[] => {
+  return [...languageUsages].sort((a, b) => b.lineCount - a.lineCount || compareTags(a.tag, b.tag))
 }
 
 /**
  * Counts each distinct declared tag once per normal line, including its normal words.
  *
  * Spaces, annotations, backgrounds, and absent tags are excluded; explicit und tags are counted.
+ * Multilingual lines contribute to multiple tags, so total counts may exceed the number of normal lines.
  */
 export const deriveEnrichedLanguageUsages = (lines: LanguageLine[]): LanguageUsage[] => {
   const counts = new Map<string, number>()
@@ -85,23 +86,23 @@ export const deriveEnrichedLanguageUsages = (lines: LanguageLine[]): LanguageUsa
       counts.set(tag, (counts.get(tag) ?? 0) + 1)
     }
   }
-  return orderEnrichedLanguageUsages([...counts].map(([tag, count]) => makeEnrichedLanguageUsage({ tag, count })))
+  return orderEnrichedLanguageUsages([...counts].map(([tag, lineCount]) => makeEnrichedLanguageUsage({ tag, lineCount })))
 }
 
 /**
- * Lowercases tags, merges duplicate counts, drops untagged entries, and orders the result.
+ * Lowercases tags, merges duplicate line counts, drops untagged entries, and orders the result.
  *
- * Totals above uint32 are capped; invalid counts remain available for validation.
+ * Totals above uint32 are capped; invalid line counts remain available for validation.
  */
-export const canonicalizeEnrichedLanguageUsages = (languages: LanguageUsage[]): LanguageUsage[] => {
+export const canonicalizeEnrichedLanguageUsages = (languageUsages: LanguageUsage[]): LanguageUsage[] => {
   const counts = new Map<string, number>()
-  for (const usage of languages) {
+  for (const usage of languageUsages) {
     const tag = lowerTag(usage.tag)
-    // An empty tag names no language, so its count counts nothing, and every other list drops an empty entry the same way.
+    // Untagged entries cannot contribute to any language's line count.
     if (tag === undefined) {
       continue
     }
-    counts.set(tag, Math.min((counts.get(tag) ?? 0) + usage.count, MAX_COUNT))
+    counts.set(tag, Math.min((counts.get(tag) ?? 0) + usage.lineCount, MAX_COUNT))
   }
-  return orderEnrichedLanguageUsages([...counts].map(([tag, count]) => makeEnrichedLanguageUsage({ tag, count })))
+  return orderEnrichedLanguageUsages([...counts].map(([tag, lineCount]) => makeEnrichedLanguageUsage({ tag, lineCount })))
 }

@@ -3,16 +3,16 @@
 package gondola.lyrics.model.enriched
 
 /**
- * How many normal lines declare one language.
+ * Languages are counted independently, so line counts may sum to more than the number of normal lines.
  */
 public data class LanguageUsage(
     /**
-     * BCP 47 language tag, unique within the list when compared case-insensitively.
-     * Explicit `und` tags count like any other tag; missing or empty tags contribute nothing.
+     * BCP 47 tags are compared case-insensitively and are unique within the list.
      */
     val tag: String = "",
     /**
-     * Number of normal lines declaring this tag on the line or a normal word, counted once per line.
+     * A normal line contributes once when this tag appears on the line or any normal word.
+     * Explicit `und` tags count; missing or empty tags contribute nothing.
      */
-    val count: Long = 0,
+    val lineCount: Long = 0,
 )

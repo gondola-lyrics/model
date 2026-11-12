@@ -163,7 +163,7 @@ const enrichedLyric = (): EnrichedLyric => {
     timing: 99 as TimingLevel,
     meta: meta(),
     extra: extra(),
-    languages: [makeEnrichedLanguageUsage({ tag: 'en', count: 3 })],
+    languageUsages: [makeEnrichedLanguageUsage({ tag: 'en', lineCount: 3 })],
     agents: [makeAgent({ id: 'a', type: -1 as AgentType, raw: 'x', names: [makeText({ text: 'n' })] })],
     lines: [
       makeEnrichedLineNormal({

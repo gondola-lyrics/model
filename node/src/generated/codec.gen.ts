@@ -1067,9 +1067,9 @@ export const encodeEnrichedLanguageUsage = (w: WireWriter, v: enriched.LanguageU
     w.tag(10)
     w.string(v.tag)
   }
-  if (v.count !== 0) {
+  if (v.lineCount !== 0) {
     w.tag(16)
-    w.uint32(v.count)
+    w.uint32(v.lineCount)
   }
 }
 
@@ -1080,7 +1080,7 @@ export const decodeEnrichedLanguageUsage = (r: WireReader, m: enriched.LanguageU
         m.tag = r.string()
         break
       case 16:
-        m.count = r.uint32()
+        m.lineCount = r.uint32()
         break
       default:
         r.skip()
@@ -1687,7 +1687,7 @@ export const encodeEnrichedLyric = (w: WireWriter, v: enriched.Lyric): void => {
     w.message(50, encodeCommonMeta, v.meta)
   }
   w.map(58, v.extra)
-  for (const item of v.languages) {
+  for (const item of v.languageUsages) {
     w.message(66, encodeEnrichedLanguageUsage, item)
   }
   for (const item of v.agents) {
@@ -1731,7 +1731,7 @@ export const decodeEnrichedLyric = (r: WireReader, m: enriched.Lyric): void => {
         const end = r.enter()
         decodeEnrichedLanguageUsage(r, item)
         r.leave(end)
-        m.languages.push(item)
+        m.languageUsages.push(item)
         break
       }
       case 74: {

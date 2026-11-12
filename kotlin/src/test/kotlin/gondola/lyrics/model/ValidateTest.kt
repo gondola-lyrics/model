@@ -355,14 +355,17 @@ class ValidateTest {
     }
 
     @Test
-    fun reportsNativeCountsAlongsideTagErrors() {
+    fun reportsNativeLineCountsAlongsideTagErrors() {
+        val usage = LanguageUsage(lineCount = -1)
+        val diagnostics = validateEnrichedLanguageUsage(usage, "languageUsages[0]")
         assertEquals(
-            listOf("languages[0].tag" to "language.usage.tag.empty", "languages[0].count" to "language.usage.count.invalid"),
-            validateEnrichedLanguageUsage(LanguageUsage(count = -1), "languages[0]").asPairs(),
+            listOf("languageUsages[0].tag" to "language.usage.tag.empty", "languageUsages[0].lineCount" to "language.usage.line_count.invalid"),
+            diagnostics.asPairs(),
         )
+        assertEquals(-1L, resolveDiagnosticPath(mapOf("languageUsages" to listOf(usage)), diagnostics.last().path))
         assertEquals(
-            listOf("count" to "language.usage.count.overflow"),
-            validateEnrichedLanguageUsage(LanguageUsage(tag = "en", count = 4294967296L)).asPairs(),
+            listOf("lineCount" to "language.usage.line_count.overflow"),
+            validateEnrichedLanguageUsage(LanguageUsage(tag = "en", lineCount = 4294967296L)).asPairs(),
         )
     }
 
@@ -391,7 +394,7 @@ class ValidateTest {
             format = "lrc",
             timing = TimingLevel.TIMING_LEVEL_WORD,
             status = LyricStatus.LYRIC_STATUS_VALID,
-            languages = deriveEnrichedLanguageUsages(lines),
+            languageUsages = deriveEnrichedLanguageUsages(lines),
             lines = lines,
         )
         assertEquals(emptyList(), validateEnrichedLyric(lyric))
@@ -414,7 +417,7 @@ class ValidateTest {
     }
 
     @Test
-    fun reportsUndeclaredLanguagesAndUnsplitWord() {
+    fun reportsMissingLanguageUsagesAndUnsplitWord() {
         val lyric = makeEnrichedLyric(
             format = "lrc",
             timing = TimingLevel.TIMING_LEVEL_WORD,
@@ -431,7 +434,7 @@ class ValidateTest {
         )
         assertEquals(
             listOf(
-                "languages" to "lyric.languages.mismatch",
+                "languageUsages" to "lyric.language_usages.mismatch",
                 "lines[0].content.words[0].text" to "word.text.separator",
             ),
             validateEnrichedLyric(lyric).asPairs(),

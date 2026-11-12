@@ -34,15 +34,15 @@ describe('order', () => {
 
   // Comparing tags by codepoint sorted every capitalized tag ahead of every lowercase one.
   it('compares language tags without case', () => {
-    const languages = [makeEnrichedLanguageUsage({ tag: 'Zh', count: 1 }), makeEnrichedLanguageUsage({ tag: 'ja', count: 1 })]
+    const languages = [makeEnrichedLanguageUsage({ tag: 'Zh', lineCount: 1 }), makeEnrichedLanguageUsage({ tag: 'ja', lineCount: 1 })]
     deepStrictEqual(
       orderEnrichedLanguageUsages(languages).map((usage) => usage.tag),
       ['ja', 'Zh'],
     )
   })
 
-  it('orders language usages by descending count', () => {
-    const languages = [makeEnrichedLanguageUsage({ tag: 'en', count: 1 }), makeEnrichedLanguageUsage({ tag: 'ja', count: 3 })]
+  it('orders language usages by descending line count', () => {
+    const languages = [makeEnrichedLanguageUsage({ tag: 'en', lineCount: 1 }), makeEnrichedLanguageUsage({ tag: 'ja', lineCount: 3 })]
     deepStrictEqual(
       orderEnrichedLanguageUsages(languages).map((usage) => usage.tag),
       ['ja', 'en'],

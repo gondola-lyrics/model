@@ -18,6 +18,7 @@ import gondola.lyrics.model.document.encodeDocumentLyric
 import gondola.lyrics.model.document.makeDocumentLineContentText
 import gondola.lyrics.model.document.makeDocumentLineNormal
 import gondola.lyrics.model.document.makeDocumentLyric
+import gondola.lyrics.model.enriched.LanguageUsage
 import gondola.lyrics.model.enriched.Line
 import gondola.lyrics.model.enriched.LineAnnotation
 import gondola.lyrics.model.enriched.LineAnnotationRoman
@@ -131,7 +132,7 @@ class CodecTest {
             format = "lrc",
             timing = TimingLevel.TIMING_LEVEL_WORD,
             status = LyricStatus.LYRIC_STATUS_VALID,
-            languages = deriveEnrichedLanguageUsages(lines),
+            languageUsages = deriveEnrichedLanguageUsages(lines),
             lines = lines,
         )
     }
@@ -226,6 +227,7 @@ class CodecTest {
             timing = TimingLevel(-1),
             meta = meta,
             extra = mapOf("\$private" to "kept"),
+            languageUsages = listOf(LanguageUsage(tag = "en", lineCount = 3)),
             lines = listOf(
                 Line(
                     part = part,
@@ -403,7 +405,11 @@ class CodecTest {
                         "backgrounds" to listOf(official("lyric.$layer.LineBackground", "agent_ids" to listOf("guest", "lead"))),
                     ),
                 ),
-            ) + if (layer == "enriched") listOf("status" to 2) else emptyList()
+            ) + if (layer == "enriched") {
+                listOf("status" to 2, "language_usages" to listOf(official("lyric.enriched.LanguageUsage", "tag" to "en", "line_count" to 3L)))
+            } else {
+                emptyList()
+            }
             val bytes = official("lyric.$layer.Lyric", *values.toTypedArray()).toByteArray()
             if (layer == "enriched") {
                 assertContentEquals(bytes, encodeEnrichedLyric(native))

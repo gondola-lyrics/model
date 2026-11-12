@@ -13,14 +13,14 @@ import gondola.lyrics.model.utils.uint32
 import gondola.lyrics.model.common.pickItemByLanguage as pickByLanguage
 
 /**
- * Creates a language count within the uint32 domain.
+ * Creates a language usage measured in normal lines within the uint32 domain.
  */
-public fun makeEnrichedLanguageUsage(tag: String = "", count: Long = 0): LanguageUsage {
-    return LanguageUsage(tag = tag, count = uint32(count))
+public fun makeEnrichedLanguageUsage(tag: String = "", lineCount: Long = 0): LanguageUsage {
+    return LanguageUsage(tag = tag, lineCount = uint32(lineCount))
 }
 
 /**
- * Checks that the language tag is well formed and the count fits uint32.
+ * Checks that the language tag is well formed and the line count fits uint32.
  */
 public fun validateEnrichedLanguageUsage(usage: LanguageUsage, path: String = ""): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
@@ -29,22 +29,22 @@ public fun validateEnrichedLanguageUsage(usage: LanguageUsage, path: String = ""
     } else if (!isLanguageTag(usage.tag)) {
         diagnostics += Diagnostic(childPath(path, "tag"), DiagnosticCode.LanguageTagMalformed)
     }
-    if (usage.count < 0) {
-        diagnostics += Diagnostic(childPath(path, "count"), DiagnosticCode.LanguageUsageCountInvalid)
-    } else if (usage.count > MAX_COUNT) {
-        diagnostics += Diagnostic(childPath(path, "count"), DiagnosticCode.LanguageUsageCountOverflow)
+    if (usage.lineCount < 0) {
+        diagnostics += Diagnostic(childPath(path, "lineCount"), DiagnosticCode.LanguageUsageLineCountInvalid)
+    } else if (usage.lineCount > MAX_COUNT) {
+        diagnostics += Diagnostic(childPath(path, "lineCount"), DiagnosticCode.LanguageUsageLineCountOverflow)
     }
     return diagnostics
 }
 
 /**
- * Orders language counts descending, then tags case-insensitively ascending.
+ * Orders line counts descending, then tags case-insensitively ascending.
  */
-public fun orderEnrichedLanguageUsages(languages: List<LanguageUsage>): List<LanguageUsage> {
-    return languages.sortedWith { a, b ->
-        val count = b.count.compareTo(a.count)
-        if (count != 0) {
-            count
+public fun orderEnrichedLanguageUsages(languageUsages: List<LanguageUsage>): List<LanguageUsage> {
+    return languageUsages.sortedWith { a, b ->
+        val order = b.lineCount.compareTo(a.lineCount)
+        if (order != 0) {
+            order
         } else {
             compareTags(a.tag, b.tag)
         }
@@ -55,6 +55,7 @@ public fun orderEnrichedLanguageUsages(languages: List<LanguageUsage>): List<Lan
  * Counts each distinct declared tag once per normal line, including its normal words.
  *
  * Spaces, annotations, backgrounds, and absent tags are excluded; explicit und tags are counted.
+ * Multilingual lines contribute to multiple tags, so total counts may exceed the number of normal lines.
  */
 public fun deriveEnrichedLanguageUsages(lines: List<Line>): List<LanguageUsage> {
     val counts = linkedMapOf<String, Long>()
@@ -72,13 +73,14 @@ public fun deriveEnrichedLanguageUsages(lines: List<Line>): List<LanguageUsage> 
             counts[tag] = (counts[tag] ?: 0) + 1
         }
     }
-    return orderEnrichedLanguageUsages(counts.map { (tag, count) -> makeEnrichedLanguageUsage(tag, count) })
+    return orderEnrichedLanguageUsages(counts.map { (tag, lineCount) -> makeEnrichedLanguageUsage(tag, lineCount) })
 }
 
 /**
  * Counts each distinct declared tag once per normal line, including its normal words.
  *
  * Spaces, annotations, backgrounds, and absent tags are excluded; explicit und tags are counted.
+ * Multilingual lines contribute to multiple tags, so total counts may exceed the number of normal lines.
  */
 @JvmName("deriveEnrichedLanguageUsagesFromDocument")
 public fun deriveEnrichedLanguageUsages(lines: List<gondola.lyrics.model.document.Line>): List<LanguageUsage> {
@@ -97,28 +99,28 @@ public fun deriveEnrichedLanguageUsages(lines: List<gondola.lyrics.model.documen
             counts[tag] = (counts[tag] ?: 0) + 1
         }
     }
-    return orderEnrichedLanguageUsages(counts.map { (tag, count) -> makeEnrichedLanguageUsage(tag, count) })
+    return orderEnrichedLanguageUsages(counts.map { (tag, lineCount) -> makeEnrichedLanguageUsage(tag, lineCount) })
 }
 
 /**
- * Lowercases tags, merges duplicate counts, drops untagged entries, and orders the result.
+ * Lowercases tags, merges duplicate line counts, drops untagged entries, and orders the result.
  *
- * Totals above uint32 are capped; negative counts remain available for validation.
+ * Totals above uint32 are capped; negative line counts remain available for validation.
  */
-public fun canonicalizeEnrichedLanguageUsages(languages: List<LanguageUsage>): List<LanguageUsage> {
+public fun canonicalizeEnrichedLanguageUsages(languageUsages: List<LanguageUsage>): List<LanguageUsage> {
     val counts = linkedMapOf<String, Long>()
-    for (usage in languages) {
+    for (usage in languageUsages) {
         val tag = lowerTag(usage.tag) ?: continue
         val previous = counts[tag] ?: 0
-        val count = usage.count
-        // Compare before adding so a Long overflow cannot turn an invalid count into a valid one.
+        val lineCount = usage.lineCount
+        // Compare before adding so a Long overflow cannot turn an invalid line count into a valid one.
         counts[tag] = when {
-            count > 0 && previous > MAX_COUNT - count -> MAX_COUNT
-            count < 0 && previous < Long.MIN_VALUE - count -> Long.MIN_VALUE
-            else -> minOf(previous + count, MAX_COUNT)
+            lineCount > 0 && previous > MAX_COUNT - lineCount -> MAX_COUNT
+            lineCount < 0 && previous < Long.MIN_VALUE - lineCount -> Long.MIN_VALUE
+            else -> minOf(previous + lineCount, MAX_COUNT)
         }
     }
-    return orderEnrichedLanguageUsages(counts.map { (tag, count) -> LanguageUsage(tag = tag, count = count) })
+    return orderEnrichedLanguageUsages(counts.map { (tag, lineCount) -> LanguageUsage(tag = tag, lineCount = lineCount) })
 }
 
 /**
