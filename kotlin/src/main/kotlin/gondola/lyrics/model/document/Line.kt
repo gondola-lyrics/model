@@ -378,7 +378,7 @@ public fun makeDocumentLineNormal(
     id: String = "",
     time: TimeRange? = null,
     part: Part? = null,
-    agents: List<String> = emptyList(),
+    agentIds: List<String> = emptyList(),
     languages: List<String> = emptyList(),
     content: LineContent? = null,
     annotation: LineAnnotation? = null,
@@ -389,7 +389,7 @@ public fun makeDocumentLineNormal(
         id = id,
         time = time,
         part = part,
-        agents = agents,
+        agentIds = agentIds,
         languages = languages,
         content = content,
         annotation = annotation,
@@ -410,12 +410,12 @@ public fun makeDocumentLineInstrumental(id: String = "", time: TimeRange? = null
 public fun makeDocumentLineBackground(
     id: String = "",
     time: TimeRange? = null,
-    agents: List<String> = emptyList(),
+    agentIds: List<String> = emptyList(),
     languages: List<String> = emptyList(),
     content: LineContent? = null,
     annotation: LineAnnotation? = null,
 ): LineBackground {
-    return LineBackground(id = id, time = time, agents = agents, languages = languages, content = content, annotation = annotation)
+    return LineBackground(id = id, time = time, agentIds = agentIds, languages = languages, content = content, annotation = annotation)
 }
 
 /**
@@ -451,8 +451,8 @@ public fun validateDocumentLine(line: Line, path: String = "", timing: TimingLev
     if (line.part != null) {
         diagnostics += validatePart(line.part, childPath(path, "part"))
     }
-    if (instrumental && line.agents.size > 0) {
-        diagnostics += Diagnostic(childPath(path, "agents"), DiagnosticCode.LineAgentsUnexpected)
+    if (instrumental && line.agentIds.size > 0) {
+        diagnostics += Diagnostic(childPath(path, "agentIds"), DiagnosticCode.LineAgentIdsUnexpected)
     }
     if (instrumental && line.languages.size > 0) {
         diagnostics += Diagnostic(childPath(path, "languages"), DiagnosticCode.LineLanguagesUnexpected)
@@ -530,7 +530,7 @@ public fun orderDocumentLine(line: Line): Line {
  */
 public fun canonicalizeDocumentLineBackground(background: LineBackground): LineBackground {
     return background.copy(
-        agents = background.agents.filter { it.isNotEmpty() },
+        agentIds = background.agentIds.filter { it.isNotEmpty() },
         languages = background.languages.mapNotNull(::lowerTag).distinct(),
         content = canonicalizeField(background.content, ::canonicalizeDocumentLineContent),
         annotation = canonicalizeField(background.annotation, ::canonicalizeDocumentLineAnnotation),
@@ -543,7 +543,7 @@ public fun canonicalizeDocumentLineBackground(background: LineBackground): LineB
 public fun canonicalizeDocumentLine(line: Line): Line {
     return line.copy(
         part = dropDefault(line.part),
-        agents = line.agents.filter { it.isNotEmpty() },
+        agentIds = line.agentIds.filter { it.isNotEmpty() },
         languages = line.languages.mapNotNull(::lowerTag).distinct(),
         content = canonicalizeField(line.content, ::canonicalizeDocumentLineContent),
         annotation = canonicalizeField(line.annotation, ::canonicalizeDocumentLineAnnotation),
@@ -552,15 +552,15 @@ public fun canonicalizeDocumentLine(line: Line): Line {
 }
 
 /**
- * Resolves agent ids in order, ignoring empty or unknown ids and keeping the first agent for duplicate ids.
+ * Resolves `agentIds` in order, ignoring empty or unknown ids and keeping the first agent for duplicate ids.
  */
 fun resolveDocumentLineAgents(line: Line, agents: List<Agent>): List<Agent> {
-    return resolveAgents(line.agents, agents)
+    return resolveAgents(line.agentIds, agents)
 }
 
 /**
- * Resolves agent ids in order, ignoring empty or unknown ids and keeping the first agent for duplicate ids.
+ * Resolves `agentIds` in order, ignoring empty or unknown ids and keeping the first agent for duplicate ids.
  */
 fun resolveDocumentLineAgents(line: LineBackground, agents: List<Agent>): List<Agent> {
-    return resolveAgents(line.agents, agents)
+    return resolveAgents(line.agentIds, agents)
 }

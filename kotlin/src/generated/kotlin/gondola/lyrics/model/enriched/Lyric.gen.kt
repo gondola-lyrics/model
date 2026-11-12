@@ -48,7 +48,7 @@ public class LyricStatus(@JvmField public val value: Int) {
 /**
  * Empty submessages are equivalent to unset, except TimeRange.
  * Repeated fields exclude all-default entries and preserve source order unless stated otherwise.
- * All agent ids referenced by lines, including backgrounds, must exist in agents.
+ * Every id in a line or background's `agent_ids` must reference an entry in `agents`.
  * Non-empty line ids are unique across all lines and backgrounds.
  * Non-empty BCP 47 tags must be well formed; comparison is case-insensitive and canonical form is lowercase.
  */

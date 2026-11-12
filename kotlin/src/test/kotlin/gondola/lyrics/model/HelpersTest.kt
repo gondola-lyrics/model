@@ -149,14 +149,14 @@ class HelpersTest {
             makeAgent(id = "a", type = AgentType.AGENT_TYPE_PERSON, names = listOf(makeText(text = "first"))),
             makeAgent(id = "a", type = AgentType.AGENT_TYPE_PERSON, names = listOf(makeText(text = "second"))),
         )
-        val resolved = resolveEnrichedLineAgents(makeEnrichedLineNormal(agents = listOf("a")), agents)
+        val resolved = resolveEnrichedLineAgents(makeEnrichedLineNormal(agentIds = listOf("a")), agents)
         assertEquals(listOf("first"), resolved.map { it.names[0].text })
     }
 
     @Test
     fun resolvesNeitherEmptyNorUnknownAgentId() {
         val agents = listOf(makeAgent(id = "", type = AgentType.AGENT_TYPE_PERSON), makeAgent(id = "a", type = AgentType.AGENT_TYPE_PERSON))
-        assertEquals(emptyList(), resolveEnrichedLineAgents(makeEnrichedLineNormal(agents = listOf("", "ghost")), agents))
+        assertEquals(emptyList(), resolveEnrichedLineAgents(makeEnrichedLineNormal(agentIds = listOf("", "ghost")), agents))
     }
 
     // The wire range is wider than the schema's time range, so construction and validation enforce different bounds.

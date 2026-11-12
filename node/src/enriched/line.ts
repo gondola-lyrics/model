@@ -374,7 +374,7 @@ export const makeEnrichedLineNormal = (init?: Omit<MakeInit<Line>, 'type'>): Lin
     type: LineType.NORMAL,
     time: init?.time,
     part: init?.part,
-    agents: init?.agents,
+    agentIds: init?.agentIds,
     languages: init?.languages,
     content: init?.content,
     annotation: init?.annotation,
@@ -433,8 +433,8 @@ export const validateEnrichedLine = (line: Line, path = '', timing = TimingLevel
     diagnostics.push(...validatePart(line.part, childPath(path, 'part')))
   }
   // An instrumental line carries no singing, so every field describing one is not allowed, and a forbidden field is never descended into.
-  if (instrumental && line.agents.length > 0) {
-    diagnostics.push({ path: childPath(path, 'agents'), code: DiagnosticCode.LineAgentsUnexpected })
+  if (instrumental && line.agentIds.length > 0) {
+    diagnostics.push({ path: childPath(path, 'agentIds'), code: DiagnosticCode.LineAgentIdsUnexpected })
   }
   if (instrumental && line.languages.length > 0) {
     diagnostics.push({ path: childPath(path, 'languages'), code: DiagnosticCode.LineLanguagesUnexpected })
@@ -509,7 +509,7 @@ export const canonicalizeEnrichedLineBackground = (background: LineBackground): 
   return {
     ...background,
     time: copyMessage(background.time),
-    agents: background.agents.filter((id) => id !== ''),
+    agentIds: background.agentIds.filter((id) => id !== ''),
     languages: [...new Set(background.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
     content: canonicalizeField(fieldsEnrichedLineContent, background.content, canonicalizeEnrichedLineContent),
     annotation: canonicalizeField(fieldsEnrichedLineAnnotation, background.annotation, canonicalizeEnrichedLineAnnotation),
@@ -524,7 +524,7 @@ export const canonicalizeEnrichedLine = (line: Line): Line => {
     ...line,
     time: copyMessage(line.time),
     part: dropDefault(fieldsCommonPart, copyMessage(line.part)),
-    agents: line.agents.filter((id) => id !== ''),
+    agentIds: line.agentIds.filter((id) => id !== ''),
     languages: [...new Set(line.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
     content: canonicalizeField(fieldsEnrichedLineContent, line.content, canonicalizeEnrichedLineContent),
     annotation: canonicalizeField(fieldsEnrichedLineAnnotation, line.annotation, canonicalizeEnrichedLineAnnotation),

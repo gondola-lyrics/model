@@ -158,7 +158,7 @@ internal fun isDefault(message: Any): Boolean {
         is DocumentLineBackground ->
             message.id == "" &&
                 message.time == null &&
-                message.agents.isEmpty() &&
+                message.agentIds.isEmpty() &&
                 message.languages.isEmpty() &&
                 message.content == null &&
                 message.annotation == null
@@ -168,7 +168,7 @@ internal fun isDefault(message: Any): Boolean {
                 message.type.value == 0 &&
                 message.time == null &&
                 message.part == null &&
-                message.agents.isEmpty() &&
+                message.agentIds.isEmpty() &&
                 message.languages.isEmpty() &&
                 message.content == null &&
                 message.annotation == null &&
@@ -242,7 +242,7 @@ internal fun isDefault(message: Any): Boolean {
         is EnrichedLineBackground ->
             message.id == "" &&
                 message.time == null &&
-                message.agents.isEmpty() &&
+                message.agentIds.isEmpty() &&
                 message.languages.isEmpty() &&
                 message.content == null &&
                 message.annotation == null
@@ -252,7 +252,7 @@ internal fun isDefault(message: Any): Boolean {
                 message.type.value == 0 &&
                 message.time == null &&
                 message.part == null &&
-                message.agents.isEmpty() &&
+                message.agentIds.isEmpty() &&
                 message.languages.isEmpty() &&
                 message.content == null &&
                 message.annotation == null &&
@@ -403,7 +403,7 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
         is DocumentLineBackground -> {
             visit("id", FieldShape.SCALAR, message.id)
             visit("time", FieldShape.MESSAGE, message.time)
-            visit("agents", FieldShape.LIST_SCALAR, message.agents)
+            visit("agentIds", FieldShape.LIST_SCALAR, message.agentIds)
             visit("languages", FieldShape.LIST_SCALAR, message.languages)
             visit("content", FieldShape.MESSAGE, message.content)
             visit("annotation", FieldShape.MESSAGE, message.annotation)
@@ -414,7 +414,7 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("type", FieldShape.ENUM, message.type)
             visit("time", FieldShape.MESSAGE, message.time)
             visit("part", FieldShape.MESSAGE, message.part)
-            visit("agents", FieldShape.LIST_SCALAR, message.agents)
+            visit("agentIds", FieldShape.LIST_SCALAR, message.agentIds)
             visit("languages", FieldShape.LIST_SCALAR, message.languages)
             visit("content", FieldShape.MESSAGE, message.content)
             visit("annotation", FieldShape.MESSAGE, message.annotation)
@@ -506,7 +506,7 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
         is EnrichedLineBackground -> {
             visit("id", FieldShape.SCALAR, message.id)
             visit("time", FieldShape.MESSAGE, message.time)
-            visit("agents", FieldShape.LIST_SCALAR, message.agents)
+            visit("agentIds", FieldShape.LIST_SCALAR, message.agentIds)
             visit("languages", FieldShape.LIST_SCALAR, message.languages)
             visit("content", FieldShape.MESSAGE, message.content)
             visit("annotation", FieldShape.MESSAGE, message.annotation)
@@ -517,7 +517,7 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("type", FieldShape.ENUM, message.type)
             visit("time", FieldShape.MESSAGE, message.time)
             visit("part", FieldShape.MESSAGE, message.part)
-            visit("agents", FieldShape.LIST_SCALAR, message.agents)
+            visit("agentIds", FieldShape.LIST_SCALAR, message.agentIds)
             visit("languages", FieldShape.LIST_SCALAR, message.languages)
             visit("content", FieldShape.MESSAGE, message.content)
             visit("annotation", FieldShape.MESSAGE, message.annotation)
@@ -687,7 +687,7 @@ internal fun readField(message: Any, name: String): Any? {
         is DocumentLineBackground -> when (name) {
             "id" -> message.id
             "time" -> message.time
-            "agents" -> message.agents
+            "agentIds" -> message.agentIds
             "languages" -> message.languages
             "content" -> message.content
             "annotation" -> message.annotation
@@ -699,7 +699,7 @@ internal fun readField(message: Any, name: String): Any? {
             "type" -> message.type.value
             "time" -> message.time
             "part" -> message.part
-            "agents" -> message.agents
+            "agentIds" -> message.agentIds
             "languages" -> message.languages
             "content" -> message.content
             "annotation" -> message.annotation
@@ -805,7 +805,7 @@ internal fun readField(message: Any, name: String): Any? {
         is EnrichedLineBackground -> when (name) {
             "id" -> message.id
             "time" -> message.time
-            "agents" -> message.agents
+            "agentIds" -> message.agentIds
             "languages" -> message.languages
             "content" -> message.content
             "annotation" -> message.annotation
@@ -817,7 +817,7 @@ internal fun readField(message: Any, name: String): Any? {
             "type" -> message.type.value
             "time" -> message.time
             "part" -> message.part
-            "agents" -> message.agents
+            "agentIds" -> message.agentIds
             "languages" -> message.languages
             "content" -> message.content
             "annotation" -> message.annotation

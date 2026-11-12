@@ -111,10 +111,10 @@ export type LineBackground = {
    */
   time?: TimeRange | undefined
   /**
-   * Identifiers of the performing agents, the lead first.
+   * The lead performer comes first.
    * Multiple ids identify performers singing together; a named ensemble uses one GROUP agent.
    */
-  agents: string[]
+  agentIds: string[]
   /**
    * BCP 47 language tags the source declares for this line, each at most once.
    */
@@ -143,10 +143,10 @@ export type Line = {
    */
   part?: Part | undefined
   /**
-   * Identifiers of the performing agents, the lead first.
+   * The lead performer comes first.
    * Multiple ids identify performers singing together; a named ensemble uses one GROUP agent.
    */
-  agents: string[]
+  agentIds: string[]
   /**
    * BCP 47 language tags the source declares for this line, each at most once.
    */

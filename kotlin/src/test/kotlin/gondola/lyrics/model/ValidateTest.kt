@@ -1,19 +1,25 @@
 package gondola.lyrics.model
 
+import gondola.lyrics.model.common.AgentType
 import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.Meta
 import gondola.lyrics.model.common.Part
 import gondola.lyrics.model.common.PartType
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.TimingLevel
+import gondola.lyrics.model.common.makeAgent
 import gondola.lyrics.model.common.makePart
 import gondola.lyrics.model.common.makeTextToken
 import gondola.lyrics.model.common.makeTimeRange
+import gondola.lyrics.model.common.resolveDiagnosticPath
 import gondola.lyrics.model.common.validateMeta
 import gondola.lyrics.model.common.validateTimeRange
+import gondola.lyrics.model.document.makeDocumentLineBackground
 import gondola.lyrics.model.document.makeDocumentLineContentText
+import gondola.lyrics.model.document.makeDocumentLineInstrumental
 import gondola.lyrics.model.document.makeDocumentLineNormal
 import gondola.lyrics.model.document.makeDocumentLyric
+import gondola.lyrics.model.document.validateDocumentLine
 import gondola.lyrics.model.document.validateDocumentLyric
 import gondola.lyrics.model.enriched.LanguageUsage
 import gondola.lyrics.model.enriched.Line
@@ -25,6 +31,7 @@ import gondola.lyrics.model.enriched.makeEnrichedLineAnnotation
 import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRoman
 import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRomanContentText
 import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationTranslation
+import gondola.lyrics.model.enriched.makeEnrichedLineBackground
 import gondola.lyrics.model.enriched.makeEnrichedLineContentText
 import gondola.lyrics.model.enriched.makeEnrichedLineContentWords
 import gondola.lyrics.model.enriched.makeEnrichedLineInstrumental
@@ -72,6 +79,69 @@ private fun validatePartsInBothLayers(parts: List<Part?>): List<List<Diagnostic>
 }
 
 class ValidateTest {
+    @Test
+    fun locatesAgentReferenceDiagnosticsThroughRenamedFieldsInBothLayers() {
+        val time = makeTimeRange(start = 1000, end = 2000)
+        val agents = listOf(makeAgent(id = "known", type = AgentType.AGENT_TYPE_PERSON))
+        val agentIds = listOf("known", "missing")
+        val document = makeDocumentLyric(
+            timing = TimingLevel.TIMING_LEVEL_LINE,
+            agents = agents,
+            lines = listOf(
+                makeDocumentLineNormal(
+                    time = time,
+                    agentIds = agentIds,
+                    content = makeDocumentLineContentText("line"),
+                    backgrounds = listOf(
+                        makeDocumentLineBackground(
+                            time = time,
+                            agentIds = listOf("background-missing"),
+                            content = makeDocumentLineContentText("background"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val enriched = makeEnrichedLyric(
+            status = LyricStatus.LYRIC_STATUS_VALID,
+            timing = TimingLevel.TIMING_LEVEL_LINE,
+            agents = agents,
+            lines = listOf(
+                makeEnrichedLineNormal(
+                    time = time,
+                    agentIds = agentIds,
+                    content = makeEnrichedLineContentText("line"),
+                    backgrounds = listOf(
+                        makeEnrichedLineBackground(
+                            time = time,
+                            agentIds = listOf("background-missing"),
+                            content = makeEnrichedLineContentText("background"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        for ((lyric, diagnostics) in listOf(document to validateDocumentLyric(document), enriched to validateEnrichedLyric(enriched))) {
+            assertEquals(
+                listOf(
+                    "lines[0].agentIds[1]" to "lyric.line.agent.dangling",
+                    "lines[0].backgrounds[0].agentIds[0]" to "lyric.line.agent.dangling",
+                ),
+                diagnostics.asPairs(),
+            )
+            assertEquals(listOf("missing", "background-missing"), diagnostics.map { resolveDiagnosticPath(lyric, it.path) })
+        }
+        val documentInstrumental = makeDocumentLineInstrumental(time = time).copy(agentIds = listOf("missing"))
+        val enrichedInstrumental = makeEnrichedLineInstrumental(time = time).copy(agentIds = listOf("missing"))
+        for ((line, diagnostics) in listOf(
+            documentInstrumental to validateDocumentLine(documentInstrumental, "", TimingLevel.TIMING_LEVEL_LINE),
+            enrichedInstrumental to validateEnrichedLine(enrichedInstrumental, "", TimingLevel.TIMING_LEVEL_LINE),
+        )) {
+            assertEquals(listOf("agentIds" to "line.agent_ids.unexpected"), diagnostics.asPairs())
+            assertEquals(listOf("missing"), resolveDiagnosticPath(line, diagnostics.single().path))
+        }
+    }
+
     @Test
     fun requiresEmphasisDecisionWhenOriginIsSet() {
         for (derived in listOf(false, true)) {

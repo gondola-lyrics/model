@@ -135,7 +135,7 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
    * Forbidden nodes and unresolved kinds require no additional fields; open nodes may omit their end.
    */
   const checkReferences = (
-    agents: string[],
+    agentIds: string[],
     time: TimeRange | undefined,
     content: LineContent | undefined,
     path: string,
@@ -148,9 +148,9 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
     const unresolvedType = isUnresolved(LineType, type)
     const sung = type !== LineType.INSTRUMENTAL
     if (sung) {
-      agents.forEach((id, j) => {
+      agentIds.forEach((id, j) => {
         if (!ids.has(id)) {
-          diagnostics.push({ path: `${path}.agents[${j}]`, code: DiagnosticCode.LyricLineAgentDangling })
+          diagnostics.push({ path: `${path}.agentIds[${j}]`, code: DiagnosticCode.LyricLineAgentDangling })
         }
       })
       anyWords = anyWords || words.length > 0
@@ -189,11 +189,11 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
     const path = `lines[${i}]`
     const forbidden = line.type === LineType.INSTRUMENTAL
     claimLineId(line.id, path)
-    checkReferences(line.agents, line.time, line.content, path, line.type, false, i === lyric.lines.length - 1)
+    checkReferences(line.agentIds, line.time, line.content, path, line.type, false, i === lyric.lines.length - 1)
     line.backgrounds.forEach((background, j) => {
       const backgroundPath = `${path}.backgrounds[${j}]`
       claimLineId(background.id, backgroundPath)
-      checkReferences(background.agents, background.time, background.content, backgroundPath, LineType.NORMAL, forbidden, true)
+      checkReferences(background.agentIds, background.time, background.content, backgroundPath, LineType.NORMAL, forbidden, true)
     })
     diagnostics.push(...validateEnrichedLine(line, path, lyric.timing))
   })

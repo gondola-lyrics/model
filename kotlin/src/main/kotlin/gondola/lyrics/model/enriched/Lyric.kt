@@ -127,12 +127,12 @@ public fun validateEnrichedLyric(lyric: Lyric): List<Diagnostic> {
 
     /**
      * Reports the whole-tree rules for one line or background line: agent references resolving to no agent, and whatever the declared timing asks of it.
-     * It walks every node whatever the line's kind, since a whole-tree invariant holds regardless; an instrumental line's agents and own range validateEnrichedLine already rules on, and a background line is read as the sung line it always is.
+     * It walks every node whatever the line's kind, since a whole-tree invariant holds regardless; an instrumental line's agent ids and own range validateEnrichedLine already rules on, and a background line is read as the sung line it always is.
      * `forbidden` marks a node its parent's kind does not allow at all: what it carries is still held to the rules it breaks by carrying it, but nothing further is asked of it, since the node as a whole is already reported.
      * `open` marks a node whose range may stay open above: the last line, which nothing in the lyric bounds, and every background line, which the line it attaches to already bounds.
      */
     fun checkReferences(
-        agents: List<String>,
+        agentIds: List<String>,
         time: TimeRange?,
         content: LineContent?,
         path: String,
@@ -144,9 +144,9 @@ public fun validateEnrichedLyric(lyric: Lyric): List<Diagnostic> {
         // A kind outside the enum turns out to need no range as readily as the zero value, so both are left unasked.
         val unresolvedType = isUnresolved(type)
         if (type != LineType.LINE_TYPE_INSTRUMENTAL) {
-            agents.forEachIndexed { index, id ->
+            agentIds.forEachIndexed { index, id ->
                 if (id !in ids) {
-                    diagnostics += Diagnostic("$path.agents[$index]", DiagnosticCode.LyricLineAgentDangling)
+                    diagnostics += Diagnostic("$path.agentIds[$index]", DiagnosticCode.LyricLineAgentDangling)
                 }
             }
             anyWords = anyWords || words.isNotEmpty()
@@ -187,7 +187,7 @@ public fun validateEnrichedLyric(lyric: Lyric): List<Diagnostic> {
         val forbidden = line.type == LineType.LINE_TYPE_INSTRUMENTAL
         claimLineId(line.id, path)
         checkReferences(
-            line.agents,
+            line.agentIds,
             line.time,
             line.content,
             path,
@@ -198,7 +198,7 @@ public fun validateEnrichedLyric(lyric: Lyric): List<Diagnostic> {
             val backgroundPath = "$path.backgrounds[$backgroundIndex]"
             claimLineId(background.id, backgroundPath)
             checkReferences(
-                background.agents,
+                background.agentIds,
                 background.time,
                 background.content,
                 backgroundPath,

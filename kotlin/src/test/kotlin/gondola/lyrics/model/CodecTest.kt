@@ -229,10 +229,12 @@ class CodecTest {
             lines = listOf(
                 Line(
                     part = part,
+                    agentIds = listOf("lead", "guest"),
                     content = LineContent(
                         words = listOf(Word(type = WordType(99), language = "", text = "x", emphasis = WordEmphasis(), annotation = wordAnnotation)),
                     ),
                     annotation = lineAnnotation,
+                    backgrounds = listOf(gondola.lyrics.model.enriched.makeEnrichedLineBackground(agentIds = listOf("guest", "lead"))),
                 ),
             ),
         )
@@ -277,6 +279,7 @@ class CodecTest {
             lines = listOf(
                 DocumentLine(
                     part = part,
+                    agentIds = listOf("lead", "guest"),
                     content = DocumentLineContent(
                         words = listOf(
                             DocumentWord(
@@ -289,6 +292,7 @@ class CodecTest {
                         ),
                     ),
                     annotation = documentLineAnnotation,
+                    backgrounds = listOf(gondola.lyrics.model.document.makeDocumentLineBackground(agentIds = listOf("guest", "lead"))),
                 ),
             ),
         )
@@ -381,6 +385,7 @@ class CodecTest {
                     official(
                         "lyric.$layer.Line",
                         "part" to officialPart,
+                        "agent_ids" to listOf("lead", "guest"),
                         "content" to official(
                             "lyric.$layer.LineContent",
                             "words" to listOf(
@@ -395,6 +400,7 @@ class CodecTest {
                             ),
                         ),
                         "annotation" to officialLineAnnotation,
+                        "backgrounds" to listOf(official("lyric.$layer.LineBackground", "agent_ids" to listOf("guest", "lead"))),
                     ),
                 ),
             ) + if (layer == "enriched") listOf("status" to 2) else emptyList()

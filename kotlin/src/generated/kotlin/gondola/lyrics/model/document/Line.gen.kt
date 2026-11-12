@@ -133,10 +133,10 @@ public data class LineBackground(
      */
     val time: TimeRange? = null,
     /**
-     * Identifiers of the performing agents, the lead first.
+     * The lead performer comes first.
      * Multiple ids identify performers singing together; a named ensemble uses one GROUP agent.
      */
-    val agents: List<String> = emptyList(),
+    val agentIds: List<String> = emptyList(),
     /**
      * BCP 47 language tags the source declares for this line, each at most once.
      */
@@ -165,10 +165,10 @@ public data class Line(
      */
     val part: Part? = null,
     /**
-     * Identifiers of the performing agents, the lead first.
+     * The lead performer comes first.
      * Multiple ids identify performers singing together; a named ensemble uses one GROUP agent.
      */
-    val agents: List<String> = emptyList(),
+    val agentIds: List<String> = emptyList(),
     /**
      * BCP 47 language tags the source declares for this line, each at most once.
      */

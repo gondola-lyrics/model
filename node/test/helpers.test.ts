@@ -121,7 +121,7 @@ describe('resolve line agents', () => {
       makeAgent({ id: 'a', type: AgentType.PERSON, names: [makeText({ text: 'first' })] }),
       makeAgent({ id: 'a', type: AgentType.PERSON, names: [makeText({ text: 'second' })] }),
     ]
-    const resolved = resolveLineAgents({ agents: ['a'] }, agents)
+    const resolved = resolveLineAgents({ agentIds: ['a'] }, agents)
     deepStrictEqual(
       resolved.map((agent) => agent.names[0]?.text),
       ['first'],
@@ -130,6 +130,6 @@ describe('resolve line agents', () => {
 
   it('resolves neither an empty id nor one naming no agent', () => {
     const agents = [makeAgent({ id: '', type: AgentType.PERSON }), makeAgent({ id: 'a', type: AgentType.PERSON })]
-    deepStrictEqual(resolveLineAgents({ agents: ['', 'ghost'] }, agents), [])
+    deepStrictEqual(resolveLineAgents({ agentIds: ['', 'ghost'] }, agents), [])
   })
 })

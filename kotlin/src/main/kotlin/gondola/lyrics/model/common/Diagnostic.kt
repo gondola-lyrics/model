@@ -46,7 +46,7 @@ enum class DiagnosticCode(val value: String) {
     LineTimeEndMissing("line.time.end.missing"),
     LineTimeEmpty("line.time.empty"),
     LineBackgroundsUnordered("line.backgrounds.unordered"),
-    LineAgentsUnexpected("line.agents.unexpected"),
+    LineAgentIdsUnexpected("line.agent_ids.unexpected"),
     LineLanguagesUnexpected("line.languages.unexpected"),
     LineLanguagesDuplicate("line.languages.duplicate"),
     LineAnnotationUnexpected("line.annotation.unexpected"),

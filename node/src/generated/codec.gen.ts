@@ -840,7 +840,7 @@ export const encodeDocumentLineBackground = (w: WireWriter, v: document.LineBack
   if (v.time !== undefined) {
     w.message(18, encodeCommonTimeRange, v.time)
   }
-  for (const item of v.agents) {
+  for (const item of v.agentIds) {
     w.tag(26)
     w.string(item)
   }
@@ -870,7 +870,7 @@ export const decodeDocumentLineBackground = (r: WireReader, m: document.LineBack
         break
       }
       case 26:
-        m.agents.push(r.string())
+        m.agentIds.push(r.string())
         break
       case 34:
         m.languages.push(r.string())
@@ -910,7 +910,7 @@ export const encodeDocumentLine = (w: WireWriter, v: document.Line): void => {
   if (v.part !== undefined) {
     w.message(34, encodeCommonPart, v.part)
   }
-  for (const item of v.agents) {
+  for (const item of v.agentIds) {
     w.tag(42)
     w.string(item)
   }
@@ -953,7 +953,7 @@ export const decodeDocumentLine = (r: WireReader, m: document.Line): void => {
         break
       }
       case 42:
-        m.agents.push(r.string())
+        m.agentIds.push(r.string())
         break
       case 50:
         m.languages.push(r.string())
@@ -1516,7 +1516,7 @@ export const encodeEnrichedLineBackground = (w: WireWriter, v: enriched.LineBack
   if (v.time !== undefined) {
     w.message(18, encodeCommonTimeRange, v.time)
   }
-  for (const item of v.agents) {
+  for (const item of v.agentIds) {
     w.tag(26)
     w.string(item)
   }
@@ -1546,7 +1546,7 @@ export const decodeEnrichedLineBackground = (r: WireReader, m: enriched.LineBack
         break
       }
       case 26:
-        m.agents.push(r.string())
+        m.agentIds.push(r.string())
         break
       case 34:
         m.languages.push(r.string())
@@ -1586,7 +1586,7 @@ export const encodeEnrichedLine = (w: WireWriter, v: enriched.Line): void => {
   if (v.part !== undefined) {
     w.message(34, encodeCommonPart, v.part)
   }
-  for (const item of v.agents) {
+  for (const item of v.agentIds) {
     w.tag(42)
     w.string(item)
   }
@@ -1629,7 +1629,7 @@ export const decodeEnrichedLine = (r: WireReader, m: enriched.Line): void => {
         break
       }
       case 42:
-        m.agents.push(r.string())
+        m.agentIds.push(r.string())
         break
       case 50:
         m.languages.push(r.string())

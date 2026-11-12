@@ -4,16 +4,20 @@ import { deepStrictEqual } from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import {
+  AgentType,
   EnrichedLyricStatus,
   PartType,
   TimingLevel,
   canonicalizeEnrichedLyric,
   deriveEnrichedLanguageUsages,
+  makeAgent,
   makeDocumentLineAnnotation,
   makeDocumentLineAnnotationRoman,
   makeDocumentLineAnnotationRomanContentText,
   makeDocumentLineAnnotationTranslation,
+  makeDocumentLineBackground,
   makeDocumentLineContentText,
+  makeDocumentLineInstrumental,
   makeDocumentLineNormal,
   makeDocumentLyric,
   makeDocumentWordAnnotation,
@@ -24,6 +28,7 @@ import {
   makeEnrichedLineAnnotationRoman,
   makeEnrichedLineAnnotationRomanContentText,
   makeEnrichedLineAnnotationTranslation,
+  makeEnrichedLineBackground,
   makeEnrichedLineContentText,
   makeEnrichedLineContentWords,
   makeEnrichedLineInstrumental,
@@ -39,6 +44,8 @@ import {
   makeEnrichedWordSpace,
   makePart,
   makeTimeRange,
+  resolveDiagnosticPath,
+  validateDocumentLine,
   validateDocumentLineAnnotation,
   validateDocumentLyric,
   validateDocumentWordAnnotation,
@@ -71,6 +78,59 @@ const validatePartsInBothLayers = (parts: (Part | undefined)[]): Diagnostic[][] 
 }
 
 describe('validate', () => {
+  it('locates agent reference diagnostics through renamed fields in both layers', () => {
+    const time = makeTimeRange({ start: 1000, end: 2000 })
+    const agents = [makeAgent({ id: 'known', type: AgentType.PERSON })]
+    const agentIds = ['known', 'missing']
+    const document = makeDocumentLyric({
+      timing: TimingLevel.LINE,
+      agents,
+      lines: [
+        makeDocumentLineNormal({
+          time,
+          agentIds,
+          content: makeDocumentLineContentText('line'),
+          backgrounds: [makeDocumentLineBackground({ time, agentIds: ['background-missing'], content: makeDocumentLineContentText('background') })],
+        }),
+      ],
+    })
+    const enriched = makeEnrichedLyric({
+      status: EnrichedLyricStatus.VALID,
+      timing: TimingLevel.LINE,
+      agents,
+      lines: [
+        makeEnrichedLineNormal({
+          time,
+          agentIds,
+          content: makeEnrichedLineContentText('line'),
+          backgrounds: [makeEnrichedLineBackground({ time, agentIds: ['background-missing'], content: makeEnrichedLineContentText('background') })],
+        }),
+      ],
+    })
+    for (const model of [
+      { lyric: document, diagnostics: validateDocumentLyric(document) },
+      { lyric: enriched, diagnostics: validateEnrichedLyric(enriched) },
+    ]) {
+      deepStrictEqual(model.diagnostics, [
+        { path: 'lines[0].agentIds[1]', code: 'lyric.line.agent.dangling' },
+        { path: 'lines[0].backgrounds[0].agentIds[0]', code: 'lyric.line.agent.dangling' },
+      ])
+      deepStrictEqual(
+        model.diagnostics.map((diagnostic) => resolveDiagnosticPath(model.lyric, diagnostic.path)),
+        ['missing', 'background-missing'],
+      )
+    }
+    const documentInstrumental = { ...makeDocumentLineInstrumental({ time }), agentIds: ['missing'] }
+    const enrichedInstrumental = { ...makeEnrichedLineInstrumental({ time }), agentIds: ['missing'] }
+    for (const model of [
+      { line: documentInstrumental, diagnostics: validateDocumentLine(documentInstrumental, 'line', TimingLevel.LINE) },
+      { line: enrichedInstrumental, diagnostics: validateEnrichedLine(enrichedInstrumental, 'line', TimingLevel.LINE) },
+    ]) {
+      deepStrictEqual(model.diagnostics, [{ path: 'line.agentIds', code: 'line.agent_ids.unexpected' }])
+      deepStrictEqual(resolveDiagnosticPath({ line: model.line }, model.diagnostics[0]!.path), ['missing'])
+    }
+  })
+
   it('requires an emphasis decision when its origin is set', () => {
     for (const derived of [false, true]) {
       const line = makeEnrichedLineNormal({

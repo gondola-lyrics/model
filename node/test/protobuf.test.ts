@@ -170,7 +170,7 @@ const enrichedLyric = (): EnrichedLyric => {
         id: 'l',
         time: makeTimeRange({ start: 0, end: 0 }),
         part: makePart({ type: PartType.CHORUS, id: 'Chorus-A', raw: '' }),
-        agents: ['a'],
+        agentIds: ['a'],
         languages: ['en', ''],
         content: makeEnrichedLineContentWords([
           makeEnrichedWordNormal({
@@ -187,7 +187,7 @@ const enrichedLyric = (): EnrichedLyric => {
           makeEnrichedLineBackground({
             id: 'b',
             time: makeTimeRange({ start: 1 }),
-            agents: ['a'],
+            agentIds: ['a'],
             languages: ['ja'],
             content: makeEnrichedLineContentText(''),
             annotation: makeEnrichedLineAnnotation(),
@@ -212,7 +212,7 @@ const documentLyric = (): DocumentLyric => {
         id: 'l',
         time: makeTimeRange({ start: 0 }),
         part: makePart({ type: PartType.OTHER, id: 'Section-B', raw: 'x' }),
-        agents: ['a'],
+        agentIds: ['a'],
         languages: ['en'],
         content: makeDocumentLineContentWords([
           makeDocumentWordNormal({
@@ -226,7 +226,7 @@ const documentLyric = (): DocumentLyric => {
           makeDocumentWordSpace({ text: ' ' }),
         ]),
         annotation: lineAnnotation(),
-        backgrounds: [makeDocumentLineBackground({ content: makeDocumentLineContentText('bg') })],
+        backgrounds: [makeDocumentLineBackground({ agentIds: ['a'], content: makeDocumentLineContentText('bg') })],
       }),
     ],
   })

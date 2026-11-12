@@ -88,9 +88,9 @@ message LineBackground {
   // Must contain every timed word; boundaries may extend beyond the words.
   lyric.common.TimeRange time = 2;
 
-  // Identifiers of the performing agents, the lead first.
+  // The lead performer comes first.
   // Multiple ids identify performers singing together; a named ensemble uses one GROUP agent.
-  repeated string agents = 3;
+  repeated string agent_ids = 3;
 
   // BCP 47 language tags of this line, each at most once.
   repeated string languages = 4;
@@ -114,9 +114,9 @@ message Line {
   // Structural section this line belongs to; unset means no part information.
   lyric.common.Part part = 4;
 
-  // Identifiers of the performing agents, the lead first.
+  // The lead performer comes first.
   // Multiple ids identify performers singing together; a named ensemble uses one GROUP agent.
-  repeated string agents = 5;
+  repeated string agent_ids = 5;
 
   // BCP 47 language tags of this line, each at most once.
   repeated string languages = 6;

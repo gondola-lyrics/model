@@ -375,7 +375,7 @@ internal fun encodeDocumentLineBackground(w: WireWriter, src: DocumentLineBackgr
         w.string(src.id)
     }
     src.time?.let { w.message(18, ::encodeCommonTimeRange, it) }
-    for (item in src.agents) {
+    for (item in src.agentIds) {
         w.tag(26)
         w.string(item)
     }
@@ -399,7 +399,7 @@ internal fun encodeDocumentLine(w: WireWriter, src: DocumentLine) {
     }
     src.time?.let { w.message(26, ::encodeCommonTimeRange, it) }
     src.part?.let { w.message(34, ::encodeCommonPart, it) }
-    for (item in src.agents) {
+    for (item in src.agentIds) {
         w.tag(42)
         w.string(item)
     }
@@ -607,7 +607,7 @@ internal fun encodeEnrichedLineBackground(w: WireWriter, src: EnrichedLineBackgr
         w.string(src.id)
     }
     src.time?.let { w.message(18, ::encodeCommonTimeRange, it) }
-    for (item in src.agents) {
+    for (item in src.agentIds) {
         w.tag(26)
         w.string(item)
     }
@@ -631,7 +631,7 @@ internal fun encodeEnrichedLine(w: WireWriter, src: EnrichedLine) {
     }
     src.time?.let { w.message(26, ::encodeCommonTimeRange, it) }
     src.part?.let { w.message(34, ::encodeCommonPart, it) }
-    for (item in src.agents) {
+    for (item in src.agentIds) {
         w.tag(42)
         w.string(item)
     }
@@ -965,7 +965,7 @@ private class DocumentLineContentState {
 private class DocumentLineBackgroundState {
     var id: String = ""
     var time: CommonTimeRangeState? = null
-    val agents = ArrayList<String>()
+    val agentIds = ArrayList<String>()
     val languages = ArrayList<String>()
     var content: DocumentLineContentState? = null
     var annotation: DocumentLineAnnotationState? = null
@@ -974,7 +974,7 @@ private class DocumentLineBackgroundState {
         return DocumentLineBackground(
             id = id,
             time = time?.finish(),
-            agents = agents,
+            agentIds = agentIds,
             languages = languages,
             content = content?.finish(),
             annotation = annotation?.finish(),
@@ -987,7 +987,7 @@ private class DocumentLineState {
     var type: DocumentLineType = DocumentLineType.LINE_TYPE_UNSPECIFIED
     var time: CommonTimeRangeState? = null
     var part: CommonPartState? = null
-    val agents = ArrayList<String>()
+    val agentIds = ArrayList<String>()
     val languages = ArrayList<String>()
     var content: DocumentLineContentState? = null
     var annotation: DocumentLineAnnotationState? = null
@@ -999,7 +999,7 @@ private class DocumentLineState {
             type = type,
             time = time?.finish(),
             part = part?.finish(),
-            agents = agents,
+            agentIds = agentIds,
             languages = languages,
             content = content?.finish(),
             annotation = annotation?.finish(),
@@ -1201,7 +1201,7 @@ private class EnrichedLineContentState {
 private class EnrichedLineBackgroundState {
     var id: String = ""
     var time: CommonTimeRangeState? = null
-    val agents = ArrayList<String>()
+    val agentIds = ArrayList<String>()
     val languages = ArrayList<String>()
     var content: EnrichedLineContentState? = null
     var annotation: EnrichedLineAnnotationState? = null
@@ -1210,7 +1210,7 @@ private class EnrichedLineBackgroundState {
         return EnrichedLineBackground(
             id = id,
             time = time?.finish(),
-            agents = agents,
+            agentIds = agentIds,
             languages = languages,
             content = content?.finish(),
             annotation = annotation?.finish(),
@@ -1223,7 +1223,7 @@ private class EnrichedLineState {
     var type: EnrichedLineType = EnrichedLineType.LINE_TYPE_UNSPECIFIED
     var time: CommonTimeRangeState? = null
     var part: CommonPartState? = null
-    val agents = ArrayList<String>()
+    val agentIds = ArrayList<String>()
     val languages = ArrayList<String>()
     var content: EnrichedLineContentState? = null
     var annotation: EnrichedLineAnnotationState? = null
@@ -1235,7 +1235,7 @@ private class EnrichedLineState {
             type = type,
             time = time?.finish(),
             part = part?.finish(),
-            agents = agents,
+            agentIds = agentIds,
             languages = languages,
             content = content?.finish(),
             annotation = annotation?.finish(),
@@ -1823,7 +1823,7 @@ private fun mergeDocumentLineBackground(r: WireReader, state: DocumentLineBackgr
                 r.leave(end)
             }
 
-            26 -> state.agents.add(r.string())
+            26 -> state.agentIds.add(r.string())
 
             34 -> state.languages.add(r.string())
 
@@ -1874,7 +1874,7 @@ private fun mergeDocumentLine(r: WireReader, state: DocumentLineState) {
                 r.leave(end)
             }
 
-            42 -> state.agents.add(r.string())
+            42 -> state.agentIds.add(r.string())
 
             50 -> state.languages.add(r.string())
 
@@ -2303,7 +2303,7 @@ private fun mergeEnrichedLineBackground(r: WireReader, state: EnrichedLineBackgr
                 r.leave(end)
             }
 
-            26 -> state.agents.add(r.string())
+            26 -> state.agentIds.add(r.string())
 
             34 -> state.languages.add(r.string())
 
@@ -2354,7 +2354,7 @@ private fun mergeEnrichedLine(r: WireReader, state: EnrichedLineState) {
                 r.leave(end)
             }
 
-            42 -> state.agents.add(r.string())
+            42 -> state.agentIds.add(r.string())
 
             50 -> state.languages.add(r.string())
 

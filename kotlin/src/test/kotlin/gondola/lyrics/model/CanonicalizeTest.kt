@@ -217,16 +217,21 @@ class CanonicalizeTest {
         val base = buildLyric()
         val words = assertNotNull(base.lines[0].content).words.toMutableList()
         val tags = mutableListOf("EN")
-        val agents = mutableListOf("a")
+        val agentIds = mutableListOf("a")
         val extra = linkedMapOf("key" to "value")
         val titles = mutableListOf(makeText(text = "title"))
         val unknowns = mutableListOf(makeUnknownEntry(key = "x", value = "y"))
         val meta = Meta(titles = titles, unknowns = unknowns)
-        val lines = mutableListOf(base.lines[0].copy(languages = tags, agents = agents, content = LineContent(words = words)))
+        val lines = mutableListOf(base.lines[0].copy(languages = tags, agentIds = agentIds, content = LineContent(words = words)))
         val lyric = base.copy(extra = extra, meta = meta, lines = lines)
         val documentWords = mutableListOf(DocumentWord(type = WordType.WORD_TYPE_NORMAL, text = "x"))
         val documentLines = mutableListOf(
-            DocumentLine(type = LineType.LINE_TYPE_NORMAL, languages = tags, agents = agents, content = DocumentLineContent(words = documentWords)),
+            DocumentLine(
+                type = LineType.LINE_TYPE_NORMAL,
+                languages = tags,
+                agentIds = agentIds,
+                content = DocumentLineContent(words = documentWords),
+            ),
         )
         val stored = DocumentLyric(extra = extra, meta = meta, lines = documentLines)
         val original = encodeEnrichedLyric(lyric)
@@ -242,7 +247,7 @@ class CanonicalizeTest {
         words.clear()
         documentWords.clear()
         tags.clear()
-        agents.clear()
+        agentIds.clear()
         extra["key"] = "changed"
         titles.clear()
         unknowns.clear()

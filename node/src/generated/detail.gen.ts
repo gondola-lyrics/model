@@ -257,7 +257,7 @@ export const fieldsDocumentLineBackground: MessageFields<document.LineBackground
   fields: [
     { name: 'id', shape: 'scalar' },
     { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
-    { name: 'agents', shape: 'list-scalar' },
+    { name: 'agentIds', shape: 'list-scalar' },
     { name: 'languages', shape: 'list-scalar' },
     { name: 'content', shape: 'message', message: fieldsDocumentLineContent },
     { name: 'annotation', shape: 'message', message: fieldsDocumentLineAnnotation },
@@ -265,7 +265,7 @@ export const fieldsDocumentLineBackground: MessageFields<document.LineBackground
 }
 
 export const createDocumentLineBackground = (): document.LineBackground => {
-  return { id: '', agents: [], languages: [] }
+  return { id: '', agentIds: [], languages: [] }
 }
 
 export const fieldsDocumentLine: MessageFields<document.Line> = {
@@ -274,7 +274,7 @@ export const fieldsDocumentLine: MessageFields<document.Line> = {
     { name: 'type', shape: 'enum' },
     { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
     { name: 'part', shape: 'message', message: fieldsCommonPart },
-    { name: 'agents', shape: 'list-scalar' },
+    { name: 'agentIds', shape: 'list-scalar' },
     { name: 'languages', shape: 'list-scalar' },
     { name: 'content', shape: 'message', message: fieldsDocumentLineContent },
     { name: 'annotation', shape: 'message', message: fieldsDocumentLineAnnotation },
@@ -283,7 +283,7 @@ export const fieldsDocumentLine: MessageFields<document.Line> = {
 }
 
 export const createDocumentLine = (): document.Line => {
-  return { id: '', type: 0, agents: [], languages: [], backgrounds: [] }
+  return { id: '', type: 0, agentIds: [], languages: [], backgrounds: [] }
 }
 
 export const fieldsDocumentLyric: MessageFields<document.Lyric> = {
@@ -450,7 +450,7 @@ export const fieldsEnrichedLineBackground: MessageFields<enriched.LineBackground
   fields: [
     { name: 'id', shape: 'scalar' },
     { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
-    { name: 'agents', shape: 'list-scalar' },
+    { name: 'agentIds', shape: 'list-scalar' },
     { name: 'languages', shape: 'list-scalar' },
     { name: 'content', shape: 'message', message: fieldsEnrichedLineContent },
     { name: 'annotation', shape: 'message', message: fieldsEnrichedLineAnnotation },
@@ -458,7 +458,7 @@ export const fieldsEnrichedLineBackground: MessageFields<enriched.LineBackground
 }
 
 export const createEnrichedLineBackground = (): enriched.LineBackground => {
-  return { id: '', agents: [], languages: [] }
+  return { id: '', agentIds: [], languages: [] }
 }
 
 export const fieldsEnrichedLine: MessageFields<enriched.Line> = {
@@ -467,7 +467,7 @@ export const fieldsEnrichedLine: MessageFields<enriched.Line> = {
     { name: 'type', shape: 'enum' },
     { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
     { name: 'part', shape: 'message', message: fieldsCommonPart },
-    { name: 'agents', shape: 'list-scalar' },
+    { name: 'agentIds', shape: 'list-scalar' },
     { name: 'languages', shape: 'list-scalar' },
     { name: 'content', shape: 'message', message: fieldsEnrichedLineContent },
     { name: 'annotation', shape: 'message', message: fieldsEnrichedLineAnnotation },
@@ -476,7 +476,7 @@ export const fieldsEnrichedLine: MessageFields<enriched.Line> = {
 }
 
 export const createEnrichedLine = (): enriched.Line => {
-  return { id: '', type: 0, agents: [], languages: [], backgrounds: [] }
+  return { id: '', type: 0, agentIds: [], languages: [], backgrounds: [] }
 }
 
 export const fieldsEnrichedLyric: MessageFields<enriched.Lyric> = {

@@ -1,12 +1,12 @@
-import type { MakeInit } from '@root/utils'
 import type { Agent } from '@root/generated/common/index.gen'
+import type { MakeInit } from '@root/utils'
 import type { Diagnostic } from './diagnostic'
 
 import { AgentType } from '@root/generated/common/index.gen'
-import { DiagnosticCode } from './diagnostic'
-
-import { canonicalizeList, childPath, findDuplicates, isUnresolved, lowerTag, withInit } from '@root/utils'
 import { createCommonAgent, fieldsCommonText } from '@root/generated/detail.gen'
+import { canonicalizeList, childPath, findDuplicates, isUnresolved, lowerTag, withInit } from '@root/utils'
+
+import { DiagnosticCode } from './diagnostic'
 import { canonicalizeText, validateText } from './text'
 
 /**
@@ -45,16 +45,16 @@ export const canonicalizeAgent = (agent: Agent): Agent => {
 }
 
 /**
- * Resolves a line's agent ids to the Agent objects they reference, in order with the lead first.
+ * Resolves a line's `agentIds` to the Agent objects they reference, in order with the lead first.
  * An id matching no agent is skipped, so a dangling reference drops out rather than leaving a hole.
  * An empty id never resolves, and the first agent claiming an id keeps it, matching what validate reports about both.
  */
-export const resolveLineAgents = (line: { agents: string[] }, agents: Agent[]): Agent[] => {
+export const resolveLineAgents = (line: { agentIds: string[] }, agents: Agent[]): Agent[] => {
   const idMap = new Map<string, Agent>()
   for (const agent of agents) {
     if (agent.id !== '' && !idMap.has(agent.id)) {
       idMap.set(agent.id, agent)
     }
   }
-  return line.agents.map((id) => idMap.get(id)).filter((agent) => agent !== undefined)
+  return line.agentIds.map((id) => idMap.get(id)).filter((agent) => agent !== undefined)
 }
