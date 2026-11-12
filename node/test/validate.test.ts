@@ -11,6 +11,7 @@ import {
   deriveEnrichedLanguageUsages,
   makeDocumentLineAnnotation,
   makeDocumentLineAnnotationRoman,
+  makeDocumentLineAnnotationRomanContentText,
   makeDocumentLineAnnotationTranslation,
   makeDocumentLineContentText,
   makeDocumentLineNormal,
@@ -21,6 +22,7 @@ import {
   makeDocumentWordAnnotationTranslation,
   makeEnrichedLineAnnotation,
   makeEnrichedLineAnnotationRoman,
+  makeEnrichedLineAnnotationRomanContentText,
   makeEnrichedLineAnnotationTranslation,
   makeEnrichedLineContentText,
   makeEnrichedLineContentWords,
@@ -146,6 +148,7 @@ describe('validate', () => {
         makeWordAnnotationTranslation: makeDocumentWordAnnotationTranslation,
         makeLineAnnotation: makeDocumentLineAnnotation,
         makeLineAnnotationRoman: makeDocumentLineAnnotationRoman,
+        makeLineAnnotationRomanContentText: makeDocumentLineAnnotationRomanContentText,
         makeLineAnnotationTranslation: makeDocumentLineAnnotationTranslation,
         validateWordAnnotation: validateDocumentWordAnnotation,
         validateLineAnnotation: validateDocumentLineAnnotation,
@@ -157,6 +160,7 @@ describe('validate', () => {
         makeWordAnnotationTranslation: makeEnrichedWordAnnotationTranslation,
         makeLineAnnotation: makeEnrichedLineAnnotation,
         makeLineAnnotationRoman: makeEnrichedLineAnnotationRoman,
+        makeLineAnnotationRomanContentText: makeEnrichedLineAnnotationRomanContentText,
         makeLineAnnotationTranslation: makeEnrichedLineAnnotationTranslation,
         validateWordAnnotation: validateEnrichedWordAnnotation,
         validateLineAnnotation: validateEnrichedLineAnnotation,
@@ -176,7 +180,9 @@ describe('validate', () => {
         translations: ['zh-Hans', 'ZH-HANS'].map((language) => model.makeWordAnnotationTranslation({ language, text: 'translation' })),
       })
       const line = model.makeLineAnnotation({
-        romans: identities.map((identity) => model.makeLineAnnotationRoman({ ...identity, text: 'roman' })),
+        romans: identities.map((identity) =>
+          model.makeLineAnnotationRoman({ ...identity, content: model.makeLineAnnotationRomanContentText('roman') }),
+        ),
         translations: ['zh-Hans', 'ZH-HANS'].map((language) => model.makeLineAnnotationTranslation({ language, text: 'translation' })),
       })
       deepStrictEqual(model.validateWordAnnotation(word), [
@@ -209,7 +215,15 @@ describe('validate', () => {
             }),
           }),
         ]),
-        annotation: makeEnrichedLineAnnotation({ romans: [makeEnrichedLineAnnotationRoman({ ...identity, text: 'shi' })] }),
+        annotation: makeEnrichedLineAnnotation({
+          romans: [
+            makeEnrichedLineAnnotationRoman({
+              language,
+              scheme: 'independent_romanization',
+              content: makeEnrichedLineAnnotationRomanContentText('shi'),
+            }),
+          ],
+        }),
       })
       const diagnostics = validateEnrichedLine(line, '', Timing.WORD)
       deepStrictEqual(

@@ -22,6 +22,7 @@ import gondola.lyrics.model.utils.findUnordered
 import gondola.lyrics.model.utils.getAnnotationKey
 import gondola.lyrics.model.utils.getTimeRangeEnd
 import gondola.lyrics.model.utils.isTimeRangeOrdered
+import gondola.lyrics.model.utils.isTimeRangeUncovered
 import gondola.lyrics.model.utils.isUnresolved
 import gondola.lyrics.model.utils.lowerTag
 
@@ -114,7 +115,79 @@ public fun makeEnrichedLineAnnotation(
 }
 
 /**
- * Checks roman uniqueness by language and scheme and translation uniqueness by language.
+ * Creates a source fragment, preserving its text and optional timing.
+ */
+public fun makeEnrichedLineAnnotationRomanToken(time: TimeRange? = null, text: String = ""): LineAnnotationRomanToken {
+    return LineAnnotationRomanToken(time = time, text = text)
+}
+
+/**
+ * Creates roman content from source fragments without adding whole-line text.
+ */
+public fun makeEnrichedLineAnnotationRomanContentTokens(tokens: List<LineAnnotationRomanToken>): LineAnnotationRomanContent {
+    return LineAnnotationRomanContent(tokens = tokens)
+}
+
+/**
+ * Creates whole-line roman text without fragment timing.
+ */
+public fun makeEnrichedLineAnnotationRomanContentText(text: String): LineAnnotationRomanContent {
+    return LineAnnotationRomanContent(text = text)
+}
+
+/**
+ * Checks exclusive content, non-empty text, a token timing anchor, and containment in a declared annotation range.
+ *
+ * Explicit token times are independent of the original line when the annotation has no declared range.
+ */
+public fun validateEnrichedLineAnnotationRomanContent(
+    content: LineAnnotationRomanContent?,
+    path: String = "",
+    time: TimeRange? = null,
+): List<Diagnostic> {
+    val diagnostics = mutableListOf<Diagnostic>()
+    val tokens = content?.tokens.orEmpty()
+    val hasTokens = tokens.isNotEmpty()
+    val hasText = content?.text != null
+    if (!hasTokens && !hasText) {
+        diagnostics.add(Diagnostic(path, DiagnosticCode.LineAnnotationRomanContentMissing))
+    } else if (hasTokens && hasText) {
+        diagnostics.add(Diagnostic(path, DiagnosticCode.LineAnnotationRomanContentAmbiguous))
+    }
+    if (content?.text == "") {
+        diagnostics.add(Diagnostic(childPath(path, "text"), DiagnosticCode.LineAnnotationRomanContentTextEmpty))
+    }
+    if (hasTokens && tokens.none { it.time != null }) {
+        diagnostics.add(Diagnostic(childPath(path, "tokens"), DiagnosticCode.LineAnnotationRomanContentTokensTimeMissing))
+    }
+    tokens.forEachIndexed { index, token ->
+        val tokenPath = childPath(path, "tokens[$index]")
+        if (token.text.isEmpty()) {
+            diagnostics.add(Diagnostic(childPath(tokenPath, "text"), DiagnosticCode.LineAnnotationRomanTokenTextEmpty))
+        }
+        if (token.time != null) {
+            diagnostics.addAll(validateTimeRange(token.time, childPath(tokenPath, "time")))
+        }
+        if (isTimeRangeUncovered(token.time, time)) {
+            diagnostics.add(Diagnostic(childPath(tokenPath, "time"), DiagnosticCode.LineAnnotationRomanTimeUncovered))
+        }
+    }
+    return diagnostics
+}
+
+/**
+ * Checks the declared range and required roman content without constraining them to the original line.
+ */
+public fun validateEnrichedLineAnnotationRoman(roman: LineAnnotationRoman, path: String = ""): List<Diagnostic> {
+    val diagnostics = validateEnrichedLineAnnotationRomanContent(roman.content, childPath(path, "content"), roman.time).toMutableList()
+    if (roman.time != null) {
+        diagnostics.addAll(validateTimeRange(roman.time, childPath(path, "time")))
+    }
+    return diagnostics
+}
+
+/**
+ * Checks roman content and timing, uniqueness by language and scheme, and translation uniqueness by language.
  */
 public fun validateEnrichedLineAnnotation(annotation: LineAnnotation, path: String = ""): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
@@ -124,14 +197,41 @@ public fun validateEnrichedLineAnnotation(annotation: LineAnnotation, path: Stri
     findDuplicates(annotation.translations) { lowerTag(it.language) ?: "" }.forEach { index ->
         diagnostics.add(Diagnostic(childPath(path, "translations[$index]"), DiagnosticCode.LineAnnotationTranslationsLanguageDuplicate))
     }
+    annotation.romans.forEachIndexed { index, roman ->
+        diagnostics.addAll(validateEnrichedLineAnnotationRoman(roman, childPath(path, "romans[$index]")))
+    }
+    return diagnostics
+}
+
+private fun validateRomanPlacement(annotation: LineAnnotation, content: LineContent?, path: String): List<Diagnostic> {
+    val wordKeys = mutableSetOf<Pair<String?, String?>>()
+    for (word in content?.words.orEmpty()) {
+        if (word.type == WordType.WORD_TYPE_SPACE) {
+            continue
+        }
+        for (roman in word.annotation?.romans.orEmpty()) {
+            wordKeys.add(getAnnotationKey(roman.language, roman.scheme))
+        }
+    }
+    val diagnostics = mutableListOf<Diagnostic>()
+    annotation.romans.forEachIndexed { index, roman ->
+        if (getAnnotationKey(roman.language, roman.scheme) in wordKeys) {
+            diagnostics.add(Diagnostic(childPath(path, "romans[$index]"), DiagnosticCode.LineAnnotationRomansConflict))
+        }
+    }
     return diagnostics
 }
 
 /**
  * Creates a whole-line romanization without normalizing its language or scheme.
  */
-public fun makeEnrichedLineAnnotationRoman(language: String? = null, text: String = "", scheme: String? = null): LineAnnotationRoman {
-    return LineAnnotationRoman(language = language, text = text, scheme = scheme)
+public fun makeEnrichedLineAnnotationRoman(
+    language: String? = null,
+    scheme: String? = null,
+    time: TimeRange? = null,
+    content: LineAnnotationRomanContent? = null,
+): LineAnnotationRoman {
+    return LineAnnotationRoman(language = language, scheme = scheme, time = time, content = content)
 }
 
 /**
@@ -142,10 +242,68 @@ public fun makeEnrichedLineAnnotationTranslation(language: String? = null, text:
 }
 
 /**
- * Lowercases the romanization's language and scheme.
+ * Copies the source fragment and its optional time without changing text.
+ */
+public fun canonicalizeEnrichedLineAnnotationRomanToken(token: LineAnnotationRomanToken): LineAnnotationRomanToken {
+    return token.copy(time = token.time?.copy())
+}
+
+/**
+ * Copies roman content, preserving fragment order, whitespace, and explicit timing.
+ */
+public fun canonicalizeEnrichedLineAnnotationRomanContent(content: LineAnnotationRomanContent): LineAnnotationRomanContent {
+    return content.copy(tokens = canonicalizeList(content.tokens, ::canonicalizeEnrichedLineAnnotationRomanToken))
+}
+
+/**
+ * Lowercases language and scheme and copies roman content and timing without inferring missing boundaries.
  */
 public fun canonicalizeEnrichedLineAnnotationRoman(roman: LineAnnotationRoman): LineAnnotationRoman {
-    return roman.copy(language = lowerTag(roman.language), scheme = lowerTag(roman.scheme))
+    return roman.copy(
+        language = lowerTag(roman.language),
+        scheme = lowerTag(roman.scheme),
+        time = roman.time?.copy(),
+        content = canonicalizeField(roman.content, ::canonicalizeEnrichedLineAnnotationRomanContent),
+    )
+}
+
+/**
+ * Returns whole-line text or joins source fragments without adding separators.
+ */
+public fun getEnrichedLineAnnotationRomanText(roman: LineAnnotationRoman): String {
+    return roman.content?.text ?: roman.content?.tokens.orEmpty().joinToString("") { it.text }
+}
+
+/**
+ * Uses the romanization's declared time, falling back to the owning line.
+ */
+public fun resolveEnrichedLineAnnotationRomanTime(roman: LineAnnotationRoman, line: Line): TimeRange? {
+    return roman.time ?: line.time
+}
+
+/**
+ * Uses the romanization's declared time, falling back to the owning background.
+ */
+public fun resolveEnrichedLineAnnotationRomanTime(roman: LineAnnotationRoman, line: LineBackground): TimeRange? {
+    return roman.time ?: line.time
+}
+
+/**
+ * Uses the entire token time, then the romanization's time, then the owning line's time.
+ */
+public fun resolveEnrichedLineAnnotationRomanTokenTime(token: LineAnnotationRomanToken, roman: LineAnnotationRoman, line: Line): TimeRange? {
+    return token.time ?: resolveEnrichedLineAnnotationRomanTime(roman, line)
+}
+
+/**
+ * Uses the entire token time, then the romanization's time, then the owning background's time.
+ */
+public fun resolveEnrichedLineAnnotationRomanTokenTime(
+    token: LineAnnotationRomanToken,
+    roman: LineAnnotationRoman,
+    line: LineBackground,
+): TimeRange? {
+    return token.time ?: resolveEnrichedLineAnnotationRomanTime(roman, line)
 }
 
 /**
@@ -187,7 +345,13 @@ private fun deriveWordRomans(words: List<Word>): List<LineAnnotationRoman> {
             }
         }
         if (joined.isNotEmpty()) {
-            romans.add(makeEnrichedLineAnnotationRoman(language = language, text = joined.toString(), scheme = scheme))
+            romans.add(
+                makeEnrichedLineAnnotationRoman(
+                    language = language,
+                    scheme = scheme,
+                    content = makeEnrichedLineAnnotationRomanContentText(joined.toString()),
+                ),
+            )
         }
     }
     return romans
@@ -326,6 +490,7 @@ public fun validateEnrichedLine(line: Line, path: String = "", timing: Timing = 
         diagnostics += Diagnostic(childPath(path, "annotation"), DiagnosticCode.LineAnnotationUnexpected)
     } else if (line.annotation != null) {
         diagnostics += validateEnrichedLineAnnotation(line.annotation, childPath(path, "annotation"))
+        diagnostics += validateRomanPlacement(line.annotation, line.content, childPath(path, "annotation"))
     }
     if (instrumental && line.backgrounds.size > 0) {
         diagnostics += Diagnostic(childPath(path, "backgrounds"), DiagnosticCode.LineBackgroundsUnexpected)
@@ -365,6 +530,7 @@ public fun validateEnrichedLineBackground(
     diagnostics += validateEnrichedLineContent(background.content, time, path, timing)
     if (background.annotation != null) {
         diagnostics += validateEnrichedLineAnnotation(background.annotation, childPath(path, "annotation"))
+        diagnostics += validateRomanPlacement(background.annotation, background.content, childPath(path, "annotation"))
     }
     return diagnostics
 }

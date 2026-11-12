@@ -18,10 +18,16 @@ The library targets Java 8 bytecode and provides native Kotlin data classes with
 
 ## Usage
 
-- `timing` determines the time precision of the entire lyric:
+- `timing` declares the timing precision of the original lyric:
   - `TIMING_NONE`: No timing declared; every line is plain text.
   - `TIMING_LINE`: Each line has one time range and plain text content. Use `TIMING_WORD` if any line needs word-level timing.
   - `TIMING_WORD`: Normal words carry their own time ranges. Plain text lines may also appear; use `TIMING_LINE` if all lines are plain text.
+
+Annotations can carry their own timing independently of the original lyric's precision.
+
+Line romanizations use either `content.text` for whole-line text or `content.tokens` for source fragments, with at least one explicitly timed token.
+Use `makeDocumentLineAnnotationRomanContentText` or `makeDocumentLineAnnotationRomanContentTokens` to select the content form; the enriched helpers use the corresponding `Enriched` names.
+Token text preserves whitespace and is joined without added separators; word romanizations retain their existing token structure.
 
 Messages expose immutable properties. Use data-class constructors or helpers to create values, and `copy()` to modify them.
 Optional fields use nullable values: `null` means absent, while explicit `false` and zero values remain present.

@@ -3,6 +3,8 @@ export type {
   Line as DocumentLine,
   LineAnnotation as DocumentLineAnnotation,
   LineAnnotationRoman as DocumentLineAnnotationRoman,
+  LineAnnotationRomanContent as DocumentLineAnnotationRomanContent,
+  LineAnnotationRomanToken as DocumentLineAnnotationRomanToken,
   LineAnnotationTranslation as DocumentLineAnnotationTranslation,
   LineBackground as DocumentLineBackground,
   LineContent as DocumentLineContent,

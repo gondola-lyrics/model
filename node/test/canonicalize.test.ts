@@ -18,6 +18,7 @@ import {
   deriveEnrichedLanguageUsages,
   makeDocumentLineAnnotation,
   makeDocumentLineAnnotationRoman,
+  makeDocumentLineAnnotationRomanContentText,
   makeDocumentLineContentText,
   makeDocumentLineNormal,
   makeDocumentLyric,
@@ -28,6 +29,7 @@ import {
   makeDocumentWordNormal,
   makeEnrichedLineAnnotation,
   makeEnrichedLineAnnotationRoman,
+  makeEnrichedLineAnnotationRomanContentText,
   makeEnrichedLineContentWords,
   makeEnrichedLineNormal,
   makeEnrichedLyric,
@@ -141,6 +143,7 @@ describe('canonicalize', () => {
         makeWordAnnotationRuby: makeDocumentWordAnnotationRuby,
         makeLineAnnotation: makeDocumentLineAnnotation,
         makeLineAnnotationRoman: makeDocumentLineAnnotationRoman,
+        makeLineAnnotationRomanContentText: makeDocumentLineAnnotationRomanContentText,
         canonicalizeWordAnnotation: canonicalizeDocumentWordAnnotation,
         canonicalizeLineAnnotation: canonicalizeDocumentLineAnnotation,
       },
@@ -151,6 +154,7 @@ describe('canonicalize', () => {
         makeWordAnnotationRuby: makeEnrichedWordAnnotationRuby,
         makeLineAnnotation: makeEnrichedLineAnnotation,
         makeLineAnnotationRoman: makeEnrichedLineAnnotationRoman,
+        makeLineAnnotationRomanContentText: makeEnrichedLineAnnotationRomanContentText,
         canonicalizeWordAnnotation: canonicalizeEnrichedWordAnnotation,
         canonicalizeLineAnnotation: canonicalizeEnrichedLineAnnotation,
       },
@@ -160,7 +164,9 @@ describe('canonicalize', () => {
           romans: [model.makeWordAnnotationRoman({ language: 'JA-Latn', scheme, tokens: [model.makeWordAnnotationToken({ text: 'shi' })] })],
           rubies: [model.makeWordAnnotationRuby({ language: 'JA-Latn', scheme, tokens: [model.makeWordAnnotationToken({ text: 'shi' })] })],
         })
-        const line = model.makeLineAnnotation({ romans: [model.makeLineAnnotationRoman({ language: 'JA-Latn', scheme, text: 'shi' })] })
+        const line = model.makeLineAnnotation({
+          romans: [model.makeLineAnnotationRoman({ language: 'JA-Latn', scheme, content: model.makeLineAnnotationRomanContentText('shi') })],
+        })
         const canonicalWord = model.canonicalizeWordAnnotation(word)
         const canonicalLine = model.canonicalizeLineAnnotation(line)
         const expected = { language: 'ja-latn', scheme: scheme === '' ? undefined : 'hepburn' }

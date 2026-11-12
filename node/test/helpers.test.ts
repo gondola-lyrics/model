@@ -8,6 +8,7 @@ import {
   deriveEnrichedLineRomans,
   makeAgent,
   makeDocumentLineAnnotationRoman,
+  makeDocumentLineAnnotationRomanContentText,
   makeDocumentLineContentWords,
   makeDocumentWordAnnotation,
   makeDocumentWordAnnotationRoman,
@@ -15,6 +16,7 @@ import {
   makeDocumentWordNormal,
   makeDocumentWordSpace,
   makeEnrichedLineAnnotationRoman,
+  makeEnrichedLineAnnotationRomanContentText,
   makeEnrichedLineContentWords,
   makeEnrichedLineNormal,
   makeEnrichedWordAnnotation,
@@ -74,9 +76,9 @@ describe('derive line romans', () => {
       makeDocumentWordSpace({ text: ' ' }),
     ]
     deepStrictEqual(deriveDocumentLineRomans(makeDocumentLineContentWords(words)), [
-      makeDocumentLineAnnotationRoman({ language: 'ja-latn', scheme: 'hepburn', text: 'shi chi' }),
-      makeDocumentLineAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', text: 'si ti' }),
-      makeDocumentLineAnnotationRoman({ language: 'ja-latn', text: 'default text' }),
+      makeDocumentLineAnnotationRoman({ language: 'ja-latn', scheme: 'hepburn', content: makeDocumentLineAnnotationRomanContentText('shi chi') }),
+      makeDocumentLineAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', content: makeDocumentLineAnnotationRomanContentText('si ti') }),
+      makeDocumentLineAnnotationRoman({ language: 'ja-latn', content: makeDocumentLineAnnotationRomanContentText('default text') }),
     ])
     deepStrictEqual(first.romans[0]?.scheme, 'HEPBURN')
   })
@@ -105,9 +107,9 @@ describe('derive line romans', () => {
       makeEnrichedWordSpace({ text: ' ' }),
     ]
     deepStrictEqual(deriveEnrichedLineRomans(makeEnrichedLineContentWords(words)), [
-      makeEnrichedLineAnnotationRoman({ language: 'ja-latn', scheme: 'hepburn', text: 'shi chi' }),
-      makeEnrichedLineAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', text: 'si ti' }),
-      makeEnrichedLineAnnotationRoman({ language: 'ja-latn', text: 'default text' }),
+      makeEnrichedLineAnnotationRoman({ language: 'ja-latn', scheme: 'hepburn', content: makeEnrichedLineAnnotationRomanContentText('shi chi') }),
+      makeEnrichedLineAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', content: makeEnrichedLineAnnotationRomanContentText('si ti') }),
+      makeEnrichedLineAnnotationRoman({ language: 'ja-latn', content: makeEnrichedLineAnnotationRomanContentText('default text') }),
     ])
     deepStrictEqual(first.romans[0]?.scheme, 'HEPBURN')
   })

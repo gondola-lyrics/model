@@ -35,6 +35,9 @@ import {
   makeEnrichedLanguageUsage,
   makeEnrichedLineAnnotation,
   makeEnrichedLineAnnotationRoman,
+  makeEnrichedLineAnnotationRomanContentText,
+  makeEnrichedLineAnnotationRomanContentTokens,
+  makeEnrichedLineAnnotationRomanToken,
   makeEnrichedLineAnnotationTranslation,
   makeEnrichedLineBackground,
   makeEnrichedLineContentText,
@@ -119,7 +122,25 @@ const meta = () => {
 
 const lineAnnotation = () => {
   return makeEnrichedLineAnnotation({
-    romans: [makeEnrichedLineAnnotationRoman({ language: 'ja-latn', scheme: 'hepburn', text: 'r' })],
+    romans: [
+      makeEnrichedLineAnnotationRoman({
+        language: 'ja-latn',
+        scheme: 'hepburn',
+        time: makeTimeRange({ start: 0, end: 0 }),
+        content: makeEnrichedLineAnnotationRomanContentText('r'),
+      }),
+      makeEnrichedLineAnnotationRoman({
+        language: 'zh-latn',
+        scheme: 'pinyin',
+        time: makeTimeRange({ start: 0 }),
+        content: makeEnrichedLineAnnotationRomanContentTokens([
+          makeEnrichedLineAnnotationRomanToken({ time: makeTimeRange({ start: 0, end: 1 }), text: 'ni' }),
+          makeEnrichedLineAnnotationRomanToken({ text: '  ' }),
+          makeEnrichedLineAnnotationRomanToken({ time: makeTimeRange({ start: 3 }), text: 'hao' }),
+        ]),
+      }),
+      makeEnrichedLineAnnotationRoman({ content: makeEnrichedLineAnnotationRomanContentText('') }),
+    ],
     translations: [makeEnrichedLineAnnotationTranslation({ language: 'zh', text: '译' })],
   })
 }

@@ -44,18 +44,53 @@ public class LineType(@JvmField public val value: Int) {
 }
 
 /**
- * Romanized transliteration of a whole line.
+ * Token boundaries follow the source and need not match the original words.
  */
+public data class LineAnnotationRomanToken(
+    /**
+     * Unset uses the annotation's range, then the line's; an explicit range is never filled field by field.
+     * An explicit range must fit a declared annotation range, but need not fit the original line.
+     */
+    val time: TimeRange? = null,
+    /**
+     * Non-empty source text, preserving whitespace and punctuation.
+     */
+    val text: String = "",
+)
+
+/**
+ * Exactly one of tokens or text must be set.
+ */
+public data class LineAnnotationRomanContent(
+    /**
+     * Non-empty source fragments in text order; at least one carries an explicit time range.
+     * Fragments concatenate without added separators, preserving their boundaries and whitespace.
+     */
+    val tokens: List<LineAnnotationRomanToken> = emptyList(),
+    /**
+     * Non-empty whole-line text without token segmentation.
+     */
+    val text: String? = null,
+)
+
 public data class LineAnnotationRoman(
     /**
      * Language of this item, as a BCP 47 tag.
      */
     val language: String? = null,
-    val text: String = "",
     /**
      * Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
      */
     val scheme: String? = null,
+    /**
+     * An explicit range may differ from the original line's and must contain every explicitly timed token.
+     * Unset uses the line's range for text and untimed tokens; explicit token times remain independent.
+     */
+    val time: TimeRange? = null,
+    /**
+     * Required, with exactly one content form.
+     */
+    val content: LineAnnotationRomanContent? = null,
 )
 
 /**
@@ -96,6 +131,7 @@ public data class LineContent(
 
 /**
  * Background vocals attached to a normal line, sharing its part.
+ * Roman keys are exclusive between this background's annotation and its words' annotations.
  */
 public data class LineBackground(
     /**
@@ -122,6 +158,9 @@ public data class LineBackground(
     val annotation: LineAnnotation? = null,
 )
 
+/**
+ * Roman keys are exclusive between this line's annotation and its words' annotations.
+ */
 public data class Line(
     /**
      * Identifier of the line; empty means none.

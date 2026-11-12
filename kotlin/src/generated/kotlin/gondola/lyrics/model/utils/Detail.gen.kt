@@ -19,6 +19,8 @@ import gondola.lyrics.model.common.UnknownEntry as CommonUnknownEntry
 import gondola.lyrics.model.document.Line as DocumentLine
 import gondola.lyrics.model.document.LineAnnotation as DocumentLineAnnotation
 import gondola.lyrics.model.document.LineAnnotationRoman as DocumentLineAnnotationRoman
+import gondola.lyrics.model.document.LineAnnotationRomanContent as DocumentLineAnnotationRomanContent
+import gondola.lyrics.model.document.LineAnnotationRomanToken as DocumentLineAnnotationRomanToken
 import gondola.lyrics.model.document.LineAnnotationTranslation as DocumentLineAnnotationTranslation
 import gondola.lyrics.model.document.LineBackground as DocumentLineBackground
 import gondola.lyrics.model.document.LineContent as DocumentLineContent
@@ -35,6 +37,8 @@ import gondola.lyrics.model.enriched.LanguageUsage as EnrichedLanguageUsage
 import gondola.lyrics.model.enriched.Line as EnrichedLine
 import gondola.lyrics.model.enriched.LineAnnotation as EnrichedLineAnnotation
 import gondola.lyrics.model.enriched.LineAnnotationRoman as EnrichedLineAnnotationRoman
+import gondola.lyrics.model.enriched.LineAnnotationRomanContent as EnrichedLineAnnotationRomanContent
+import gondola.lyrics.model.enriched.LineAnnotationRomanToken as EnrichedLineAnnotationRomanToken
 import gondola.lyrics.model.enriched.LineAnnotationTranslation as EnrichedLineAnnotationTranslation
 import gondola.lyrics.model.enriched.LineBackground as EnrichedLineBackground
 import gondola.lyrics.model.enriched.LineContent as EnrichedLineContent
@@ -134,10 +138,18 @@ internal fun isDefault(message: Any): Boolean {
                 message.annotation == null &&
                 message.emphasis == null
 
+        is DocumentLineAnnotationRomanToken ->
+            message.time == null &&
+                message.text == ""
+
+        is DocumentLineAnnotationRomanContent -> message.tokens.isEmpty() &&
+            message.text == null
+
         is DocumentLineAnnotationRoman ->
             message.language == null &&
-                message.text == "" &&
-                message.scheme == null
+                message.scheme == null &&
+                message.time == null &&
+                message.content == null
 
         is DocumentLineAnnotationTranslation ->
             message.language == null &&
@@ -218,10 +230,18 @@ internal fun isDefault(message: Any): Boolean {
                 message.annotation == null &&
                 message.emphasis == null
 
+        is EnrichedLineAnnotationRomanToken ->
+            message.time == null &&
+                message.text == ""
+
+        is EnrichedLineAnnotationRomanContent -> message.tokens.isEmpty() &&
+            message.text == null
+
         is EnrichedLineAnnotationRoman ->
             message.language == null &&
-                message.text == "" &&
-                message.scheme == null
+                message.scheme == null &&
+                message.time == null &&
+                message.content == null
 
         is EnrichedLineAnnotationTranslation ->
             message.language == null &&
@@ -366,10 +386,21 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("emphasis", FieldShape.OPTIONAL, message.emphasis)
         }
 
+        is DocumentLineAnnotationRomanToken -> {
+            visit("time", FieldShape.MESSAGE, message.time)
+            visit("text", FieldShape.SCALAR, message.text)
+        }
+
+        is DocumentLineAnnotationRomanContent -> {
+            visit("tokens", FieldShape.LIST_MESSAGE, message.tokens)
+            visit("text", FieldShape.OPTIONAL, message.text)
+        }
+
         is DocumentLineAnnotationRoman -> {
             visit("language", FieldShape.OPTIONAL, message.language)
-            visit("text", FieldShape.SCALAR, message.text)
             visit("scheme", FieldShape.OPTIONAL, message.scheme)
+            visit("time", FieldShape.MESSAGE, message.time)
+            visit("content", FieldShape.MESSAGE, message.content)
         }
 
         is DocumentLineAnnotationTranslation -> {
@@ -468,10 +499,21 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("emphasis", FieldShape.MESSAGE, message.emphasis)
         }
 
+        is EnrichedLineAnnotationRomanToken -> {
+            visit("time", FieldShape.MESSAGE, message.time)
+            visit("text", FieldShape.SCALAR, message.text)
+        }
+
+        is EnrichedLineAnnotationRomanContent -> {
+            visit("tokens", FieldShape.LIST_MESSAGE, message.tokens)
+            visit("text", FieldShape.OPTIONAL, message.text)
+        }
+
         is EnrichedLineAnnotationRoman -> {
             visit("language", FieldShape.OPTIONAL, message.language)
-            visit("text", FieldShape.SCALAR, message.text)
             visit("scheme", FieldShape.OPTIONAL, message.scheme)
+            visit("time", FieldShape.MESSAGE, message.time)
+            visit("content", FieldShape.MESSAGE, message.content)
         }
 
         is EnrichedLineAnnotationTranslation -> {
@@ -637,10 +679,23 @@ internal fun readField(message: Any, name: String): Any? {
             else -> null
         }
 
+        is DocumentLineAnnotationRomanToken -> when (name) {
+            "time" -> message.time
+            "text" -> message.text
+            else -> null
+        }
+
+        is DocumentLineAnnotationRomanContent -> when (name) {
+            "tokens" -> message.tokens
+            "text" -> message.text
+            else -> null
+        }
+
         is DocumentLineAnnotationRoman -> when (name) {
             "language" -> message.language
-            "text" -> message.text
             "scheme" -> message.scheme
+            "time" -> message.time
+            "content" -> message.content
             else -> null
         }
 
@@ -754,10 +809,23 @@ internal fun readField(message: Any, name: String): Any? {
             else -> null
         }
 
+        is EnrichedLineAnnotationRomanToken -> when (name) {
+            "time" -> message.time
+            "text" -> message.text
+            else -> null
+        }
+
+        is EnrichedLineAnnotationRomanContent -> when (name) {
+            "tokens" -> message.tokens
+            "text" -> message.text
+            else -> null
+        }
+
         is EnrichedLineAnnotationRoman -> when (name) {
             "language" -> message.language
-            "text" -> message.text
             "scheme" -> message.scheme
+            "time" -> message.time
+            "content" -> message.content
             else -> null
         }
 

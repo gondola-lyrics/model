@@ -182,7 +182,29 @@ class CodecTest {
             rubies = listOf(WordAnnotationRuby(language = "zh-latn", scheme = "pinyin", tokens = listOf(WordAnnotationToken(text = "han")))),
             romans = listOf(WordAnnotationRoman(language = "ja-latn", scheme = "hepburn", tokens = listOf(WordAnnotationToken(text = "shi")))),
         )
-        val lineAnnotation = LineAnnotation(romans = listOf(LineAnnotationRoman(language = "ja-latn", scheme = "hepburn", text = "shi")))
+        val lineAnnotation = LineAnnotation(
+            romans = listOf(
+                LineAnnotationRoman(
+                    language = "ja-latn",
+                    scheme = "hepburn",
+                    time = TimeRange(start = 0, end = 0),
+                    content = gondola.lyrics.model.enriched.LineAnnotationRomanContent(text = "shi"),
+                ),
+                LineAnnotationRoman(
+                    language = "zh-latn",
+                    scheme = "pinyin",
+                    time = TimeRange(start = 0),
+                    content = gondola.lyrics.model.enriched.LineAnnotationRomanContent(
+                        tokens = listOf(
+                            gondola.lyrics.model.enriched.LineAnnotationRomanToken(time = TimeRange(start = 0, end = 1), text = "ni"),
+                            gondola.lyrics.model.enriched.LineAnnotationRomanToken(text = "  "),
+                            gondola.lyrics.model.enriched.LineAnnotationRomanToken(time = TimeRange(start = 3), text = "hao"),
+                        ),
+                    ),
+                ),
+                LineAnnotationRoman(content = gondola.lyrics.model.enriched.LineAnnotationRomanContent(text = "")),
+            ),
+        )
         val part = Part(type = PartType.PART_TYPE_CHORUS, id = "Chorus-A", raw = "chorus")
         val meta = Meta(
             offset = -1500,
@@ -226,7 +248,21 @@ class CodecTest {
             ),
         )
         val documentLineAnnotation = gondola.lyrics.model.document.LineAnnotation(
-            romans = listOf(gondola.lyrics.model.document.LineAnnotationRoman(language = "ja-latn", scheme = "hepburn", text = "shi")),
+            romans = lineAnnotation.romans.map { roman ->
+                gondola.lyrics.model.document.LineAnnotationRoman(
+                    language = roman.language,
+                    scheme = roman.scheme,
+                    time = roman.time,
+                    content = roman.content?.let { content ->
+                        gondola.lyrics.model.document.LineAnnotationRomanContent(
+                            text = content.text,
+                            tokens = content.tokens.map { token ->
+                                gondola.lyrics.model.document.LineAnnotationRomanToken(time = token.time, text = token.text)
+                            },
+                        )
+                    },
+                )
+            },
         )
         val stored = DocumentLyric(
             version = "1.1.0",
@@ -285,7 +321,41 @@ class CodecTest {
             )
             val officialLineAnnotation = official(
                 "lyric.$layer.LineAnnotation",
-                "romans" to listOf(official("lyric.$layer.LineAnnotationRoman", "language" to "ja-latn", "scheme" to "hepburn", "text" to "shi")),
+                "romans" to listOf(
+                    official(
+                        "lyric.$layer.LineAnnotationRoman",
+                        "language" to "ja-latn",
+                        "scheme" to "hepburn",
+                        "time" to official("lyric.common.TimeRange", "start" to 0L, "end" to 0L),
+                        "content" to official("lyric.$layer.LineAnnotationRomanContent", "text" to "shi"),
+                    ),
+                    official(
+                        "lyric.$layer.LineAnnotationRoman",
+                        "language" to "zh-latn",
+                        "scheme" to "pinyin",
+                        "time" to official("lyric.common.TimeRange", "start" to 0L),
+                        "content" to official(
+                            "lyric.$layer.LineAnnotationRomanContent",
+                            "tokens" to listOf(
+                                official(
+                                    "lyric.$layer.LineAnnotationRomanToken",
+                                    "time" to official("lyric.common.TimeRange", "start" to 0L, "end" to 1L),
+                                    "text" to "ni",
+                                ),
+                                official("lyric.$layer.LineAnnotationRomanToken", "text" to "  "),
+                                official(
+                                    "lyric.$layer.LineAnnotationRomanToken",
+                                    "time" to official("lyric.common.TimeRange", "start" to 3L),
+                                    "text" to "hao",
+                                ),
+                            ),
+                        ),
+                    ),
+                    official(
+                        "lyric.$layer.LineAnnotationRoman",
+                        "content" to official("lyric.$layer.LineAnnotationRomanContent", "text" to ""),
+                    ),
+                ),
             )
             val emphasis = if (layer == "enriched") official("lyric.enriched.WordEmphasis") else false
             val values = listOf(

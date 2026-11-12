@@ -20,6 +20,7 @@ import gondola.lyrics.model.enriched.WordType
 import gondola.lyrics.model.enriched.deriveEnrichedLineLanguages
 import gondola.lyrics.model.enriched.deriveEnrichedLineRomans
 import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRoman
+import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRomanContentText
 import gondola.lyrics.model.enriched.makeEnrichedLineContentWords
 import gondola.lyrics.model.enriched.makeEnrichedLineNormal
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotation
@@ -76,9 +77,13 @@ class HelpersTest {
             makeEnrichedWordSpace(text = " "),
         )
         val expected = listOf(
-            makeEnrichedLineAnnotationRoman(language = "ja-latn", scheme = "hepburn", text = "shi chi"),
-            makeEnrichedLineAnnotationRoman(language = "ja-latn", scheme = "kunrei", text = "si ti"),
-            makeEnrichedLineAnnotationRoman(language = "ja-latn", text = "default text"),
+            makeEnrichedLineAnnotationRoman(
+                language = "ja-latn",
+                scheme = "hepburn",
+                content = makeEnrichedLineAnnotationRomanContentText("shi chi"),
+            ),
+            makeEnrichedLineAnnotationRoman(language = "ja-latn", scheme = "kunrei", content = makeEnrichedLineAnnotationRomanContentText("si ti")),
+            makeEnrichedLineAnnotationRoman(language = "ja-latn", content = makeEnrichedLineAnnotationRomanContentText("default text")),
         )
         assertEquals(expected, deriveEnrichedLineRomans(makeEnrichedLineContentWords(words)))
         val stored = gondola.lyrics.model.document.makeDocumentLineContentWords(
@@ -109,7 +114,9 @@ class HelpersTest {
                 Triple("ja-latn", "kunrei", "si ti"),
                 Triple("ja-latn", null, "default text"),
             ),
-            gondola.lyrics.model.document.deriveDocumentLineRomans(stored).map { Triple(it.language, it.scheme, it.text) },
+            gondola.lyrics.model.document.deriveDocumentLineRomans(stored).map {
+                Triple(it.language, it.scheme, gondola.lyrics.model.document.getDocumentLineAnnotationRomanText(it))
+            },
         )
         assertEquals("HEPBURN", first.romans[0].scheme)
     }

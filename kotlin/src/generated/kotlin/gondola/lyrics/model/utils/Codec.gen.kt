@@ -19,6 +19,8 @@ import gondola.lyrics.model.common.UnknownEntry as CommonUnknownEntry
 import gondola.lyrics.model.document.Line as DocumentLine
 import gondola.lyrics.model.document.LineAnnotation as DocumentLineAnnotation
 import gondola.lyrics.model.document.LineAnnotationRoman as DocumentLineAnnotationRoman
+import gondola.lyrics.model.document.LineAnnotationRomanContent as DocumentLineAnnotationRomanContent
+import gondola.lyrics.model.document.LineAnnotationRomanToken as DocumentLineAnnotationRomanToken
 import gondola.lyrics.model.document.LineAnnotationTranslation as DocumentLineAnnotationTranslation
 import gondola.lyrics.model.document.LineBackground as DocumentLineBackground
 import gondola.lyrics.model.document.LineContent as DocumentLineContent
@@ -35,6 +37,8 @@ import gondola.lyrics.model.enriched.LanguageUsage as EnrichedLanguageUsage
 import gondola.lyrics.model.enriched.Line as EnrichedLine
 import gondola.lyrics.model.enriched.LineAnnotation as EnrichedLineAnnotation
 import gondola.lyrics.model.enriched.LineAnnotationRoman as EnrichedLineAnnotationRoman
+import gondola.lyrics.model.enriched.LineAnnotationRomanContent as EnrichedLineAnnotationRomanContent
+import gondola.lyrics.model.enriched.LineAnnotationRomanToken as EnrichedLineAnnotationRomanToken
 import gondola.lyrics.model.enriched.LineAnnotationTranslation as EnrichedLineAnnotationTranslation
 import gondola.lyrics.model.enriched.LineBackground as EnrichedLineBackground
 import gondola.lyrics.model.enriched.LineContent as EnrichedLineContent
@@ -309,19 +313,37 @@ internal fun encodeDocumentWord(w: WireWriter, src: DocumentWord) {
 }
 
 @JvmSynthetic
+internal fun encodeDocumentLineAnnotationRomanToken(w: WireWriter, src: DocumentLineAnnotationRomanToken) {
+    src.time?.let { w.message(10, ::encodeCommonTimeRange, it) }
+    if (src.text.isNotEmpty()) {
+        w.tag(18)
+        w.string(src.text)
+    }
+}
+
+@JvmSynthetic
+internal fun encodeDocumentLineAnnotationRomanContent(w: WireWriter, src: DocumentLineAnnotationRomanContent) {
+    for (item in src.tokens) {
+        w.message(10, ::encodeDocumentLineAnnotationRomanToken, item)
+    }
+    src.text?.let {
+        w.tag(18)
+        w.string(it)
+    }
+}
+
+@JvmSynthetic
 internal fun encodeDocumentLineAnnotationRoman(w: WireWriter, src: DocumentLineAnnotationRoman) {
     src.language?.let {
         w.tag(10)
         w.string(it)
     }
-    if (src.text.isNotEmpty()) {
-        w.tag(18)
-        w.string(src.text)
-    }
     src.scheme?.let {
-        w.tag(26)
+        w.tag(18)
         w.string(it)
     }
+    src.time?.let { w.message(26, ::encodeCommonTimeRange, it) }
+    src.content?.let { w.message(34, ::encodeDocumentLineAnnotationRomanContent, it) }
 }
 
 @JvmSynthetic
@@ -541,19 +563,37 @@ internal fun encodeEnrichedWord(w: WireWriter, src: EnrichedWord) {
 }
 
 @JvmSynthetic
+internal fun encodeEnrichedLineAnnotationRomanToken(w: WireWriter, src: EnrichedLineAnnotationRomanToken) {
+    src.time?.let { w.message(10, ::encodeCommonTimeRange, it) }
+    if (src.text.isNotEmpty()) {
+        w.tag(18)
+        w.string(src.text)
+    }
+}
+
+@JvmSynthetic
+internal fun encodeEnrichedLineAnnotationRomanContent(w: WireWriter, src: EnrichedLineAnnotationRomanContent) {
+    for (item in src.tokens) {
+        w.message(10, ::encodeEnrichedLineAnnotationRomanToken, item)
+    }
+    src.text?.let {
+        w.tag(18)
+        w.string(it)
+    }
+}
+
+@JvmSynthetic
 internal fun encodeEnrichedLineAnnotationRoman(w: WireWriter, src: EnrichedLineAnnotationRoman) {
     src.language?.let {
         w.tag(10)
         w.string(it)
     }
-    if (src.text.isNotEmpty()) {
-        w.tag(18)
-        w.string(src.text)
-    }
     src.scheme?.let {
-        w.tag(26)
+        w.tag(18)
         w.string(it)
     }
+    src.time?.let { w.message(26, ::encodeCommonTimeRange, it) }
+    src.content?.let { w.message(34, ::encodeEnrichedLineAnnotationRomanContent, it) }
 }
 
 @JvmSynthetic
@@ -885,16 +925,42 @@ private class DocumentWordState {
     }
 }
 
+private class DocumentLineAnnotationRomanTokenState {
+    var time: CommonTimeRangeState? = null
+    var text: String = ""
+
+    fun finish(): DocumentLineAnnotationRomanToken {
+        return DocumentLineAnnotationRomanToken(
+            time = time?.finish(),
+            text = text,
+        )
+    }
+}
+
+private class DocumentLineAnnotationRomanContentState {
+    val tokens = ArrayList<DocumentLineAnnotationRomanTokenState>()
+    var text: String? = null
+
+    fun finish(): DocumentLineAnnotationRomanContent {
+        return DocumentLineAnnotationRomanContent(
+            tokens = tokens.map { it.finish() },
+            text = text,
+        )
+    }
+}
+
 private class DocumentLineAnnotationRomanState {
     var language: String? = null
-    var text: String = ""
     var scheme: String? = null
+    var time: CommonTimeRangeState? = null
+    var content: DocumentLineAnnotationRomanContentState? = null
 
     fun finish(): DocumentLineAnnotationRoman {
         return DocumentLineAnnotationRoman(
             language = language,
-            text = text,
             scheme = scheme,
+            time = time?.finish(),
+            content = content?.finish(),
         )
     }
 }
@@ -1119,16 +1185,42 @@ private class EnrichedWordState {
     }
 }
 
+private class EnrichedLineAnnotationRomanTokenState {
+    var time: CommonTimeRangeState? = null
+    var text: String = ""
+
+    fun finish(): EnrichedLineAnnotationRomanToken {
+        return EnrichedLineAnnotationRomanToken(
+            time = time?.finish(),
+            text = text,
+        )
+    }
+}
+
+private class EnrichedLineAnnotationRomanContentState {
+    val tokens = ArrayList<EnrichedLineAnnotationRomanTokenState>()
+    var text: String? = null
+
+    fun finish(): EnrichedLineAnnotationRomanContent {
+        return EnrichedLineAnnotationRomanContent(
+            tokens = tokens.map { it.finish() },
+            text = text,
+        )
+    }
+}
+
 private class EnrichedLineAnnotationRomanState {
     var language: String? = null
-    var text: String = ""
     var scheme: String? = null
+    var time: CommonTimeRangeState? = null
+    var content: EnrichedLineAnnotationRomanContentState? = null
 
     fun finish(): EnrichedLineAnnotationRoman {
         return EnrichedLineAnnotationRoman(
             language = language,
-            text = text,
             scheme = scheme,
+            time = time?.finish(),
+            content = content?.finish(),
         )
     }
 }
@@ -1649,12 +1741,76 @@ internal fun decodeDocumentWord(r: WireReader): DocumentWord {
     return state.finish()
 }
 
+private fun mergeDocumentLineAnnotationRomanToken(r: WireReader, state: DocumentLineAnnotationRomanTokenState) {
+    while (r.more()) {
+        when (r.tag()) {
+            10 -> {
+                val item = state.time ?: CommonTimeRangeState().also { state.time = it }
+                val end = r.enter()
+                mergeCommonTimeRange(r, item)
+                r.leave(end)
+            }
+
+            18 -> state.text = r.string()
+
+            else -> r.skip()
+        }
+    }
+}
+
+@JvmSynthetic
+internal fun decodeDocumentLineAnnotationRomanToken(r: WireReader): DocumentLineAnnotationRomanToken {
+    val state = DocumentLineAnnotationRomanTokenState()
+    mergeDocumentLineAnnotationRomanToken(r, state)
+    return state.finish()
+}
+
+private fun mergeDocumentLineAnnotationRomanContent(r: WireReader, state: DocumentLineAnnotationRomanContentState) {
+    while (r.more()) {
+        when (r.tag()) {
+            10 -> {
+                val item = DocumentLineAnnotationRomanTokenState()
+                val end = r.enter()
+                mergeDocumentLineAnnotationRomanToken(r, item)
+                r.leave(end)
+                state.tokens.add(item)
+            }
+
+            18 -> state.text = r.string()
+
+            else -> r.skip()
+        }
+    }
+}
+
+@JvmSynthetic
+internal fun decodeDocumentLineAnnotationRomanContent(r: WireReader): DocumentLineAnnotationRomanContent {
+    val state = DocumentLineAnnotationRomanContentState()
+    mergeDocumentLineAnnotationRomanContent(r, state)
+    return state.finish()
+}
+
 private fun mergeDocumentLineAnnotationRoman(r: WireReader, state: DocumentLineAnnotationRomanState) {
     while (r.more()) {
         when (r.tag()) {
             10 -> state.language = r.string()
-            18 -> state.text = r.string()
-            26 -> state.scheme = r.string()
+
+            18 -> state.scheme = r.string()
+
+            26 -> {
+                val item = state.time ?: CommonTimeRangeState().also { state.time = it }
+                val end = r.enter()
+                mergeCommonTimeRange(r, item)
+                r.leave(end)
+            }
+
+            34 -> {
+                val item = state.content ?: DocumentLineAnnotationRomanContentState().also { state.content = it }
+                val end = r.enter()
+                mergeDocumentLineAnnotationRomanContent(r, item)
+                r.leave(end)
+            }
+
             else -> r.skip()
         }
     }
@@ -2113,12 +2269,76 @@ internal fun decodeEnrichedWord(r: WireReader): EnrichedWord {
     return state.finish()
 }
 
+private fun mergeEnrichedLineAnnotationRomanToken(r: WireReader, state: EnrichedLineAnnotationRomanTokenState) {
+    while (r.more()) {
+        when (r.tag()) {
+            10 -> {
+                val item = state.time ?: CommonTimeRangeState().also { state.time = it }
+                val end = r.enter()
+                mergeCommonTimeRange(r, item)
+                r.leave(end)
+            }
+
+            18 -> state.text = r.string()
+
+            else -> r.skip()
+        }
+    }
+}
+
+@JvmSynthetic
+internal fun decodeEnrichedLineAnnotationRomanToken(r: WireReader): EnrichedLineAnnotationRomanToken {
+    val state = EnrichedLineAnnotationRomanTokenState()
+    mergeEnrichedLineAnnotationRomanToken(r, state)
+    return state.finish()
+}
+
+private fun mergeEnrichedLineAnnotationRomanContent(r: WireReader, state: EnrichedLineAnnotationRomanContentState) {
+    while (r.more()) {
+        when (r.tag()) {
+            10 -> {
+                val item = EnrichedLineAnnotationRomanTokenState()
+                val end = r.enter()
+                mergeEnrichedLineAnnotationRomanToken(r, item)
+                r.leave(end)
+                state.tokens.add(item)
+            }
+
+            18 -> state.text = r.string()
+
+            else -> r.skip()
+        }
+    }
+}
+
+@JvmSynthetic
+internal fun decodeEnrichedLineAnnotationRomanContent(r: WireReader): EnrichedLineAnnotationRomanContent {
+    val state = EnrichedLineAnnotationRomanContentState()
+    mergeEnrichedLineAnnotationRomanContent(r, state)
+    return state.finish()
+}
+
 private fun mergeEnrichedLineAnnotationRoman(r: WireReader, state: EnrichedLineAnnotationRomanState) {
     while (r.more()) {
         when (r.tag()) {
             10 -> state.language = r.string()
-            18 -> state.text = r.string()
-            26 -> state.scheme = r.string()
+
+            18 -> state.scheme = r.string()
+
+            26 -> {
+                val item = state.time ?: CommonTimeRangeState().also { state.time = it }
+                val end = r.enter()
+                mergeCommonTimeRange(r, item)
+                r.leave(end)
+            }
+
+            34 -> {
+                val item = state.content ?: EnrichedLineAnnotationRomanContentState().also { state.content = it }
+                val end = r.enter()
+                mergeEnrichedLineAnnotationRomanContent(r, item)
+                r.leave(end)
+            }
+
             else -> r.skip()
         }
     }

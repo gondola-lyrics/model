@@ -16,6 +16,8 @@ import {
   createDocumentLine,
   createDocumentLineAnnotation,
   createDocumentLineAnnotationRoman,
+  createDocumentLineAnnotationRomanContent,
+  createDocumentLineAnnotationRomanToken,
   createDocumentLineAnnotationTranslation,
   createDocumentLineBackground,
   createDocumentLineContent,
@@ -29,6 +31,8 @@ import {
   createEnrichedLine,
   createEnrichedLineAnnotation,
   createEnrichedLineAnnotationRoman,
+  createEnrichedLineAnnotationRomanContent,
+  createEnrichedLineAnnotationRomanToken,
   createEnrichedLineAnnotationTranslation,
   createEnrichedLineBackground,
   createEnrichedLineContent,
@@ -661,18 +665,79 @@ export const decodeDocumentWord = (r: WireReader, m: document.Word): void => {
   }
 }
 
-export const encodeDocumentLineAnnotationRoman = (w: WireWriter, v: document.LineAnnotationRoman): void => {
-  if (v.language !== undefined) {
-    w.tag(10)
-    w.string(v.language)
+export const encodeDocumentLineAnnotationRomanToken = (w: WireWriter, v: document.LineAnnotationRomanToken): void => {
+  if (v.time !== undefined) {
+    w.message(10, encodeCommonTimeRange, v.time)
   }
   if (v.text !== '') {
     w.tag(18)
     w.string(v.text)
   }
+}
+
+export const decodeDocumentLineAnnotationRomanToken = (r: WireReader, m: document.LineAnnotationRomanToken): void => {
+  while (r.more()) {
+    switch (r.tag()) {
+      case 10: {
+        m.time ??= createCommonTimeRange()
+        const end = r.enter()
+        decodeCommonTimeRange(r, m.time)
+        r.leave(end)
+        break
+      }
+      case 18:
+        m.text = r.string()
+        break
+      default:
+        r.skip()
+    }
+  }
+}
+
+export const encodeDocumentLineAnnotationRomanContent = (w: WireWriter, v: document.LineAnnotationRomanContent): void => {
+  for (const item of v.tokens) {
+    w.message(10, encodeDocumentLineAnnotationRomanToken, item)
+  }
+  if (v.text !== undefined) {
+    w.tag(18)
+    w.string(v.text)
+  }
+}
+
+export const decodeDocumentLineAnnotationRomanContent = (r: WireReader, m: document.LineAnnotationRomanContent): void => {
+  while (r.more()) {
+    switch (r.tag()) {
+      case 10: {
+        const item = createDocumentLineAnnotationRomanToken()
+        const end = r.enter()
+        decodeDocumentLineAnnotationRomanToken(r, item)
+        r.leave(end)
+        m.tokens.push(item)
+        break
+      }
+      case 18:
+        m.text = r.string()
+        break
+      default:
+        r.skip()
+    }
+  }
+}
+
+export const encodeDocumentLineAnnotationRoman = (w: WireWriter, v: document.LineAnnotationRoman): void => {
+  if (v.language !== undefined) {
+    w.tag(10)
+    w.string(v.language)
+  }
   if (v.scheme !== undefined) {
-    w.tag(26)
+    w.tag(18)
     w.string(v.scheme)
+  }
+  if (v.time !== undefined) {
+    w.message(26, encodeCommonTimeRange, v.time)
+  }
+  if (v.content !== undefined) {
+    w.message(34, encodeDocumentLineAnnotationRomanContent, v.content)
   }
 }
 
@@ -683,11 +748,22 @@ export const decodeDocumentLineAnnotationRoman = (r: WireReader, m: document.Lin
         m.language = r.string()
         break
       case 18:
-        m.text = r.string()
-        break
-      case 26:
         m.scheme = r.string()
         break
+      case 26: {
+        m.time ??= createCommonTimeRange()
+        const end = r.enter()
+        decodeCommonTimeRange(r, m.time)
+        r.leave(end)
+        break
+      }
+      case 34: {
+        m.content ??= createDocumentLineAnnotationRomanContent()
+        const end = r.enter()
+        decodeDocumentLineAnnotationRomanContent(r, m.content)
+        r.leave(end)
+        break
+      }
       default:
         r.skip()
     }
@@ -1323,18 +1399,79 @@ export const decodeEnrichedWord = (r: WireReader, m: enriched.Word): void => {
   }
 }
 
-export const encodeEnrichedLineAnnotationRoman = (w: WireWriter, v: enriched.LineAnnotationRoman): void => {
-  if (v.language !== undefined) {
-    w.tag(10)
-    w.string(v.language)
+export const encodeEnrichedLineAnnotationRomanToken = (w: WireWriter, v: enriched.LineAnnotationRomanToken): void => {
+  if (v.time !== undefined) {
+    w.message(10, encodeCommonTimeRange, v.time)
   }
   if (v.text !== '') {
     w.tag(18)
     w.string(v.text)
   }
+}
+
+export const decodeEnrichedLineAnnotationRomanToken = (r: WireReader, m: enriched.LineAnnotationRomanToken): void => {
+  while (r.more()) {
+    switch (r.tag()) {
+      case 10: {
+        m.time ??= createCommonTimeRange()
+        const end = r.enter()
+        decodeCommonTimeRange(r, m.time)
+        r.leave(end)
+        break
+      }
+      case 18:
+        m.text = r.string()
+        break
+      default:
+        r.skip()
+    }
+  }
+}
+
+export const encodeEnrichedLineAnnotationRomanContent = (w: WireWriter, v: enriched.LineAnnotationRomanContent): void => {
+  for (const item of v.tokens) {
+    w.message(10, encodeEnrichedLineAnnotationRomanToken, item)
+  }
+  if (v.text !== undefined) {
+    w.tag(18)
+    w.string(v.text)
+  }
+}
+
+export const decodeEnrichedLineAnnotationRomanContent = (r: WireReader, m: enriched.LineAnnotationRomanContent): void => {
+  while (r.more()) {
+    switch (r.tag()) {
+      case 10: {
+        const item = createEnrichedLineAnnotationRomanToken()
+        const end = r.enter()
+        decodeEnrichedLineAnnotationRomanToken(r, item)
+        r.leave(end)
+        m.tokens.push(item)
+        break
+      }
+      case 18:
+        m.text = r.string()
+        break
+      default:
+        r.skip()
+    }
+  }
+}
+
+export const encodeEnrichedLineAnnotationRoman = (w: WireWriter, v: enriched.LineAnnotationRoman): void => {
+  if (v.language !== undefined) {
+    w.tag(10)
+    w.string(v.language)
+  }
   if (v.scheme !== undefined) {
-    w.tag(26)
+    w.tag(18)
     w.string(v.scheme)
+  }
+  if (v.time !== undefined) {
+    w.message(26, encodeCommonTimeRange, v.time)
+  }
+  if (v.content !== undefined) {
+    w.message(34, encodeEnrichedLineAnnotationRomanContent, v.content)
   }
 }
 
@@ -1345,11 +1482,22 @@ export const decodeEnrichedLineAnnotationRoman = (r: WireReader, m: enriched.Lin
         m.language = r.string()
         break
       case 18:
-        m.text = r.string()
-        break
-      case 26:
         m.scheme = r.string()
         break
+      case 26: {
+        m.time ??= createCommonTimeRange()
+        const end = r.enter()
+        decodeCommonTimeRange(r, m.time)
+        r.leave(end)
+        break
+      }
+      case 34: {
+        m.content ??= createEnrichedLineAnnotationRomanContent()
+        const end = r.enter()
+        decodeEnrichedLineAnnotationRomanContent(r, m.content)
+        r.leave(end)
+        break
+      }
       default:
         r.skip()
     }

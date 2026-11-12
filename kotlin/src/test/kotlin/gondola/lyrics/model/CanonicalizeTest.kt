@@ -26,6 +26,7 @@ import gondola.lyrics.model.enriched.deriveEnrichedLanguageUsages
 import gondola.lyrics.model.enriched.encodeEnrichedLyric
 import gondola.lyrics.model.enriched.makeEnrichedLineAnnotation
 import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRoman
+import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRomanContentText
 import gondola.lyrics.model.enriched.makeEnrichedLineContentWords
 import gondola.lyrics.model.enriched.makeEnrichedLineNormal
 import gondola.lyrics.model.enriched.makeEnrichedLyric
@@ -148,7 +149,15 @@ class CanonicalizeTest {
                 ),
             )
             val line =
-                makeEnrichedLineAnnotation(romans = listOf(makeEnrichedLineAnnotationRoman(language = "JA-Latn", scheme = scheme, text = "shi")))
+                makeEnrichedLineAnnotation(
+                    romans = listOf(
+                        makeEnrichedLineAnnotationRoman(
+                            language = "JA-Latn",
+                            scheme = scheme,
+                            content = makeEnrichedLineAnnotationRomanContentText("shi"),
+                        ),
+                    ),
+                )
             val canonicalWord = canonicalizeEnrichedWordAnnotation(word)
             val canonicalLine = canonicalizeEnrichedLineAnnotation(line)
             val expectedScheme = if (scheme.isEmpty()) null else "hepburn"

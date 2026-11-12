@@ -195,16 +195,39 @@ export const createDocumentWord = (): document.Word => {
   return { type: 0, text: '' }
 }
 
+export const fieldsDocumentLineAnnotationRomanToken: MessageFields<document.LineAnnotationRomanToken> = {
+  fields: [
+    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
+    { name: 'text', shape: 'scalar' },
+  ],
+}
+
+export const createDocumentLineAnnotationRomanToken = (): document.LineAnnotationRomanToken => {
+  return { text: '' }
+}
+
+export const fieldsDocumentLineAnnotationRomanContent: MessageFields<document.LineAnnotationRomanContent> = {
+  fields: [
+    { name: 'tokens', shape: 'list-message', message: fieldsDocumentLineAnnotationRomanToken },
+    { name: 'text', shape: 'optional' },
+  ],
+}
+
+export const createDocumentLineAnnotationRomanContent = (): document.LineAnnotationRomanContent => {
+  return { tokens: [] }
+}
+
 export const fieldsDocumentLineAnnotationRoman: MessageFields<document.LineAnnotationRoman> = {
   fields: [
     { name: 'language', shape: 'optional' },
-    { name: 'text', shape: 'scalar' },
     { name: 'scheme', shape: 'optional' },
+    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
+    { name: 'content', shape: 'message', message: fieldsDocumentLineAnnotationRomanContent },
   ],
 }
 
 export const createDocumentLineAnnotationRoman = (): document.LineAnnotationRoman => {
-  return { text: '' }
+  return {  }
 }
 
 export const fieldsDocumentLineAnnotationTranslation: MessageFields<document.LineAnnotationTranslation> = {
@@ -387,16 +410,39 @@ export const createEnrichedWord = (): enriched.Word => {
   return { type: 0, text: '' }
 }
 
+export const fieldsEnrichedLineAnnotationRomanToken: MessageFields<enriched.LineAnnotationRomanToken> = {
+  fields: [
+    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
+    { name: 'text', shape: 'scalar' },
+  ],
+}
+
+export const createEnrichedLineAnnotationRomanToken = (): enriched.LineAnnotationRomanToken => {
+  return { text: '' }
+}
+
+export const fieldsEnrichedLineAnnotationRomanContent: MessageFields<enriched.LineAnnotationRomanContent> = {
+  fields: [
+    { name: 'tokens', shape: 'list-message', message: fieldsEnrichedLineAnnotationRomanToken },
+    { name: 'text', shape: 'optional' },
+  ],
+}
+
+export const createEnrichedLineAnnotationRomanContent = (): enriched.LineAnnotationRomanContent => {
+  return { tokens: [] }
+}
+
 export const fieldsEnrichedLineAnnotationRoman: MessageFields<enriched.LineAnnotationRoman> = {
   fields: [
     { name: 'language', shape: 'optional' },
-    { name: 'text', shape: 'scalar' },
     { name: 'scheme', shape: 'optional' },
+    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
+    { name: 'content', shape: 'message', message: fieldsEnrichedLineAnnotationRomanContent },
   ],
 }
 
 export const createEnrichedLineAnnotationRoman = (): enriched.LineAnnotationRoman => {
-  return { text: '' }
+  return {  }
 }
 
 export const fieldsEnrichedLineAnnotationTranslation: MessageFields<enriched.LineAnnotationTranslation> = {

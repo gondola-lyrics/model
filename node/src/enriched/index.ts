@@ -4,6 +4,8 @@ export type {
   Line as EnrichedLine,
   LineAnnotation as EnrichedLineAnnotation,
   LineAnnotationRoman as EnrichedLineAnnotationRoman,
+  LineAnnotationRomanContent as EnrichedLineAnnotationRomanContent,
+  LineAnnotationRomanToken as EnrichedLineAnnotationRomanToken,
   LineAnnotationTranslation as EnrichedLineAnnotationTranslation,
   LineBackground as EnrichedLineBackground,
   LineContent as EnrichedLineContent,

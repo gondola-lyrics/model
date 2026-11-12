@@ -23,15 +23,39 @@ enum LineType {
   LINE_TYPE_INSTRUMENTAL = 2;
 }
 
-// Romanized transliteration of a whole line.
+// Token boundaries follow the source and need not match the original words.
+message LineAnnotationRomanToken {
+  // Unset uses the annotation's range, then the line's; an explicit range is never filled field by field.
+  // An explicit range must fit a declared annotation range, but need not fit the original line.
+  lyric.common.TimeRange time = 1;
+
+  // Non-empty source text, preserving whitespace and punctuation.
+  string text = 2;
+}
+
+// Exactly one of tokens or text must be set.
+message LineAnnotationRomanContent {
+  // Non-empty source fragments in text order; at least one carries an explicit time range.
+  // Fragments concatenate without added separators, preserving their boundaries and whitespace.
+  repeated LineAnnotationRomanToken tokens = 1;
+
+  // Non-empty whole-line text without token segmentation.
+  optional string text = 2;
+}
+
 message LineAnnotationRoman {
   // Language of this item, as a BCP 47 tag.
   optional string language = 1;
 
-  string text = 2;
-
   // Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
-  optional string scheme = 3;
+  optional string scheme = 2;
+
+  // An explicit range may differ from the original line's and must contain every explicitly timed token.
+  // Unset uses the line's range for text and untimed tokens; explicit token times remain independent.
+  lyric.common.TimeRange time = 3;
+
+  // Required, with exactly one content form.
+  LineAnnotationRomanContent content = 4;
 }
 
 // Translation of a whole line into another language.
@@ -62,6 +86,7 @@ message LineContent {
 }
 
 // Background vocals attached to a normal line, sharing its part.
+// Roman keys are exclusive between this background's annotation and its words' annotations.
 message LineBackground {
   // Identifier of this background line; empty means none.
   string id = 1;
@@ -84,6 +109,7 @@ message LineBackground {
   LineAnnotation annotation = 6;
 }
 
+// Roman keys are exclusive between this line's annotation and its words' annotations.
 message Line {
   // Identifier of the line; empty means none.
   string id = 1;

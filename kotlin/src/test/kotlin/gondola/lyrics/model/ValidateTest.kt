@@ -22,6 +22,7 @@ import gondola.lyrics.model.enriched.canonicalizeEnrichedLyric
 import gondola.lyrics.model.enriched.deriveEnrichedLanguageUsages
 import gondola.lyrics.model.enriched.makeEnrichedLineAnnotation
 import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRoman
+import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRomanContentText
 import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationTranslation
 import gondola.lyrics.model.enriched.makeEnrichedLineContentText
 import gondola.lyrics.model.enriched.makeEnrichedLineContentWords
@@ -171,7 +172,9 @@ class ValidateTest {
             translations = listOf("zh-Hans", "ZH-HANS").map { makeEnrichedWordAnnotationTranslation(language = it, text = "translation") },
         )
         val line = makeEnrichedLineAnnotation(
-            romans = identities.map { (language, scheme) -> makeEnrichedLineAnnotationRoman(language = language, scheme = scheme, text = "roman") },
+            romans = identities.map { (language, scheme) ->
+                makeEnrichedLineAnnotationRoman(language = language, scheme = scheme, content = makeEnrichedLineAnnotationRomanContentText("roman"))
+            },
             translations = listOf("zh-Hans", "ZH-HANS").map { makeEnrichedLineAnnotationTranslation(language = it, text = "translation") },
         )
         val expectedWord = listOf(
@@ -202,7 +205,11 @@ class ValidateTest {
         )
         val documentLine = gondola.lyrics.model.document.makeDocumentLineAnnotation(
             romans = identities.map { (language, scheme) ->
-                gondola.lyrics.model.document.makeDocumentLineAnnotationRoman(language = language, scheme = scheme, text = "roman")
+                gondola.lyrics.model.document.makeDocumentLineAnnotationRoman(
+                    language = language,
+                    scheme = scheme,
+                    content = gondola.lyrics.model.document.makeDocumentLineAnnotationRomanContentText("roman"),
+                )
             },
             translations = listOf("zh-Hans", "ZH-HANS").map {
                 gondola.lyrics.model.document.makeDocumentLineAnnotationTranslation(language = it, text = "translation")
@@ -243,7 +250,13 @@ class ValidateTest {
                     ),
                 ),
                 annotation = makeEnrichedLineAnnotation(
-                    romans = listOf(makeEnrichedLineAnnotationRoman(language = language, scheme = scheme, text = "shi")),
+                    romans = listOf(
+                        makeEnrichedLineAnnotationRoman(
+                            language = language,
+                            scheme = "independent_romanization",
+                            content = makeEnrichedLineAnnotationRomanContentText("shi"),
+                        ),
+                    ),
                 ),
             )
             val expected = if (language == "ja-latn") {

@@ -5,6 +5,8 @@ import type {
   Line,
   LineAnnotation,
   LineAnnotationRoman,
+  LineAnnotationRomanContent,
+  LineAnnotationRomanToken,
   LineAnnotationTranslation,
   LineBackground,
   LineContent,
@@ -19,6 +21,8 @@ import {
   createDocumentLine,
   createDocumentLineAnnotation,
   createDocumentLineAnnotationRoman,
+  createDocumentLineAnnotationRomanContent,
+  createDocumentLineAnnotationRomanToken,
   createDocumentLineAnnotationTranslation,
   createDocumentLineBackground,
   createDocumentLineContent,
@@ -26,6 +30,8 @@ import {
   fieldsDocumentLine,
   fieldsDocumentLineAnnotation,
   fieldsDocumentLineAnnotationRoman,
+  fieldsDocumentLineAnnotationRomanContent,
+  fieldsDocumentLineAnnotationRomanToken,
   fieldsDocumentLineAnnotationTranslation,
   fieldsDocumentLineBackground,
   fieldsDocumentLineContent,
@@ -44,6 +50,7 @@ import {
   getAnnotationKey,
   getTimeRangeEnd,
   isTimeRangeOrdered,
+  isTimeRangeUncovered,
   isUnresolved,
   lowerTag,
   withInit,
@@ -118,7 +125,79 @@ export const makeDocumentLineAnnotation = (init?: MakeInit<LineAnnotation>): Lin
 }
 
 /**
- * Checks roman uniqueness by language and scheme and translation uniqueness by language.
+ * Creates a source fragment, preserving its text and optional timing.
+ */
+export const makeDocumentLineAnnotationRomanToken = (init?: MakeInit<LineAnnotationRomanToken>): LineAnnotationRomanToken => {
+  return withInit(createDocumentLineAnnotationRomanToken(), init)
+}
+
+/**
+ * Creates roman content from source fragments without adding whole-line text.
+ */
+export const makeDocumentLineAnnotationRomanContentTokens = (tokens: LineAnnotationRomanToken[]): LineAnnotationRomanContent => {
+  return withInit(createDocumentLineAnnotationRomanContent(), { tokens })
+}
+
+/**
+ * Creates whole-line roman text without fragment timing.
+ */
+export const makeDocumentLineAnnotationRomanContentText = (text: string): LineAnnotationRomanContent => {
+  return withInit(createDocumentLineAnnotationRomanContent(), { text })
+}
+
+/**
+ * Checks exclusive content, non-empty text, a token timing anchor, and containment in a declared annotation range.
+ *
+ * Explicit token times are independent of the original line when the annotation has no declared range.
+ */
+export const validateDocumentLineAnnotationRomanContent = (
+  content: LineAnnotationRomanContent | undefined,
+  path = '',
+  time?: TimeRange,
+): Diagnostic[] => {
+  const diagnostics: Diagnostic[] = []
+  const tokens = content?.tokens ?? []
+  const hasTokens = tokens.length > 0
+  const hasText = content?.text !== undefined
+  if (!hasTokens && !hasText) {
+    diagnostics.push({ path, code: DiagnosticCode.LineAnnotationRomanContentMissing })
+  } else if (hasTokens && hasText) {
+    diagnostics.push({ path, code: DiagnosticCode.LineAnnotationRomanContentAmbiguous })
+  }
+  if (content?.text === '') {
+    diagnostics.push({ path: childPath(path, 'text'), code: DiagnosticCode.LineAnnotationRomanContentTextEmpty })
+  }
+  if (hasTokens && !tokens.some((token) => token.time !== undefined)) {
+    diagnostics.push({ path: childPath(path, 'tokens'), code: DiagnosticCode.LineAnnotationRomanContentTokensTimeMissing })
+  }
+  tokens.forEach((token, i) => {
+    const tokenPath = childPath(path, `tokens[${i}]`)
+    if (token.text === '') {
+      diagnostics.push({ path: childPath(tokenPath, 'text'), code: DiagnosticCode.LineAnnotationRomanTokenTextEmpty })
+    }
+    if (token.time) {
+      diagnostics.push(...validateTimeRange(token.time, childPath(tokenPath, 'time')))
+    }
+    if (isTimeRangeUncovered(token.time, time)) {
+      diagnostics.push({ path: childPath(tokenPath, 'time'), code: DiagnosticCode.LineAnnotationRomanTimeUncovered })
+    }
+  })
+  return diagnostics
+}
+
+/**
+ * Checks the declared range and required roman content without constraining them to the original line.
+ */
+export const validateDocumentLineAnnotationRoman = (roman: LineAnnotationRoman, path = ''): Diagnostic[] => {
+  const diagnostics = validateDocumentLineAnnotationRomanContent(roman.content, childPath(path, 'content'), roman.time)
+  if (roman.time) {
+    diagnostics.push(...validateTimeRange(roman.time, childPath(path, 'time')))
+  }
+  return diagnostics
+}
+
+/**
+ * Checks roman content and timing, uniqueness by language and scheme, and translation uniqueness by language.
  */
 export const validateDocumentLineAnnotation = (annotation: LineAnnotation, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -127,6 +206,28 @@ export const validateDocumentLineAnnotation = (annotation: LineAnnotation, path 
   })
   findDuplicates(annotation.translations, (item) => lowerTag(item.language) ?? '').forEach((i) => {
     diagnostics.push({ path: childPath(path, `translations[${i}]`), code: DiagnosticCode.LineAnnotationTranslationsLanguageDuplicate })
+  })
+  annotation.romans.forEach((roman, i) => {
+    diagnostics.push(...validateDocumentLineAnnotationRoman(roman, childPath(path, `romans[${i}]`)))
+  })
+  return diagnostics
+}
+
+const validateRomanPlacement = (annotation: LineAnnotation, content: LineContent | undefined, path: string): Diagnostic[] => {
+  const wordKeys = new Set<string>()
+  for (const word of content?.words ?? []) {
+    if (word.type === WordType.SPACE) {
+      continue
+    }
+    for (const roman of word.annotation?.romans ?? []) {
+      wordKeys.add(getAnnotationKey(roman))
+    }
+  }
+  const diagnostics: Diagnostic[] = []
+  annotation.romans.forEach((roman, i) => {
+    if (wordKeys.has(getAnnotationKey(roman))) {
+      diagnostics.push({ path: childPath(path, `romans[${i}]`), code: DiagnosticCode.LineAnnotationRomansConflict })
+    }
   })
   return diagnostics
 }
@@ -146,10 +247,58 @@ export const makeDocumentLineAnnotationTranslation = (init?: MakeInit<LineAnnota
 }
 
 /**
- * Lowercases the romanization's language and scheme.
+ * Copies the source fragment and its optional time without changing text.
+ */
+export const canonicalizeDocumentLineAnnotationRomanToken = (token: LineAnnotationRomanToken): LineAnnotationRomanToken => {
+  return { ...token, time: copyMessage(token.time) }
+}
+
+/**
+ * Copies roman content, preserving fragment order, whitespace, and explicit timing.
+ */
+export const canonicalizeDocumentLineAnnotationRomanContent = (content: LineAnnotationRomanContent): LineAnnotationRomanContent => {
+  return {
+    ...content,
+    tokens: canonicalizeList(fieldsDocumentLineAnnotationRomanToken, content.tokens, canonicalizeDocumentLineAnnotationRomanToken),
+  }
+}
+
+/**
+ * Lowercases language and scheme and copies roman content and timing without inferring missing boundaries.
  */
 export const canonicalizeDocumentLineAnnotationRoman = (roman: LineAnnotationRoman): LineAnnotationRoman => {
-  return { ...roman, language: lowerTag(roman.language), scheme: lowerTag(roman.scheme) }
+  return {
+    ...roman,
+    language: lowerTag(roman.language),
+    scheme: lowerTag(roman.scheme),
+    time: copyMessage(roman.time),
+    content: canonicalizeField(fieldsDocumentLineAnnotationRomanContent, roman.content, canonicalizeDocumentLineAnnotationRomanContent),
+  }
+}
+
+/**
+ * Returns whole-line text or joins source fragments without adding separators.
+ */
+export const getDocumentLineAnnotationRomanText = (roman: LineAnnotationRoman): string => {
+  return roman.content?.text ?? (roman.content?.tokens ?? []).map((token) => token.text).join('')
+}
+
+/**
+ * Uses the romanization's declared time, falling back to the owning line or background.
+ */
+export const resolveDocumentLineAnnotationRomanTime = (roman: LineAnnotationRoman, line: { time?: TimeRange | undefined }): TimeRange | undefined => {
+  return roman.time ?? line.time
+}
+
+/**
+ * Uses the entire token time, then the romanization's time, then the owning line's time.
+ */
+export const resolveDocumentLineAnnotationRomanTokenTime = (
+  token: LineAnnotationRomanToken,
+  roman: LineAnnotationRoman,
+  line: { time?: TimeRange | undefined },
+): TimeRange | undefined => {
+  return token.time ?? resolveDocumentLineAnnotationRomanTime(roman, line)
 }
 
 /**
@@ -201,7 +350,13 @@ export const deriveDocumentLineRomans = (content: LineContent | undefined): Line
       }
     }
     if (joined !== '') {
-      romans.push(makeDocumentLineAnnotationRoman({ language: lowerTag(variant.language), scheme: lowerTag(variant.scheme), text: joined }))
+      romans.push(
+        makeDocumentLineAnnotationRoman({
+          language: lowerTag(variant.language),
+          scheme: lowerTag(variant.scheme),
+          content: makeDocumentLineAnnotationRomanContentText(joined),
+        }),
+      )
     }
   }
   return romans
@@ -318,6 +473,7 @@ export const validateDocumentLine = (line: Line, path = '', timing = Timing.UNSP
     diagnostics.push({ path: childPath(path, 'annotation'), code: DiagnosticCode.LineAnnotationUnexpected })
   } else if (line.annotation) {
     diagnostics.push(...validateDocumentLineAnnotation(line.annotation, childPath(path, 'annotation')))
+    diagnostics.push(...validateRomanPlacement(line.annotation, line.content, childPath(path, 'annotation')))
   }
   if (instrumental && line.backgrounds.length > 0) {
     diagnostics.push({ path: childPath(path, 'backgrounds'), code: DiagnosticCode.LineBackgroundsUnexpected })
@@ -352,6 +508,7 @@ export const validateDocumentLineBackground = (background: LineBackground, path 
   diagnostics.push(...validateDocumentLineContent(background.content, background.time, path, timing))
   if (background.annotation) {
     diagnostics.push(...validateDocumentLineAnnotation(background.annotation, childPath(path, 'annotation')))
+    diagnostics.push(...validateRomanPlacement(background.annotation, background.content, childPath(path, 'annotation')))
   }
   return diagnostics
 }

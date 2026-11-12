@@ -14,13 +14,42 @@ npm install @gondola-lyrics/model
 > This package is ESM-only.
 > In your TS config, use `module: node20` / `module: nodenext` / `moduleResolution: bundler`.
 
-- `timing` determines the time precision of the entire lyric and which fields carry time:
+- `timing` declares the timing precision of the original lyric:
   - `NONE`: No timing declared; every line is plain text.
   - `LINE`: Line-level; each line has one time range, and the content can only be plain text. `WORD` is not allowed. If any line needs word-level timing, use `WORD` instead.
   - `WORD`: Word-level; the content is a sequence of words, and each vocalized word carries its own time range. Plain text lines can also be mixed in. If the entire lyric consists of plain text lines, use `LINE` instead.
 
+Annotations can carry their own timing independently of the original lyric's precision.
+
 Model-specific helpers include `Document` or `Enriched` in their names and can be imported directly from the package.
 The `/document` and `/enriched` entries expose the same model-specific names; shared helpers such as `makeTimeRange` are available from the root or `/common`.
+
+Line romanizations use either `content.text` for whole-line text or `content.tokens` for source fragments, with at least one explicitly timed token.
+Token text preserves whitespace and is joined without added separators; word romanizations retain their existing token structure.
+
+```ts
+import {
+  makeDocumentLineAnnotationRoman,
+  makeDocumentLineAnnotationRomanContentText,
+  makeDocumentLineAnnotationRomanContentTokens,
+  makeDocumentLineAnnotationRomanToken,
+} from '@gondola-lyrics/model'
+
+const plainRoman = makeDocumentLineAnnotationRoman({
+  language: 'zh-latn',
+  scheme: 'pinyin',
+  content: makeDocumentLineAnnotationRomanContentText('ni hao'),
+})
+
+const timedRoman = makeDocumentLineAnnotationRoman({
+  language: 'zh-latn',
+  scheme: 'pinyin',
+  content: makeDocumentLineAnnotationRomanContentTokens([
+    makeDocumentLineAnnotationRomanToken({ time: { start: 1000, end: 1800 }, text: 'ni ' }),
+    makeDocumentLineAnnotationRomanToken({ time: { start: 2000 }, text: 'hao' }),
+  ]),
+})
+```
 
 ### Document Examples
 
