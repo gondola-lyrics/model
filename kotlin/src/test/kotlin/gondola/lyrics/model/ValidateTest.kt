@@ -1,18 +1,23 @@
 package gondola.lyrics.model
 
 import gondola.lyrics.model.common.AgentType
+import gondola.lyrics.model.common.CreditRole
 import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.Meta
 import gondola.lyrics.model.common.Part
 import gondola.lyrics.model.common.PartType
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.TimingLevel
+import gondola.lyrics.model.common.canonicalizeMetaCredit
 import gondola.lyrics.model.common.makeAgent
+import gondola.lyrics.model.common.makeMetaCredit
 import gondola.lyrics.model.common.makePart
+import gondola.lyrics.model.common.makeText
 import gondola.lyrics.model.common.makeTextToken
 import gondola.lyrics.model.common.makeTimeRange
 import gondola.lyrics.model.common.resolveDiagnosticPath
 import gondola.lyrics.model.common.validateMeta
+import gondola.lyrics.model.common.validateMetaCredit
 import gondola.lyrics.model.common.validateTimeRange
 import gondola.lyrics.model.document.makeDocumentLineBackground
 import gondola.lyrics.model.document.makeDocumentLineContentText
@@ -79,6 +84,17 @@ private fun validatePartsInBothLayers(parts: List<Part?>): List<List<Diagnostic>
 }
 
 class ValidateTest {
+    @Test
+    fun acceptsNewCreditRolesWithOptionalSourceLabelsAndPreservesTheirMeaning() {
+        for (role in listOf(CreditRole.CREDIT_ROLE_SONGWRITER, CreditRole.CREDIT_ROLE_RECORDING_ENGINEER)) {
+            for (raw in listOf(null, "Source Role")) {
+                val credit = makeMetaCredit(role = role, raw = raw, names = listOf(makeText(text = "Contributor")))
+                assertEquals(emptyList(), validateMetaCredit(credit))
+                assertEquals(credit, canonicalizeMetaCredit(credit))
+            }
+        }
+    }
+
     @Test
     fun locatesAgentReferenceDiagnosticsThroughRenamedFieldsInBothLayers() {
         val time = makeTimeRange(start = 1000, end = 2000)

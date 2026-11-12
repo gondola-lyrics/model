@@ -5,10 +5,12 @@ import { describe, it } from 'node:test'
 
 import {
   AgentType,
+  CreditRole,
   EnrichedLyricStatus,
   PartType,
   TimingLevel,
   canonicalizeEnrichedLyric,
+  canonicalizeMetaCredit,
   deriveEnrichedLanguageUsages,
   makeAgent,
   makeDocumentLineAnnotation,
@@ -42,7 +44,9 @@ import {
   makeEnrichedWordEmphasis,
   makeEnrichedWordNormal,
   makeEnrichedWordSpace,
+  makeMetaCredit,
   makePart,
+  makeText,
   makeTimeRange,
   resolveDiagnosticPath,
   validateDocumentLine,
@@ -54,6 +58,7 @@ import {
   validateEnrichedLyric,
   validateEnrichedWord,
   validateEnrichedWordAnnotation,
+  validateMetaCredit,
 } from '@root/index'
 
 const textLine = (start: number, end?: number): EnrichedLine => {
@@ -78,6 +83,17 @@ const validatePartsInBothLayers = (parts: (Part | undefined)[]): Diagnostic[][] 
 }
 
 describe('validate', () => {
+  it('accepts new credit roles with optional source labels and preserves their meaning', () => {
+    for (const role of [CreditRole.SONGWRITER, CreditRole.RECORDING_ENGINEER]) {
+      for (const raw of [undefined, 'Source Role']) {
+        const credit = makeMetaCredit({ role, raw, names: [makeText({ text: 'Contributor' })] })
+        deepStrictEqual(validateMetaCredit(credit), [])
+        const canonical = canonicalizeMetaCredit(credit)
+        deepStrictEqual({ role: canonical.role, raw: canonical.raw }, { role, raw })
+      }
+    }
+  })
+
   it('locates agent reference diagnostics through renamed fields in both layers', () => {
     const time = makeTimeRange({ start: 1000, end: 2000 })
     const agents = [makeAgent({ id: 'known', type: AgentType.PERSON })]

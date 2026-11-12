@@ -18,13 +18,15 @@ public class CreditRole(@JvmField public val value: Int) {
         return when (value) {
             0 -> "CREDIT_ROLE_UNSPECIFIED"
             1 -> "CREDIT_ROLE_OTHER"
-            2 -> "CREDIT_ROLE_LYRICIST"
-            3 -> "CREDIT_ROLE_COMPOSER"
-            4 -> "CREDIT_ROLE_ARRANGER"
-            5 -> "CREDIT_ROLE_PRODUCER"
-            6 -> "CREDIT_ROLE_PERFORMER"
-            7 -> "CREDIT_ROLE_MIXING_ENGINEER"
-            8 -> "CREDIT_ROLE_MASTERING_ENGINEER"
+            2 -> "CREDIT_ROLE_PERFORMER"
+            3 -> "CREDIT_ROLE_SONGWRITER"
+            4 -> "CREDIT_ROLE_LYRICIST"
+            5 -> "CREDIT_ROLE_COMPOSER"
+            6 -> "CREDIT_ROLE_ARRANGER"
+            7 -> "CREDIT_ROLE_PRODUCER"
+            8 -> "CREDIT_ROLE_MIXING_ENGINEER"
+            9 -> "CREDIT_ROLE_MASTERING_ENGINEER"
+            10 -> "CREDIT_ROLE_RECORDING_ENGINEER"
             else -> "CreditRole($value)"
         }
     }
@@ -41,39 +43,49 @@ public class CreditRole(@JvmField public val value: Int) {
         @JvmField public val CREDIT_ROLE_OTHER: CreditRole = CreditRole(1)
 
         /**
+         * The contributor performed the song.
+         */
+        @JvmField public val CREDIT_ROLE_PERFORMER: CreditRole = CreditRole(2)
+
+        /**
+         * The source credits songwriting without distinguishing lyrics from composition.
+         */
+        @JvmField public val CREDIT_ROLE_SONGWRITER: CreditRole = CreditRole(3)
+
+        /**
          * The contributor wrote the lyrics.
          */
-        @JvmField public val CREDIT_ROLE_LYRICIST: CreditRole = CreditRole(2)
+        @JvmField public val CREDIT_ROLE_LYRICIST: CreditRole = CreditRole(4)
 
         /**
          * The contributor composed the music.
          */
-        @JvmField public val CREDIT_ROLE_COMPOSER: CreditRole = CreditRole(3)
+        @JvmField public val CREDIT_ROLE_COMPOSER: CreditRole = CreditRole(5)
 
         /**
          * The contributor arranged the music.
          */
-        @JvmField public val CREDIT_ROLE_ARRANGER: CreditRole = CreditRole(4)
+        @JvmField public val CREDIT_ROLE_ARRANGER: CreditRole = CreditRole(6)
 
         /**
          * The contributor produced the recording.
          */
-        @JvmField public val CREDIT_ROLE_PRODUCER: CreditRole = CreditRole(5)
-
-        /**
-         * The contributor performed the song.
-         */
-        @JvmField public val CREDIT_ROLE_PERFORMER: CreditRole = CreditRole(6)
+        @JvmField public val CREDIT_ROLE_PRODUCER: CreditRole = CreditRole(7)
 
         /**
          * The contributor mixed the recording.
          */
-        @JvmField public val CREDIT_ROLE_MIXING_ENGINEER: CreditRole = CreditRole(7)
+        @JvmField public val CREDIT_ROLE_MIXING_ENGINEER: CreditRole = CreditRole(8)
 
         /**
          * The contributor mastered the recording.
          */
-        @JvmField public val CREDIT_ROLE_MASTERING_ENGINEER: CreditRole = CreditRole(8)
+        @JvmField public val CREDIT_ROLE_MASTERING_ENGINEER: CreditRole = CreditRole(9)
+
+        /**
+         * The contributor engineered the recording session.
+         */
+        @JvmField public val CREDIT_ROLE_RECORDING_ENGINEER: CreditRole = CreditRole(10)
     }
 }
 

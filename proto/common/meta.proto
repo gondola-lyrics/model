@@ -17,26 +17,32 @@ enum CreditRole {
   // A source-defined role outside this enum is recorded in `MetaCredit.raw`.
   CREDIT_ROLE_OTHER = 1;
 
+  // The contributor performed the song.
+  CREDIT_ROLE_PERFORMER = 2;
+
+  // The source credits songwriting without distinguishing lyrics from composition.
+  CREDIT_ROLE_SONGWRITER = 3;
+
   // The contributor wrote the lyrics.
-  CREDIT_ROLE_LYRICIST = 2;
+  CREDIT_ROLE_LYRICIST = 4;
 
   // The contributor composed the music.
-  CREDIT_ROLE_COMPOSER = 3;
+  CREDIT_ROLE_COMPOSER = 5;
 
   // The contributor arranged the music.
-  CREDIT_ROLE_ARRANGER = 4;
+  CREDIT_ROLE_ARRANGER = 6;
 
   // The contributor produced the recording.
-  CREDIT_ROLE_PRODUCER = 5;
-
-  // The contributor performed the song.
-  CREDIT_ROLE_PERFORMER = 6;
+  CREDIT_ROLE_PRODUCER = 7;
 
   // The contributor mixed the recording.
-  CREDIT_ROLE_MIXING_ENGINEER = 7;
+  CREDIT_ROLE_MIXING_ENGINEER = 8;
 
   // The contributor mastered the recording.
-  CREDIT_ROLE_MASTERING_ENGINEER = 8;
+  CREDIT_ROLE_MASTERING_ENGINEER = 9;
+
+  // The contributor engineered the recording session.
+  CREDIT_ROLE_RECORDING_ENGINEER = 10;
 }
 
 // Contributors share one credited role in the song or recording.

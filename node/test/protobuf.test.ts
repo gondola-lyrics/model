@@ -114,7 +114,11 @@ const meta = () => {
     albums: [makeText()],
     authors: [makeText({ text: 'b' })],
     isrcs: ['USRC17607839', ''],
-    credits: [makeMetaCredit({ role: 99 as CreditRole, raw: '', names: [makeText({ text: 'c' })] })],
+    credits: [
+      makeMetaCredit({ role: 99 as CreditRole, raw: '', names: [makeText({ text: 'c' })] }),
+      makeMetaCredit({ role: CreditRole.SONGWRITER, raw: 'Songwriter', names: [makeText({ text: 'writer' })] }),
+      makeMetaCredit({ role: CreditRole.RECORDING_ENGINEER, raw: 'Recording Engineer', names: [makeText({ text: 'engineer' })] }),
+    ],
     references: [makeMetaReference({ platform: 'x', ids: ['1', '2'] })],
   })
 }

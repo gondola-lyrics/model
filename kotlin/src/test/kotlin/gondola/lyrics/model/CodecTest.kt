@@ -3,7 +3,9 @@ package gondola.lyrics.model
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet
 import com.google.protobuf.Descriptors
 import com.google.protobuf.DynamicMessage
+import gondola.lyrics.model.common.CreditRole
 import gondola.lyrics.model.common.Meta
+import gondola.lyrics.model.common.MetaCredit
 import gondola.lyrics.model.common.Part
 import gondola.lyrics.model.common.PartType
 import gondola.lyrics.model.common.Text
@@ -218,6 +220,10 @@ class CodecTest {
             language = "",
             unknowns = listOf(UnknownEntry(key = "k", value = "v"), UnknownEntry(key = "k")),
             titles = listOf(Text(text = "\uD83D\uDE00")),
+            credits = listOf(
+                MetaCredit(role = CreditRole.CREDIT_ROLE_SONGWRITER, raw = "Songwriter", names = listOf(Text(text = "writer"))),
+                MetaCredit(role = CreditRole.CREDIT_ROLE_RECORDING_ENGINEER, raw = "Recording Engineer", names = listOf(Text(text = "engineer"))),
+            ),
         )
         val native = Lyric(
             version = "1.1.0",
@@ -306,6 +312,20 @@ class CodecTest {
             "unknowns" to
                 listOf(official("lyric.common.UnknownEntry", "key" to "k", "value" to "v"), official("lyric.common.UnknownEntry", "key" to "k")),
             "titles" to listOf(official("lyric.common.Text", "text" to "\uD83D\uDE00")),
+            "credits" to listOf(
+                official(
+                    "lyric.common.MetaCredit",
+                    "role" to 3,
+                    "raw" to "Songwriter",
+                    "names" to listOf(official("lyric.common.Text", "text" to "writer")),
+                ),
+                official(
+                    "lyric.common.MetaCredit",
+                    "role" to 10,
+                    "raw" to "Recording Engineer",
+                    "names" to listOf(official("lyric.common.Text", "text" to "engineer")),
+                ),
+            ),
         )
         val officialPart = official("lyric.common.Part", "type" to 5, "id" to "Chorus-A", "raw" to "chorus")
         val officialTokenExtra = listOf(

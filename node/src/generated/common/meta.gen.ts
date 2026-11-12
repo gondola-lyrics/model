@@ -16,33 +16,41 @@ export enum CreditRole {
    */
   OTHER = 1,
   /**
+   * The contributor performed the song.
+   */
+  PERFORMER = 2,
+  /**
+   * The source credits songwriting without distinguishing lyrics from composition.
+   */
+  SONGWRITER = 3,
+  /**
    * The contributor wrote the lyrics.
    */
-  LYRICIST = 2,
+  LYRICIST = 4,
   /**
    * The contributor composed the music.
    */
-  COMPOSER = 3,
+  COMPOSER = 5,
   /**
    * The contributor arranged the music.
    */
-  ARRANGER = 4,
+  ARRANGER = 6,
   /**
    * The contributor produced the recording.
    */
-  PRODUCER = 5,
-  /**
-   * The contributor performed the song.
-   */
-  PERFORMER = 6,
+  PRODUCER = 7,
   /**
    * The contributor mixed the recording.
    */
-  MIXING_ENGINEER = 7,
+  MIXING_ENGINEER = 8,
   /**
    * The contributor mastered the recording.
    */
-  MASTERING_ENGINEER = 8,
+  MASTERING_ENGINEER = 9,
+  /**
+   * The contributor engineered the recording session.
+   */
+  RECORDING_ENGINEER = 10,
 }
 
 /**
