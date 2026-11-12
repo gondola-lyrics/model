@@ -4,7 +4,7 @@ package lyric.enriched;
 
 import "common/agent.proto";
 import "common/meta.proto";
-import "common/timing.proto";
+import "common/time.proto";
 import "enriched/language.proto";
 import "enriched/line.proto";
 

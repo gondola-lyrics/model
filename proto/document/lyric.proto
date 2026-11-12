@@ -4,7 +4,7 @@ package lyric.document;
 
 import "common/agent.proto";
 import "common/meta.proto";
-import "common/timing.proto";
+import "common/time.proto";
 import "document/line.proto";
 
 option java_multiple_files = true;

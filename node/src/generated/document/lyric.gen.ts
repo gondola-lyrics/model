@@ -2,7 +2,7 @@
 
 import type { Agent } from '../common/agent.gen'
 import type { Meta } from '../common/meta.gen'
-import type { Timing } from '../common/timing.gen'
+import type { Timing } from '../common/time.gen'
 import type { Line } from './line.gen'
 
 /**
