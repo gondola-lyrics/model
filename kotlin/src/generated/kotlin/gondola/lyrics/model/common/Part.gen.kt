@@ -23,10 +23,11 @@ public class PartType(@JvmField public val value: Int) {
             4 -> "PART_TYPE_PRE_CHORUS"
             5 -> "PART_TYPE_CHORUS"
             6 -> "PART_TYPE_POST_CHORUS"
-            7 -> "PART_TYPE_BRIDGE"
-            8 -> "PART_TYPE_REFRAIN"
-            9 -> "PART_TYPE_INSTRUMENTAL"
-            10 -> "PART_TYPE_OUTRO"
+            7 -> "PART_TYPE_REFRAIN"
+            8 -> "PART_TYPE_BRIDGE"
+            9 -> "PART_TYPE_INTERLUDE"
+            10 -> "PART_TYPE_INSTRUMENTAL"
+            11 -> "PART_TYPE_OUTRO"
             else -> "PartType($value)"
         }
     }
@@ -68,24 +69,30 @@ public class PartType(@JvmField public val value: Int) {
         @JvmField public val PART_TYPE_POST_CHORUS: PartType = PartType(6)
 
         /**
-         * A bridge contrasts with the surrounding verse or chorus sections.
-         */
-        @JvmField public val PART_TYPE_BRIDGE: PartType = PartType(7)
-
-        /**
          * A refrain is a recurring line or passage within the song.
          */
-        @JvmField public val PART_TYPE_REFRAIN: PartType = PartType(8)
+        @JvmField public val PART_TYPE_REFRAIN: PartType = PartType(7)
+
+        /**
+         * A bridge contrasts with the surrounding verse or chorus sections.
+         */
+        @JvmField public val PART_TYPE_BRIDGE: PartType = PartType(8)
+
+        /**
+         * An unsung interval appears before or between sung sections; a later sung line is required.
+         * Only INSTRUMENTAL lines may carry this type.
+         */
+        @JvmField public val PART_TYPE_INTERLUDE: PartType = PartType(9)
 
         /**
          * An instrumental section is represented by the INSTRUMENTAL lines covering it.
          */
-        @JvmField public val PART_TYPE_INSTRUMENTAL: PartType = PartType(9)
+        @JvmField public val PART_TYPE_INSTRUMENTAL: PartType = PartType(10)
 
         /**
          * A closing section ends the song.
          */
-        @JvmField public val PART_TYPE_OUTRO: PartType = PartType(10)
+        @JvmField public val PART_TYPE_OUTRO: PartType = PartType(11)
     }
 }
 

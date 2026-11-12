@@ -18,6 +18,7 @@ import gondola.lyrics.model.common.makeTimeRange
 import gondola.lyrics.model.document.decodeDocumentLyric
 import gondola.lyrics.model.document.encodeDocumentLyric
 import gondola.lyrics.model.document.makeDocumentLineContentText
+import gondola.lyrics.model.document.makeDocumentLineInstrumental
 import gondola.lyrics.model.document.makeDocumentLineNormal
 import gondola.lyrics.model.document.makeDocumentLyric
 import gondola.lyrics.model.enriched.LanguageUsage
@@ -235,6 +236,10 @@ class CodecTest {
             extra = mapOf("\$private" to "kept"),
             languageUsages = listOf(LanguageUsage(tag = "en", lineCount = 3)),
             lines = listOf(
+                makeEnrichedLineInstrumental(
+                    time = TimeRange(end = 1),
+                    part = Part(type = PartType.PART_TYPE_INTERLUDE, id = "Interlude-A", raw = "interlude"),
+                ),
                 Line(
                     part = part,
                     agentIds = listOf("lead", "guest"),
@@ -285,6 +290,10 @@ class CodecTest {
             meta = meta,
             extra = mapOf("\$private" to "kept"),
             lines = listOf(
+                makeDocumentLineInstrumental(
+                    time = TimeRange(end = 1),
+                    part = Part(type = PartType.PART_TYPE_INTERLUDE, id = "Interlude-A", raw = "interlude"),
+                ),
                 DocumentLine(
                     part = part,
                     agentIds = listOf("lead", "guest"),
@@ -404,6 +413,12 @@ class CodecTest {
                 "meta" to officialMeta,
                 "extra" to listOf(official("lyric.$layer.Lyric.ExtraEntry", "key" to "\$private", "value" to "kept")),
                 "lines" to listOf(
+                    official(
+                        "lyric.$layer.Line",
+                        "type" to 2,
+                        "time" to official("lyric.common.TimeRange", "end" to 1L),
+                        "part" to official("lyric.common.Part", "type" to 9, "id" to "Interlude-A", "raw" to "interlude"),
+                    ),
                     official(
                         "lyric.$layer.Line",
                         "part" to officialPart,

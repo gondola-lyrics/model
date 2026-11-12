@@ -82,6 +82,26 @@ const validatePartsInBothLayers = (parts: (Part | undefined)[]): Diagnostic[][] 
   return [validateEnrichedLyric(played), validateDocumentLyric(stored)]
 }
 
+const validateTimedPartsInBothLayers = (parts: (Part | undefined)[], sungLineIndices: readonly number[]): Diagnostic[][] => {
+  const documentLines = parts.map((part, index) => {
+    const time = makeTimeRange({ start: index * 1000, end: (index + 1) * 1000 })
+    if (sungLineIndices.includes(index)) {
+      return makeDocumentLineNormal({ part, time, content: makeDocumentLineContentText('line') })
+    }
+    return makeDocumentLineInstrumental({ part, time })
+  })
+  const enrichedLines = parts.map((part, index) => {
+    const time = makeTimeRange({ start: index * 1000, end: (index + 1) * 1000 })
+    if (sungLineIndices.includes(index)) {
+      return makeEnrichedLineNormal({ part, time, content: makeEnrichedLineContentText('line') })
+    }
+    return makeEnrichedLineInstrumental({ part, time })
+  })
+  const document = makeDocumentLyric({ timing: TimingLevel.LINE, lines: documentLines })
+  const enriched = makeEnrichedLyric({ status: EnrichedLyricStatus.VALID, timing: TimingLevel.LINE, lines: enrichedLines })
+  return [validateDocumentLyric(document), validateEnrichedLyric(enriched)]
+}
+
 describe('validate', () => {
   it('accepts new credit roles with optional source labels and preserves their meaning', () => {
     for (const role of [CreditRole.SONGWRITER, CreditRole.RECORDING_ENGINEER]) {
@@ -213,6 +233,55 @@ describe('validate', () => {
         deepStrictEqual(diagnostics, [{ path: 'lines[2].part.id', code: 'lyric.part.id.reused' }])
       }
     }
+  })
+
+  it('allows interludes before and between sung sections while preserving instrumental endings', () => {
+    const interlude = makePart({ type: PartType.INTERLUDE, id: 'opening', raw: 'interlude' })
+    const verse = makePart({ type: PartType.VERSE })
+    const chorus = makePart({ type: PartType.CHORUS })
+    const parts = [
+      interlude,
+      { ...interlude },
+      verse,
+      { ...interlude, id: 'middle' },
+      chorus,
+      makePart({ type: PartType.OUTRO }),
+      makePart({ type: PartType.INSTRUMENTAL }),
+    ]
+    for (const diagnostics of validateTimedPartsInBothLayers(parts, [2, 4])) {
+      deepStrictEqual(diagnostics, [])
+    }
+  })
+
+  it('rejects every trailing interlude even when later unsung sections remain', () => {
+    const interlude = makePart({ type: PartType.INTERLUDE, raw: 'interlude' })
+    const verse = makePart({ type: PartType.VERSE })
+    const cases = [
+      { parts: [verse, interlude], sung: [0], trailing: [1] },
+      { parts: [verse, interlude, { ...interlude }], sung: [0], trailing: [1, 2] },
+      { parts: [verse, { ...interlude, id: 'tail' }, { ...interlude, id: 'tail' }], sung: [0], trailing: [1, 2] },
+      { parts: [verse, interlude, makePart({ type: PartType.OUTRO })], sung: [0], trailing: [1] },
+      { parts: [verse, interlude, makePart({ type: PartType.INSTRUMENTAL })], sung: [0], trailing: [1] },
+      { parts: [interlude], sung: [], trailing: [0] },
+    ]
+    for (const scenario of cases) {
+      const expected = scenario.trailing.map((index) => ({ path: `lines[${index}].part.type`, code: 'lyric.part.interlude.trailing' }))
+      for (const diagnostics of validateTimedPartsInBothLayers(scenario.parts, scenario.sung)) {
+        deepStrictEqual(diagnostics, expected)
+      }
+    }
+  })
+
+  it('requires interlude sections to be carried by instrumental lines', () => {
+    const part = makePart({ type: PartType.INTERLUDE })
+    const time = makeTimeRange({ start: 0, end: 1000 })
+    const documentLine = makeDocumentLineNormal({ part, time, content: makeDocumentLineContentText('line') })
+    const enrichedLine = makeEnrichedLineNormal({ part, time, content: makeEnrichedLineContentText('line') })
+    const expected = [{ path: 'line.part.type', code: 'line.part.interlude.not_instrumental' }]
+    deepStrictEqual(validateDocumentLine(documentLine, 'line', TimingLevel.LINE), expected)
+    deepStrictEqual(validateEnrichedLine(enrichedLine, 'line', TimingLevel.LINE), expected)
+    deepStrictEqual(validateDocumentLine(makeDocumentLineInstrumental({ part, time }), 'line', TimingLevel.LINE), [])
+    deepStrictEqual(validateEnrichedLine(makeEnrichedLineInstrumental({ part, time }), 'line', TimingLevel.LINE), [])
   })
 
   it('keys roman and ruby annotations by language and scheme', () => {

@@ -15,7 +15,7 @@ import type {
 
 import { DiagnosticCode, canonicalizeTextToken, validatePart, validateTextToken, validateTimeRange } from '@root/common'
 import { validateLineTags } from '@root/common/tag'
-import { TimingLevel } from '@root/generated/common/index.gen'
+import { PartType, TimingLevel } from '@root/generated/common/index.gen'
 import {
   fieldsCommonPart,
   fieldsCommonTextToken,
@@ -431,6 +431,9 @@ export const validateDocumentLine = (line: Line, path = '', timing = TimingLevel
   }
   if (line.part) {
     diagnostics.push(...validatePart(line.part, childPath(path, 'part')))
+    if (line.part.type === PartType.INTERLUDE && line.type === LineType.NORMAL) {
+      diagnostics.push({ path: childPath(path, 'part.type'), code: DiagnosticCode.LinePartInterludeNotInstrumental })
+    }
   }
   // An instrumental line carries no singing, so every field describing one is not allowed, and a forbidden field is never descended into.
   if (instrumental && line.agentIds.length > 0) {

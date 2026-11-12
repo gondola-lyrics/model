@@ -83,6 +83,28 @@ private fun validatePartsInBothLayers(parts: List<Part?>): List<List<Diagnostic>
     return listOf(validateEnrichedLyric(played), validateDocumentLyric(stored))
 }
 
+private fun validateTimedPartsInBothLayers(parts: List<Part?>, sungLineIndices: Set<Int>): List<List<Diagnostic>> {
+    val documentLines = parts.mapIndexed { index, part ->
+        val time = makeTimeRange(start = index * 1000L, end = (index + 1) * 1000L)
+        if (index in sungLineIndices) {
+            makeDocumentLineNormal(part = part, time = time, content = makeDocumentLineContentText("line"))
+        } else {
+            makeDocumentLineInstrumental(part = part, time = time)
+        }
+    }
+    val enrichedLines = parts.mapIndexed { index, part ->
+        val time = makeTimeRange(start = index * 1000L, end = (index + 1) * 1000L)
+        if (index in sungLineIndices) {
+            makeEnrichedLineNormal(part = part, time = time, content = makeEnrichedLineContentText("line"))
+        } else {
+            makeEnrichedLineInstrumental(part = part, time = time)
+        }
+    }
+    val document = makeDocumentLyric(timing = TimingLevel.TIMING_LEVEL_LINE, lines = documentLines)
+    val enriched = makeEnrichedLyric(status = LyricStatus.LYRIC_STATUS_VALID, timing = TimingLevel.TIMING_LEVEL_LINE, lines = enrichedLines)
+    return listOf(validateDocumentLyric(document), validateEnrichedLyric(enriched))
+}
+
 class ValidateTest {
     @Test
     fun acceptsNewCreditRolesWithOptionalSourceLabelsAndPreservesTheirMeaning() {
@@ -240,6 +262,56 @@ class ValidateTest {
                 assertEquals(listOf("lines[2].part.id" to "lyric.part.id.reused"), diagnostics.asPairs())
             }
         }
+    }
+
+    @Test
+    fun allowsInterludesBeforeAndBetweenSungSectionsWhilePreservingInstrumentalEndings() {
+        val interlude = makePart(type = PartType.PART_TYPE_INTERLUDE, id = "opening", raw = "interlude")
+        val parts = listOf(
+            interlude,
+            interlude.copy(),
+            makePart(type = PartType.PART_TYPE_VERSE),
+            interlude.copy(id = "middle"),
+            makePart(type = PartType.PART_TYPE_CHORUS),
+            makePart(type = PartType.PART_TYPE_OUTRO),
+            makePart(type = PartType.PART_TYPE_INSTRUMENTAL),
+        )
+        for (diagnostics in validateTimedPartsInBothLayers(parts, setOf(2, 4))) {
+            assertEquals(emptyList(), diagnostics)
+        }
+    }
+
+    @Test
+    fun rejectsEveryTrailingInterludeEvenWhenLaterUnsungSectionsRemain() {
+        val interlude = makePart(type = PartType.PART_TYPE_INTERLUDE, raw = "interlude")
+        val verse = makePart(type = PartType.PART_TYPE_VERSE)
+        val cases = listOf(
+            Triple(listOf(verse, interlude), setOf(0), listOf(1)),
+            Triple(listOf(verse, interlude, interlude.copy()), setOf(0), listOf(1, 2)),
+            Triple(listOf(verse, interlude.copy(id = "tail"), interlude.copy(id = "tail")), setOf(0), listOf(1, 2)),
+            Triple(listOf(verse, interlude, makePart(type = PartType.PART_TYPE_OUTRO)), setOf(0), listOf(1)),
+            Triple(listOf(verse, interlude, makePart(type = PartType.PART_TYPE_INSTRUMENTAL)), setOf(0), listOf(1)),
+            Triple(listOf(interlude), emptySet(), listOf(0)),
+        )
+        for ((parts, sung, trailing) in cases) {
+            val expected = trailing.map { "lines[$it].part.type" to "lyric.part.interlude.trailing" }
+            for (diagnostics in validateTimedPartsInBothLayers(parts, sung)) {
+                assertEquals(expected, diagnostics.asPairs())
+            }
+        }
+    }
+
+    @Test
+    fun requiresInterludeSectionsToBeCarriedByInstrumentalLines() {
+        val part = makePart(type = PartType.PART_TYPE_INTERLUDE)
+        val time = makeTimeRange(start = 0, end = 1000)
+        val documentLine = makeDocumentLineNormal(part = part, time = time, content = makeDocumentLineContentText("line"))
+        val enrichedLine = makeEnrichedLineNormal(part = part, time = time, content = makeEnrichedLineContentText("line"))
+        val expected = listOf("line.part.type" to "line.part.interlude.not_instrumental")
+        assertEquals(expected, validateDocumentLine(documentLine, "line", TimingLevel.TIMING_LEVEL_LINE).asPairs())
+        assertEquals(expected, validateEnrichedLine(enrichedLine, "line", TimingLevel.TIMING_LEVEL_LINE).asPairs())
+        assertEquals(emptyList(), validateDocumentLine(makeDocumentLineInstrumental(part = part, time = time), "line", TimingLevel.TIMING_LEVEL_LINE))
+        assertEquals(emptyList(), validateEnrichedLine(makeEnrichedLineInstrumental(part = part, time = time), "line", TimingLevel.TIMING_LEVEL_LINE))
     }
 
     @Test

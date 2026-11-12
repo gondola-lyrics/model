@@ -33,21 +33,26 @@ export enum PartType {
    */
   POST_CHORUS = 6,
   /**
-   * A bridge contrasts with the surrounding verse or chorus sections.
-   */
-  BRIDGE = 7,
-  /**
    * A refrain is a recurring line or passage within the song.
    */
-  REFRAIN = 8,
+  REFRAIN = 7,
+  /**
+   * A bridge contrasts with the surrounding verse or chorus sections.
+   */
+  BRIDGE = 8,
+  /**
+   * An unsung interval appears before or between sung sections; a later sung line is required.
+   * Only INSTRUMENTAL lines may carry this type.
+   */
+  INTERLUDE = 9,
   /**
    * An instrumental section is represented by the INSTRUMENTAL lines covering it.
    */
-  INSTRUMENTAL = 9,
+  INSTRUMENTAL = 10,
   /**
    * A closing section ends the song.
    */
-  OUTRO = 10,
+  OUTRO = 11,
 }
 
 /**

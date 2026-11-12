@@ -205,7 +205,12 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
   findUnordered(lyric.lines, (line) => line.time).forEach((i) => {
     diagnostics.push({ path: `lines[${i}]`, code: DiagnosticCode.LyricLinesUnordered })
   })
-  diagnostics.push(...validateLyricParts(lyric.lines.map((line) => line.part)))
+  diagnostics.push(
+    ...validateLyricParts(
+      lyric.lines.map((line) => line.part),
+      lyric.lines.findLastIndex((line) => line.type === LineType.NORMAL),
+    ),
+  )
   // A rule that already spoke about a path keeps the sweep off it, and validateAgent reports an all-default agent at the agent rather than inside it.
   const covered = diagnostics.map((diagnostic) => diagnostic.path)
   lyric.agents.forEach((agent, i) => covered.push(`agents[${i}]`))

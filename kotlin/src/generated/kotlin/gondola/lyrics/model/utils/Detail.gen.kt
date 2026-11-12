@@ -865,7 +865,8 @@ internal fun isUnresolved(value: Any): Boolean {
                 value.value != 7 &&
                 value.value != 8 &&
                 value.value != 9 &&
-                value.value != 10
+                value.value != 10 &&
+                value.value != 11
 
         is DocumentWordType -> value.value != 1 && value.value != 2
 

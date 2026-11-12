@@ -29,13 +29,16 @@ fun validatePart(part: Part, path: String = ""): List<Diagnostic> {
 }
 
 /**
- * Checks that each non-empty part id covers one contiguous run with a consistent type and raw.
+ * Checks section id consistency and requires interludes to precede the last sung line.
  * Parts follow the lyric's line order; background lines inherit their parent's part.
  */
-internal fun validateLyricParts(parts: List<Part?>): List<Diagnostic> {
+internal fun validateLyricParts(parts: List<Part?>, lastSungLineIndex: Int): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
     val seen = mutableMapOf<String, Pair<Part, Int>>()
     parts.forEachIndexed { index, part ->
+        if (part?.type == PartType.PART_TYPE_INTERLUDE && index >= lastSungLineIndex) {
+            diagnostics += Diagnostic("lines[$index].part.type", DiagnosticCode.LyricPartInterludeTrailing)
+        }
         if (part == null) {
             return@forEachIndexed
         }

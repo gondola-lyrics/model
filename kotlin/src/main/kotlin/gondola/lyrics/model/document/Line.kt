@@ -6,6 +6,7 @@ import gondola.lyrics.model.common.Agent
 import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.DiagnosticCode
 import gondola.lyrics.model.common.Part
+import gondola.lyrics.model.common.PartType
 import gondola.lyrics.model.common.TextToken
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.TimingLevel
@@ -450,6 +451,9 @@ public fun validateDocumentLine(line: Line, path: String = "", timing: TimingLev
     }
     if (line.part != null) {
         diagnostics += validatePart(line.part, childPath(path, "part"))
+        if (line.part.type == PartType.PART_TYPE_INTERLUDE && line.type == LineType.LINE_TYPE_NORMAL) {
+            diagnostics += Diagnostic(childPath(path, "part.type"), DiagnosticCode.LinePartInterludeNotInstrumental)
+        }
     }
     if (instrumental && line.agentIds.size > 0) {
         diagnostics += Diagnostic(childPath(path, "agentIds"), DiagnosticCode.LineAgentIdsUnexpected)

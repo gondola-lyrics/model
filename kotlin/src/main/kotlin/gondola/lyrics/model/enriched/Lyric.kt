@@ -215,7 +215,7 @@ public fun validateEnrichedLyric(lyric: Lyric): List<Diagnostic> {
     for (index in findUnordered(lyric.lines) { line -> line.time }) {
         diagnostics += Diagnostic("lines[$index]", DiagnosticCode.LyricLinesUnordered)
     }
-    diagnostics += validateLyricParts(lyric.lines.map { it.part })
+    diagnostics += validateLyricParts(lyric.lines.map { it.part }, lyric.lines.indexOfLast { it.type == LineType.LINE_TYPE_NORMAL })
     // A rule that already spoke about a path keeps the sweep off it, and validateAgent reports an all-default agent at the agent rather than inside it.
     val covered = diagnostics.map { it.path } + lyric.agents.indices.map { "agents[$it]" }
     for (path in findDefaultEntries(lyric, covered)) {

@@ -28,6 +28,7 @@ import {
   makeDocumentLineBackground,
   makeDocumentLineContentText,
   makeDocumentLineContentWords,
+  makeDocumentLineInstrumental,
   makeDocumentLineNormal,
   makeDocumentLyric,
   makeDocumentWordNormal,
@@ -170,6 +171,10 @@ const enrichedLyric = (): EnrichedLyric => {
     languageUsages: [makeEnrichedLanguageUsage({ tag: 'en', lineCount: 3 })],
     agents: [makeAgent({ id: 'a', type: -1 as AgentType, raw: 'x', names: [makeText({ text: 'n' })] })],
     lines: [
+      makeEnrichedLineInstrumental({
+        time: makeTimeRange({ start: 0, end: 1 }),
+        part: makePart({ type: PartType.INTERLUDE, id: 'Interlude-A', raw: 'interlude' }),
+      }),
       makeEnrichedLineNormal({
         id: 'l',
         time: makeTimeRange({ start: 0, end: 0 }),
@@ -212,6 +217,10 @@ const documentLyric = (): DocumentLyric => {
     extra: extra(),
     agents: [makeAgent({ id: 'a', type: AgentType.GROUP, names: [makeText({ text: 'n' })] })],
     lines: [
+      makeDocumentLineInstrumental({
+        time: makeTimeRange({ start: 0, end: 1 }),
+        part: makePart({ type: PartType.INTERLUDE, id: 'Interlude-A', raw: 'interlude' }),
+      }),
       makeDocumentLineNormal({
         id: 'l',
         time: makeTimeRange({ start: 0 }),

@@ -30,13 +30,16 @@ export const validatePart = (part: Part, path = ''): Diagnostic[] => {
 }
 
 /**
- * Checks that each non-empty part id covers one contiguous run with a consistent type and raw.
+ * Checks section id consistency and requires interludes to precede the last sung line.
  * Parts follow the lyric's line order; background lines inherit their parent's part.
  */
-export const validateLyricParts = (parts: readonly (Part | undefined)[]): Diagnostic[] => {
+export const validateLyricParts = (parts: readonly (Part | undefined)[], lastSungLineIndex: number): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   const seen = new Map<string, { part: Part; lastIndex: number }>()
   parts.forEach((part, i) => {
+    if (part?.type === PartType.INTERLUDE && i >= lastSungLineIndex) {
+      diagnostics.push({ path: `lines[${i}].part.type`, code: DiagnosticCode.LyricPartInterludeTrailing })
+    }
     if (part?.id === undefined || part.id === '') {
       return
     }
