@@ -6,29 +6,29 @@ import gondola.lyrics.model.common.DiagnosticCode
 import gondola.lyrics.model.common.Meta
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.Timing
-import gondola.lyrics.model.common.WordType
-import gondola.lyrics.model.common.deriveLineLanguages
-import gondola.lyrics.model.common.deriveLineRomans
 import gondola.lyrics.model.common.getTimeRangeDuration
 import gondola.lyrics.model.common.makeAgent
-import gondola.lyrics.model.common.makeLineAnnotationRoman
 import gondola.lyrics.model.common.makeText
 import gondola.lyrics.model.common.makeTimeRange
-import gondola.lyrics.model.common.makeWordAnnotation
-import gondola.lyrics.model.common.makeWordAnnotationRoman
-import gondola.lyrics.model.common.makeWordAnnotationToken
 import gondola.lyrics.model.common.resolveDiagnosticPath
-import gondola.lyrics.model.common.resolveLineAgents
 import gondola.lyrics.model.common.validateTimeRange
-import gondola.lyrics.model.common.validateWord
-import gondola.lyrics.model.runtime.Line
-import gondola.lyrics.model.runtime.LineContent
-import gondola.lyrics.model.runtime.Lyric
-import gondola.lyrics.model.runtime.Word
-import gondola.lyrics.model.runtime.makeLineContentWords
-import gondola.lyrics.model.runtime.makeLineNormal
-import gondola.lyrics.model.runtime.makeWordNormal
-import gondola.lyrics.model.runtime.makeWordSpace
+import gondola.lyrics.model.enriched.Line
+import gondola.lyrics.model.enriched.LineContent
+import gondola.lyrics.model.enriched.Lyric
+import gondola.lyrics.model.enriched.Word
+import gondola.lyrics.model.enriched.WordType
+import gondola.lyrics.model.enriched.deriveLineLanguages
+import gondola.lyrics.model.enriched.deriveLineRomans
+import gondola.lyrics.model.enriched.makeLineAnnotationRoman
+import gondola.lyrics.model.enriched.makeLineContentWords
+import gondola.lyrics.model.enriched.makeLineNormal
+import gondola.lyrics.model.enriched.makeWordAnnotation
+import gondola.lyrics.model.enriched.makeWordAnnotationRoman
+import gondola.lyrics.model.enriched.makeWordAnnotationToken
+import gondola.lyrics.model.enriched.makeWordNormal
+import gondola.lyrics.model.enriched.makeWordSpace
+import gondola.lyrics.model.enriched.resolveLineAgents
+import gondola.lyrics.model.enriched.validateWord
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -65,10 +65,36 @@ class HelpersTest {
             makeLineAnnotationRoman(language = "ja-latn", text = "default text"),
         )
         assertEquals(expected, deriveLineRomans(makeLineContentWords(words)))
-        val stored = gondola.lyrics.model.storage.LineContent(
-            words = words.map { gondola.lyrics.model.storage.Word(type = it.type, text = it.text, annotation = it.annotation) },
+        val stored = gondola.lyrics.model.document.makeLineContentWords(
+            words.map { word ->
+                val annotation = word.annotation?.let { source ->
+                    gondola.lyrics.model.document.makeWordAnnotation(
+                        romans = source.romans.map { roman ->
+                            gondola.lyrics.model.document.makeWordAnnotationRoman(
+                                language = roman.language,
+                                scheme = roman.scheme,
+                                tokens = roman.tokens.map { token ->
+                                    gondola.lyrics.model.document.makeWordAnnotationToken(time = token.time, text = token.text)
+                                },
+                            )
+                        },
+                    )
+                }
+                if (word.type == WordType.WORD_TYPE_SPACE) {
+                    gondola.lyrics.model.document.makeWordSpace(text = word.text)
+                } else {
+                    gondola.lyrics.model.document.makeWordNormal(text = word.text, annotation = annotation)
+                }
+            },
         )
-        assertEquals(expected, deriveLineRomans(stored))
+        assertEquals(
+            listOf(
+                Triple("ja-latn", "hepburn", "shi chi"),
+                Triple("ja-latn", "kunrei", "si ti"),
+                Triple("ja-latn", null, "default text"),
+            ),
+            gondola.lyrics.model.document.deriveLineRomans(stored).map { Triple(it.language, it.scheme, it.text) },
+        )
         assertEquals("HEPBURN", first.romans[0].scheme)
     }
 

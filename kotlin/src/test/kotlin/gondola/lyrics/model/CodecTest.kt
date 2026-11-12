@@ -3,8 +3,6 @@ package gondola.lyrics.model
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet
 import com.google.protobuf.Descriptors
 import com.google.protobuf.DynamicMessage
-import gondola.lyrics.model.common.LineAnnotation
-import gondola.lyrics.model.common.LineAnnotationRoman
 import gondola.lyrics.model.common.Meta
 import gondola.lyrics.model.common.Part
 import gondola.lyrics.model.common.PartType
@@ -12,34 +10,36 @@ import gondola.lyrics.model.common.Text
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.Timing
 import gondola.lyrics.model.common.UnknownEntry
-import gondola.lyrics.model.common.WordAnnotation
-import gondola.lyrics.model.common.WordAnnotationRoman
-import gondola.lyrics.model.common.WordAnnotationRuby
-import gondola.lyrics.model.common.WordAnnotationToken
-import gondola.lyrics.model.common.WordType
 import gondola.lyrics.model.common.makeMeta
 import gondola.lyrics.model.common.makeTimeRange
-import gondola.lyrics.model.runtime.Line
-import gondola.lyrics.model.runtime.LineContent
-import gondola.lyrics.model.runtime.Lyric
-import gondola.lyrics.model.runtime.LyricStatus
-import gondola.lyrics.model.runtime.Word
-import gondola.lyrics.model.runtime.WordEmphasis
-import gondola.lyrics.model.runtime.canonicalizeLyric
-import gondola.lyrics.model.runtime.decode
-import gondola.lyrics.model.runtime.deriveLanguageUsages
-import gondola.lyrics.model.runtime.encode
-import gondola.lyrics.model.runtime.makeLineContentWords
-import gondola.lyrics.model.runtime.makeLineInstrumental
-import gondola.lyrics.model.runtime.makeLineNormal
-import gondola.lyrics.model.runtime.makeLyric
-import gondola.lyrics.model.runtime.makeWordEmphasis
-import gondola.lyrics.model.runtime.makeWordNormal
-import gondola.lyrics.model.runtime.makeWordSpace
-import gondola.lyrics.model.utils.decodeRuntimeWordEmphasis
-import gondola.lyrics.model.utils.decodeStorageLineContent
-import gondola.lyrics.model.utils.encodeRuntimeWordEmphasis
-import gondola.lyrics.model.utils.encodeStorageLineContent
+import gondola.lyrics.model.enriched.Line
+import gondola.lyrics.model.enriched.LineAnnotation
+import gondola.lyrics.model.enriched.LineAnnotationRoman
+import gondola.lyrics.model.enriched.LineContent
+import gondola.lyrics.model.enriched.Lyric
+import gondola.lyrics.model.enriched.LyricStatus
+import gondola.lyrics.model.enriched.Word
+import gondola.lyrics.model.enriched.WordAnnotation
+import gondola.lyrics.model.enriched.WordAnnotationRoman
+import gondola.lyrics.model.enriched.WordAnnotationRuby
+import gondola.lyrics.model.enriched.WordAnnotationToken
+import gondola.lyrics.model.enriched.WordEmphasis
+import gondola.lyrics.model.enriched.WordType
+import gondola.lyrics.model.enriched.canonicalizeLyric
+import gondola.lyrics.model.enriched.decode
+import gondola.lyrics.model.enriched.deriveLanguageUsages
+import gondola.lyrics.model.enriched.encode
+import gondola.lyrics.model.enriched.makeLineContentWords
+import gondola.lyrics.model.enriched.makeLineInstrumental
+import gondola.lyrics.model.enriched.makeLineNormal
+import gondola.lyrics.model.enriched.makeLyric
+import gondola.lyrics.model.enriched.makeWordEmphasis
+import gondola.lyrics.model.enriched.makeWordNormal
+import gondola.lyrics.model.enriched.makeWordSpace
+import gondola.lyrics.model.utils.decodeDocumentLineContent
+import gondola.lyrics.model.utils.decodeEnrichedWordEmphasis
+import gondola.lyrics.model.utils.encodeDocumentLineContent
+import gondola.lyrics.model.utils.encodeEnrichedWordEmphasis
 import gondola.lyrics.model.utils.read
 import gondola.lyrics.model.utils.write
 import java.util.concurrent.CyclicBarrier
@@ -52,15 +52,15 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import gondola.lyrics.model.storage.Line as StorageLine
-import gondola.lyrics.model.storage.LineContent as StorageLineContent
-import gondola.lyrics.model.storage.Lyric as StorageLyric
-import gondola.lyrics.model.storage.Word as StorageWord
-import gondola.lyrics.model.storage.decode as decodeStorage
-import gondola.lyrics.model.storage.encode as encodeStorage
-import gondola.lyrics.model.storage.makeLineContentText as makeStorageLineContentText
-import gondola.lyrics.model.storage.makeLineNormal as makeStorageLineNormal
-import gondola.lyrics.model.storage.makeLyric as makeStorageLyric
+import gondola.lyrics.model.document.Line as DocumentLine
+import gondola.lyrics.model.document.LineContent as DocumentLineContent
+import gondola.lyrics.model.document.Lyric as DocumentLyric
+import gondola.lyrics.model.document.Word as DocumentWord
+import gondola.lyrics.model.document.decode as decodeDocument
+import gondola.lyrics.model.document.encode as encodeDocument
+import gondola.lyrics.model.document.makeLineContentText as makeDocumentLineContentText
+import gondola.lyrics.model.document.makeLineNormal as makeDocumentLineNormal
+import gondola.lyrics.model.document.makeLyric as makeDocumentLyric
 
 class CodecTest {
     private val schemas by lazy {
@@ -136,22 +136,22 @@ class CodecTest {
         )
     }
 
-    private fun buildStorageLyric(): StorageLyric {
-        return makeStorageLyric(
+    private fun buildDocumentLyric(): DocumentLyric {
+        return makeDocumentLyric(
             format = "lrc",
             timing = Timing.TIMING_LINE,
             lines = listOf(
-                makeStorageLineNormal(
+                makeDocumentLineNormal(
                     time = makeTimeRange(start = 1000, end = 2000),
                     languages = listOf("en"),
-                    content = makeStorageLineContentText("hi there"),
+                    content = makeDocumentLineContentText("hi there"),
                 ),
             ),
         )
     }
 
     @Test
-    fun roundTripsRuntimeLyric() {
+    fun roundTripsEnrichedLyric() {
         val lyric = buildLyric()
         assertEquals(lyric, decode(encode(lyric)))
     }
@@ -163,17 +163,17 @@ class CodecTest {
             for (derived in values) {
                 val emphasis = makeWordEmphasis(value = value, derived = derived)
                 val fields = listOfNotNull(value?.let { "value" to it }, derived?.let { "derived" to it })
-                val bytes = official("lyric.runtime.WordEmphasis", *fields.toTypedArray()).toByteArray()
-                assertContentEquals(bytes, write(::encodeRuntimeWordEmphasis, emphasis))
-                assertEquals(emphasis, read(::decodeRuntimeWordEmphasis, bytes))
+                val bytes = official("lyric.enriched.WordEmphasis", *fields.toTypedArray()).toByteArray()
+                assertContentEquals(bytes, write(::encodeEnrichedWordEmphasis, emphasis))
+                assertEquals(emphasis, read(::decodeEnrichedWordEmphasis, bytes))
             }
         }
     }
 
     @Test
-    fun roundTripsStorageLyric() {
-        val lyric = buildStorageLyric()
-        assertEquals(lyric, decodeStorage(encodeStorage(lyric)))
+    fun roundTripsDocumentLyric() {
+        val lyric = buildDocumentLyric()
+        assertEquals(lyric, decodeDocument(encodeDocument(lyric)))
     }
 
     @Test
@@ -209,7 +209,26 @@ class CodecTest {
                 ),
             ),
         )
-        val stored = StorageLyric(
+        val documentWordAnnotation = gondola.lyrics.model.document.WordAnnotation(
+            rubies = listOf(
+                gondola.lyrics.model.document.WordAnnotationRuby(
+                    language = "zh-latn",
+                    scheme = "pinyin",
+                    tokens = listOf(gondola.lyrics.model.document.WordAnnotationToken(text = "han")),
+                ),
+            ),
+            romans = listOf(
+                gondola.lyrics.model.document.WordAnnotationRoman(
+                    language = "ja-latn",
+                    scheme = "hepburn",
+                    tokens = listOf(gondola.lyrics.model.document.WordAnnotationToken(text = "shi")),
+                ),
+            ),
+        )
+        val documentLineAnnotation = gondola.lyrics.model.document.LineAnnotation(
+            romans = listOf(gondola.lyrics.model.document.LineAnnotationRoman(language = "ja-latn", scheme = "hepburn", text = "shi")),
+        )
+        val stored = DocumentLyric(
             version = "1.1.0",
             format = "ttml",
             profile = "amll",
@@ -217,12 +236,20 @@ class CodecTest {
             meta = meta,
             extra = mapOf("\$private" to "kept"),
             lines = listOf(
-                StorageLine(
+                DocumentLine(
                     part = part,
-                    content = StorageLineContent(
-                        words = listOf(StorageWord(type = WordType(99), language = "", text = "x", emphasis = false, annotation = wordAnnotation)),
+                    content = DocumentLineContent(
+                        words = listOf(
+                            DocumentWord(
+                                type = gondola.lyrics.model.document.WordType(99),
+                                language = "",
+                                text = "x",
+                                emphasis = false,
+                                annotation = documentWordAnnotation,
+                            ),
+                        ),
                     ),
-                    annotation = lineAnnotation,
+                    annotation = documentLineAnnotation,
                 ),
             ),
         )
@@ -235,32 +262,32 @@ class CodecTest {
                 listOf(official("lyric.common.UnknownEntry", "key" to "k", "value" to "v"), official("lyric.common.UnknownEntry", "key" to "k")),
             "titles" to listOf(official("lyric.common.Text", "text" to "\uD83D\uDE00")),
         )
-        val officialWordAnnotation = official(
-            "lyric.common.WordAnnotation",
-            "rubies" to listOf(
-                official(
-                    "lyric.common.WordAnnotationRuby",
-                    "language" to "zh-latn",
-                    "scheme" to "pinyin",
-                    "tokens" to listOf(official("lyric.common.WordAnnotationToken", "text" to "han")),
-                ),
-            ),
-            "romans" to listOf(
-                official(
-                    "lyric.common.WordAnnotationRoman",
-                    "language" to "ja-latn",
-                    "scheme" to "hepburn",
-                    "tokens" to listOf(official("lyric.common.WordAnnotationToken", "text" to "shi")),
-                ),
-            ),
-        )
-        val officialLineAnnotation = official(
-            "lyric.common.LineAnnotation",
-            "romans" to listOf(official("lyric.common.LineAnnotationRoman", "language" to "ja-latn", "scheme" to "hepburn", "text" to "shi")),
-        )
         val officialPart = official("lyric.common.Part", "type" to 5, "id" to "Chorus-A", "raw" to "chorus")
-        for (layer in listOf("runtime", "storage")) {
-            val emphasis = if (layer == "runtime") official("lyric.runtime.WordEmphasis") else false
+        for (layer in listOf("enriched", "document")) {
+            val officialWordAnnotation = official(
+                "lyric.$layer.WordAnnotation",
+                "rubies" to listOf(
+                    official(
+                        "lyric.$layer.WordAnnotationRuby",
+                        "language" to "zh-latn",
+                        "scheme" to "pinyin",
+                        "tokens" to listOf(official("lyric.$layer.WordAnnotationToken", "text" to "han")),
+                    ),
+                ),
+                "romans" to listOf(
+                    official(
+                        "lyric.$layer.WordAnnotationRoman",
+                        "language" to "ja-latn",
+                        "scheme" to "hepburn",
+                        "tokens" to listOf(official("lyric.$layer.WordAnnotationToken", "text" to "shi")),
+                    ),
+                ),
+            )
+            val officialLineAnnotation = official(
+                "lyric.$layer.LineAnnotation",
+                "romans" to listOf(official("lyric.$layer.LineAnnotationRoman", "language" to "ja-latn", "scheme" to "hepburn", "text" to "shi")),
+            )
+            val emphasis = if (layer == "enriched") official("lyric.enriched.WordEmphasis") else false
             val values = listOf(
                 "version" to "1.1.0",
                 "format" to "ttml",
@@ -288,14 +315,14 @@ class CodecTest {
                         "annotation" to officialLineAnnotation,
                     ),
                 ),
-            ) + if (layer == "runtime") listOf("status" to 2) else emptyList()
+            ) + if (layer == "enriched") listOf("status" to 2) else emptyList()
             val bytes = official("lyric.$layer.Lyric", *values.toTypedArray()).toByteArray()
-            if (layer == "runtime") {
+            if (layer == "enriched") {
                 assertContentEquals(bytes, encode(native))
                 assertEquals(native, decode(bytes))
             } else {
-                assertContentEquals(bytes, encodeStorage(stored))
-                assertEquals(stored, decodeStorage(bytes))
+                assertContentEquals(bytes, encodeDocument(stored))
+                assertEquals(stored, decodeDocument(bytes))
             }
         }
     }
@@ -303,16 +330,22 @@ class CodecTest {
     @Test
     fun preservesPresenceInStandardSample() {
         val bytes = fromHex("0a090801120210002201610a0d0801120208051a0022016130000a07086322016130011200")
-        val expected = StorageLineContent(
+        val expected = DocumentLineContent(
             words = listOf(
-                StorageWord(type = WordType.WORD_TYPE_NORMAL, time = TimeRange(end = 0), text = "a"),
-                StorageWord(type = WordType.WORD_TYPE_NORMAL, time = TimeRange(start = 5), language = "", text = "a", emphasis = false),
-                StorageWord(type = WordType(99), text = "a", emphasis = true),
+                DocumentWord(type = gondola.lyrics.model.document.WordType.WORD_TYPE_NORMAL, time = TimeRange(end = 0), text = "a"),
+                DocumentWord(
+                    type = gondola.lyrics.model.document.WordType.WORD_TYPE_NORMAL,
+                    time = TimeRange(start = 5),
+                    language = "",
+                    text = "a",
+                    emphasis = false,
+                ),
+                DocumentWord(type = gondola.lyrics.model.document.WordType(99), text = "a", emphasis = true),
             ),
             text = "",
         )
-        assertEquals(expected, read(::decodeStorageLineContent, bytes))
-        assertContentEquals(bytes, write(::encodeStorageLineContent, expected))
+        assertEquals(expected, read(::decodeDocumentLineContent, bytes))
+        assertContentEquals(bytes, write(::encodeDocumentLineContent, expected))
     }
 
     @Test
@@ -382,7 +415,7 @@ class CodecTest {
         for ((reason, pair) in accepted) {
             assertContentEquals(fromHex(pair.second), encode(decode(fromHex(pair.first))), reason)
         }
-        assertEquals(true, read(::decodeStorageLineContent, fromHex("0a03308001")).words[0].emphasis)
+        assertEquals(true, read(::decodeDocumentLineContent, fromHex("0a03308001")).words[0].emphasis)
     }
 
     @Test
@@ -401,11 +434,11 @@ class CodecTest {
     fun rejectsUnencodableStringsAndNumbers() {
         for (text in listOf("\uD800", "\uDC00", "x\uD800y")) {
             assertFailsWith<IllegalArgumentException> { encode(Lyric(format = text)) }
-            assertFailsWith<IllegalArgumentException> { encodeStorage(StorageLyric(format = text)) }
+            assertFailsWith<IllegalArgumentException> { encodeDocument(DocumentLyric(format = text)) }
         }
         for (duration in listOf(-1L, 4294967296L, Long.MAX_VALUE)) {
             assertFailsWith<IllegalArgumentException> { encode(Lyric(meta = Meta(duration = duration))) }
-            assertFailsWith<IllegalArgumentException> { encodeStorage(StorageLyric(meta = Meta(duration = duration))) }
+            assertFailsWith<IllegalArgumentException> { encodeDocument(DocumentLyric(meta = Meta(duration = duration))) }
         }
     }
 
@@ -450,6 +483,6 @@ class CodecTest {
     @Test
     fun roundTripsEveryAcceptedMutation() {
         checkMutations(buildLyric(), ::encode, ::decode)
-        checkMutations(buildStorageLyric(), ::encodeStorage, ::decodeStorage)
+        checkMutations(buildDocumentLyric(), ::encodeDocument, ::decodeDocument)
     }
 }

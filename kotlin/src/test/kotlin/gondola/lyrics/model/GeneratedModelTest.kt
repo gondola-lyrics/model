@@ -2,10 +2,10 @@ package gondola.lyrics.model
 
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.Timing
-import gondola.lyrics.model.storage.Line
-import gondola.lyrics.model.storage.Lyric
-import gondola.lyrics.model.storage.decode
-import gondola.lyrics.model.storage.encode
+import gondola.lyrics.model.document.Line
+import gondola.lyrics.model.document.Lyric
+import gondola.lyrics.model.document.decode
+import gondola.lyrics.model.document.encode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull

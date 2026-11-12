@@ -1,41 +1,41 @@
 import { describe, it } from 'node:test'
 import { deepStrictEqual } from 'node:assert/strict'
 
-import { runtime } from '@root/index'
+import { enriched } from '@root/index'
 
 describe('order', () => {
   // A line with no range used to sort first, which told the consumer it starts at zero.
   it('puts lines with no range last, in the order they came', () => {
-    const lyric = runtime.makeLyric({
+    const lyric = enriched.makeLyric({
       format: 'lrc',
-      timing: runtime.Timing.LINE,
-      status: runtime.LyricStatus.VALID,
+      timing: enriched.Timing.LINE,
+      status: enriched.LyricStatus.VALID,
       lines: [
-        runtime.makeLineNormal({ id: 'second', time: runtime.makeTimeRange({ start: 2000 }) }),
-        runtime.makeLineNormal({ id: 'untimed-first' }),
-        runtime.makeLineNormal({ id: 'first', time: runtime.makeTimeRange({ start: 1000 }) }),
-        runtime.makeLineNormal({ id: 'untimed-second' }),
+        enriched.makeLineNormal({ id: 'second', time: enriched.makeTimeRange({ start: 2000 }) }),
+        enriched.makeLineNormal({ id: 'untimed-first' }),
+        enriched.makeLineNormal({ id: 'first', time: enriched.makeTimeRange({ start: 1000 }) }),
+        enriched.makeLineNormal({ id: 'untimed-second' }),
       ],
     })
     deepStrictEqual(
-      runtime.orderLyric(lyric).lines.map((line) => line.id),
+      enriched.orderLyric(lyric).lines.map((line) => line.id),
       ['first', 'second', 'untimed-first', 'untimed-second'],
     )
   })
 
   // Comparing tags by codepoint sorted every capitalized tag ahead of every lowercase one.
   it('compares language tags without case', () => {
-    const languages = [runtime.makeLanguageUsage({ tag: 'Zh', count: 1 }), runtime.makeLanguageUsage({ tag: 'ja', count: 1 })]
+    const languages = [enriched.makeLanguageUsage({ tag: 'Zh', count: 1 }), enriched.makeLanguageUsage({ tag: 'ja', count: 1 })]
     deepStrictEqual(
-      runtime.orderLanguageUsages(languages).map((usage) => usage.tag),
+      enriched.orderLanguageUsages(languages).map((usage) => usage.tag),
       ['ja', 'Zh'],
     )
   })
 
   it('orders language usages by descending count', () => {
-    const languages = [runtime.makeLanguageUsage({ tag: 'en', count: 1 }), runtime.makeLanguageUsage({ tag: 'ja', count: 3 })]
+    const languages = [enriched.makeLanguageUsage({ tag: 'en', count: 1 }), enriched.makeLanguageUsage({ tag: 'ja', count: 3 })]
     deepStrictEqual(
-      runtime.orderLanguageUsages(languages).map((usage) => usage.tag),
+      enriched.orderLanguageUsages(languages).map((usage) => usage.tag),
       ['ja', 'en'],
     )
   })

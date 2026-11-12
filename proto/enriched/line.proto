@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+package lyric.enriched;
+
+import "common/part.proto";
+import "common/time.proto";
+import "enriched/word.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "LineProto";
+option java_package = "gondola.lyrics.model.enriched";
+
+enum LineType {
+  // Unspecified and unrecognized values are treated as missing.
+  LINE_TYPE_UNSPECIFIED = 0;
+
+  // A sung line, carrying its content as either words or plain text.
+  LINE_TYPE_NORMAL = 1;
+
+  // An interval without singing, carrying only a time range and optional id and part.
+  // Requires a known end and timed lyrics.
+  // `part` tells whether the source stated it or it was derived from a gap in the timeline.
+  LINE_TYPE_INSTRUMENTAL = 2;
+}
+
+// Romanized transliteration of a whole line.
+message LineAnnotationRoman {
+  // Language of this item, as a BCP 47 tag.
+  optional string language = 1;
+
+  string text = 2;
+
+  // Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+  optional string scheme = 3;
+}
+
+// Translation of a whole line into another language.
+message LineAnnotationTranslation {
+  // Target language of this translation, as a BCP 47 tag.
+  optional string language = 1;
+
+  string text = 2;
+}
+
+// Annotations explicitly attached to the whole line by the source.
+// Excludes aggregations of word annotations.
+// Roman entries are unique by language and scheme; translations are unique by language.
+// Unset and empty language or scheme values identify the same entry.
+message LineAnnotation {
+  repeated LineAnnotationRoman romans = 1;
+
+  repeated LineAnnotationTranslation translations = 2;
+}
+
+// Exactly one of words or text must be set.
+message LineContent {
+  // Ordered words; each sung word requires a time range under TIMING_WORD.
+  repeated Word words = 1;
+
+  // Non-empty text for a line without word segmentation.
+  optional string text = 2;
+}
+
+// Background vocals attached to a normal line, sharing its part.
+message LineBackground {
+  // Identifier of this background line; empty means none.
+  string id = 1;
+
+  // Time range of this background line.
+  // The parent line's end covers it, while its start may precede the parent's.
+  // Must contain every timed word; boundaries may extend beyond the words.
+  lyric.common.TimeRange time = 2;
+
+  // Identifiers of the performing agents, the lead first.
+  // Multiple ids identify performers singing together; a named ensemble uses one GROUP agent.
+  repeated string agents = 3;
+
+  // BCP 47 language tags of this line, each at most once.
+  repeated string languages = 4;
+
+  LineContent content = 5;
+
+  LineAnnotation annotation = 6;
+}
+
+message Line {
+  // Identifier of the line; empty means none.
+  string id = 1;
+
+  LineType type = 2;
+
+  // Time range of the line.
+  // Must contain every timed word; boundaries may extend beyond the words.
+  lyric.common.TimeRange time = 3;
+
+  // Structural section this line belongs to; unset means no part information.
+  lyric.common.Part part = 4;
+
+  // Identifiers of the performing agents, the lead first.
+  // Multiple ids identify performers singing together; a named ensemble uses one GROUP agent.
+  repeated string agents = 5;
+
+  // BCP 47 language tags of this line, each at most once.
+  repeated string languages = 6;
+
+  LineContent content = 7;
+
+  LineAnnotation annotation = 8;
+
+  // Background lines attached to this line, ordered by TimeRange.start ascending.
+  repeated LineBackground backgrounds = 9;
+}

@@ -7,10 +7,6 @@ package gondola.lyrics.model.utils
 import gondola.lyrics.model.common.Agent as CommonAgent
 import gondola.lyrics.model.common.AgentType as CommonAgentType
 import gondola.lyrics.model.common.CreditRole as CommonCreditRole
-import gondola.lyrics.model.common.LineAnnotation as CommonLineAnnotation
-import gondola.lyrics.model.common.LineAnnotationRoman as CommonLineAnnotationRoman
-import gondola.lyrics.model.common.LineAnnotationTranslation as CommonLineAnnotationTranslation
-import gondola.lyrics.model.common.LineType as CommonLineType
 import gondola.lyrics.model.common.Meta as CommonMeta
 import gondola.lyrics.model.common.MetaCredit as CommonMetaCredit
 import gondola.lyrics.model.common.MetaReference as CommonMetaReference
@@ -20,25 +16,39 @@ import gondola.lyrics.model.common.Text as CommonText
 import gondola.lyrics.model.common.TimeRange as CommonTimeRange
 import gondola.lyrics.model.common.Timing as CommonTiming
 import gondola.lyrics.model.common.UnknownEntry as CommonUnknownEntry
-import gondola.lyrics.model.common.WordAnnotation as CommonWordAnnotation
-import gondola.lyrics.model.common.WordAnnotationRoman as CommonWordAnnotationRoman
-import gondola.lyrics.model.common.WordAnnotationRuby as CommonWordAnnotationRuby
-import gondola.lyrics.model.common.WordAnnotationToken as CommonWordAnnotationToken
-import gondola.lyrics.model.common.WordAnnotationTranslation as CommonWordAnnotationTranslation
-import gondola.lyrics.model.common.WordType as CommonWordType
-import gondola.lyrics.model.runtime.LanguageUsage as RuntimeLanguageUsage
-import gondola.lyrics.model.runtime.Line as RuntimeLine
-import gondola.lyrics.model.runtime.LineBackground as RuntimeLineBackground
-import gondola.lyrics.model.runtime.LineContent as RuntimeLineContent
-import gondola.lyrics.model.runtime.Lyric as RuntimeLyric
-import gondola.lyrics.model.runtime.LyricStatus as RuntimeLyricStatus
-import gondola.lyrics.model.runtime.Word as RuntimeWord
-import gondola.lyrics.model.runtime.WordEmphasis as RuntimeWordEmphasis
-import gondola.lyrics.model.storage.Line as StorageLine
-import gondola.lyrics.model.storage.LineBackground as StorageLineBackground
-import gondola.lyrics.model.storage.LineContent as StorageLineContent
-import gondola.lyrics.model.storage.Lyric as StorageLyric
-import gondola.lyrics.model.storage.Word as StorageWord
+import gondola.lyrics.model.document.Line as DocumentLine
+import gondola.lyrics.model.document.LineAnnotation as DocumentLineAnnotation
+import gondola.lyrics.model.document.LineAnnotationRoman as DocumentLineAnnotationRoman
+import gondola.lyrics.model.document.LineAnnotationTranslation as DocumentLineAnnotationTranslation
+import gondola.lyrics.model.document.LineBackground as DocumentLineBackground
+import gondola.lyrics.model.document.LineContent as DocumentLineContent
+import gondola.lyrics.model.document.LineType as DocumentLineType
+import gondola.lyrics.model.document.Lyric as DocumentLyric
+import gondola.lyrics.model.document.Word as DocumentWord
+import gondola.lyrics.model.document.WordAnnotation as DocumentWordAnnotation
+import gondola.lyrics.model.document.WordAnnotationRoman as DocumentWordAnnotationRoman
+import gondola.lyrics.model.document.WordAnnotationRuby as DocumentWordAnnotationRuby
+import gondola.lyrics.model.document.WordAnnotationToken as DocumentWordAnnotationToken
+import gondola.lyrics.model.document.WordAnnotationTranslation as DocumentWordAnnotationTranslation
+import gondola.lyrics.model.document.WordType as DocumentWordType
+import gondola.lyrics.model.enriched.LanguageUsage as EnrichedLanguageUsage
+import gondola.lyrics.model.enriched.Line as EnrichedLine
+import gondola.lyrics.model.enriched.LineAnnotation as EnrichedLineAnnotation
+import gondola.lyrics.model.enriched.LineAnnotationRoman as EnrichedLineAnnotationRoman
+import gondola.lyrics.model.enriched.LineAnnotationTranslation as EnrichedLineAnnotationTranslation
+import gondola.lyrics.model.enriched.LineBackground as EnrichedLineBackground
+import gondola.lyrics.model.enriched.LineContent as EnrichedLineContent
+import gondola.lyrics.model.enriched.LineType as EnrichedLineType
+import gondola.lyrics.model.enriched.Lyric as EnrichedLyric
+import gondola.lyrics.model.enriched.LyricStatus as EnrichedLyricStatus
+import gondola.lyrics.model.enriched.Word as EnrichedWord
+import gondola.lyrics.model.enriched.WordAnnotation as EnrichedWordAnnotation
+import gondola.lyrics.model.enriched.WordAnnotationRoman as EnrichedWordAnnotationRoman
+import gondola.lyrics.model.enriched.WordAnnotationRuby as EnrichedWordAnnotationRuby
+import gondola.lyrics.model.enriched.WordAnnotationToken as EnrichedWordAnnotationToken
+import gondola.lyrics.model.enriched.WordAnnotationTranslation as EnrichedWordAnnotationTranslation
+import gondola.lyrics.model.enriched.WordEmphasis as EnrichedWordEmphasis
+import gondola.lyrics.model.enriched.WordType as EnrichedWordType
 
 internal enum class FieldShape { SCALAR, ENUM, OPTIONAL, MESSAGE, LIST_SCALAR, LIST_MESSAGE, MAP }
 
@@ -57,18 +67,6 @@ internal fun isDefault(message: Any): Boolean {
                 message.type.value == 0 &&
                 message.raw == null &&
                 message.names.isEmpty()
-
-        is CommonLineAnnotationRoman ->
-            message.language == null &&
-                message.text == "" &&
-                message.scheme == null
-
-        is CommonLineAnnotationTranslation ->
-            message.language == null &&
-                message.text == ""
-
-        is CommonLineAnnotation -> message.romans.isEmpty() &&
-            message.translations.isEmpty()
 
         is CommonUnknownEntry ->
             message.key == "" &&
@@ -104,39 +102,31 @@ internal fun isDefault(message: Any): Boolean {
             message.start == 0L &&
                 message.end == null
 
-        is CommonWordAnnotationToken ->
+        is DocumentWordAnnotationToken ->
             message.time == null &&
                 message.text == ""
 
-        is CommonWordAnnotationTranslation ->
+        is DocumentWordAnnotationTranslation ->
             message.language == null &&
                 message.text == ""
 
-        is CommonWordAnnotationRoman ->
+        is DocumentWordAnnotationRoman ->
             message.time == null &&
                 message.language == null &&
                 message.scheme == null &&
                 message.tokens.isEmpty()
 
-        is CommonWordAnnotationRuby ->
+        is DocumentWordAnnotationRuby ->
             message.time == null &&
                 message.language == null &&
                 message.scheme == null &&
                 message.tokens.isEmpty()
 
-        is CommonWordAnnotation -> message.rubies.isEmpty() &&
+        is DocumentWordAnnotation -> message.rubies.isEmpty() &&
             message.romans.isEmpty() &&
             message.translations.isEmpty()
 
-        is RuntimeLanguageUsage ->
-            message.tag == "" &&
-                message.count == 0L
-
-        is RuntimeWordEmphasis ->
-            message.value == null &&
-                message.derived == null
-
-        is RuntimeWord ->
+        is DocumentWord ->
             message.type.value == 0 &&
                 message.time == null &&
                 message.language == null &&
@@ -144,10 +134,22 @@ internal fun isDefault(message: Any): Boolean {
                 message.annotation == null &&
                 message.emphasis == null
 
-        is RuntimeLineContent -> message.words.isEmpty() &&
+        is DocumentLineAnnotationRoman ->
+            message.language == null &&
+                message.text == "" &&
+                message.scheme == null
+
+        is DocumentLineAnnotationTranslation ->
+            message.language == null &&
+                message.text == ""
+
+        is DocumentLineAnnotation -> message.romans.isEmpty() &&
+            message.translations.isEmpty()
+
+        is DocumentLineContent -> message.words.isEmpty() &&
             message.text == null
 
-        is RuntimeLineBackground ->
+        is DocumentLineBackground ->
             message.id == "" &&
                 message.time == null &&
                 message.agents.isEmpty() &&
@@ -155,7 +157,7 @@ internal fun isDefault(message: Any): Boolean {
                 message.content == null &&
                 message.annotation == null
 
-        is RuntimeLine ->
+        is DocumentLine ->
             message.id == "" &&
                 message.type.value == 0 &&
                 message.time == null &&
@@ -166,7 +168,91 @@ internal fun isDefault(message: Any): Boolean {
                 message.annotation == null &&
                 message.backgrounds.isEmpty()
 
-        is RuntimeLyric ->
+        is DocumentLyric ->
+            message.version == "" &&
+                message.format == "" &&
+                message.profile == "" &&
+                message.timing.value == 0 &&
+                message.meta == null &&
+                message.extra.isEmpty() &&
+                message.agents.isEmpty() &&
+                message.lines.isEmpty()
+
+        is EnrichedLanguageUsage ->
+            message.tag == "" &&
+                message.count == 0L
+
+        is EnrichedWordAnnotationToken ->
+            message.time == null &&
+                message.text == ""
+
+        is EnrichedWordAnnotationTranslation ->
+            message.language == null &&
+                message.text == ""
+
+        is EnrichedWordAnnotationRoman ->
+            message.time == null &&
+                message.language == null &&
+                message.scheme == null &&
+                message.tokens.isEmpty()
+
+        is EnrichedWordAnnotationRuby ->
+            message.time == null &&
+                message.language == null &&
+                message.scheme == null &&
+                message.tokens.isEmpty()
+
+        is EnrichedWordAnnotation -> message.rubies.isEmpty() &&
+            message.romans.isEmpty() &&
+            message.translations.isEmpty()
+
+        is EnrichedWordEmphasis ->
+            message.value == null &&
+                message.derived == null
+
+        is EnrichedWord ->
+            message.type.value == 0 &&
+                message.time == null &&
+                message.language == null &&
+                message.text == "" &&
+                message.annotation == null &&
+                message.emphasis == null
+
+        is EnrichedLineAnnotationRoman ->
+            message.language == null &&
+                message.text == "" &&
+                message.scheme == null
+
+        is EnrichedLineAnnotationTranslation ->
+            message.language == null &&
+                message.text == ""
+
+        is EnrichedLineAnnotation -> message.romans.isEmpty() &&
+            message.translations.isEmpty()
+
+        is EnrichedLineContent -> message.words.isEmpty() &&
+            message.text == null
+
+        is EnrichedLineBackground ->
+            message.id == "" &&
+                message.time == null &&
+                message.agents.isEmpty() &&
+                message.languages.isEmpty() &&
+                message.content == null &&
+                message.annotation == null
+
+        is EnrichedLine ->
+            message.id == "" &&
+                message.type.value == 0 &&
+                message.time == null &&
+                message.part == null &&
+                message.agents.isEmpty() &&
+                message.languages.isEmpty() &&
+                message.content == null &&
+                message.annotation == null &&
+                message.backgrounds.isEmpty()
+
+        is EnrichedLyric ->
             message.version == "" &&
                 message.format == "" &&
                 message.profile == "" &&
@@ -175,46 +261,6 @@ internal fun isDefault(message: Any): Boolean {
                 message.meta == null &&
                 message.extra.isEmpty() &&
                 message.languages.isEmpty() &&
-                message.agents.isEmpty() &&
-                message.lines.isEmpty()
-
-        is StorageWord ->
-            message.type.value == 0 &&
-                message.time == null &&
-                message.language == null &&
-                message.text == "" &&
-                message.annotation == null &&
-                message.emphasis == null
-
-        is StorageLineContent -> message.words.isEmpty() &&
-            message.text == null
-
-        is StorageLineBackground ->
-            message.id == "" &&
-                message.time == null &&
-                message.agents.isEmpty() &&
-                message.languages.isEmpty() &&
-                message.content == null &&
-                message.annotation == null
-
-        is StorageLine ->
-            message.id == "" &&
-                message.type.value == 0 &&
-                message.time == null &&
-                message.part == null &&
-                message.agents.isEmpty() &&
-                message.languages.isEmpty() &&
-                message.content == null &&
-                message.annotation == null &&
-                message.backgrounds.isEmpty()
-
-        is StorageLyric ->
-            message.version == "" &&
-                message.format == "" &&
-                message.profile == "" &&
-                message.timing.value == 0 &&
-                message.meta == null &&
-                message.extra.isEmpty() &&
                 message.agents.isEmpty() &&
                 message.lines.isEmpty()
 
@@ -238,22 +284,6 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("type", FieldShape.ENUM, message.type)
             visit("raw", FieldShape.OPTIONAL, message.raw)
             visit("names", FieldShape.LIST_MESSAGE, message.names)
-        }
-
-        is CommonLineAnnotationRoman -> {
-            visit("language", FieldShape.OPTIONAL, message.language)
-            visit("text", FieldShape.SCALAR, message.text)
-            visit("scheme", FieldShape.OPTIONAL, message.scheme)
-        }
-
-        is CommonLineAnnotationTranslation -> {
-            visit("language", FieldShape.OPTIONAL, message.language)
-            visit("text", FieldShape.SCALAR, message.text)
-        }
-
-        is CommonLineAnnotation -> {
-            visit("romans", FieldShape.LIST_MESSAGE, message.romans)
-            visit("translations", FieldShape.LIST_MESSAGE, message.translations)
         }
 
         is CommonUnknownEntry -> {
@@ -297,95 +327,37 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("end", FieldShape.OPTIONAL, message.end)
         }
 
-        is CommonWordAnnotationToken -> {
+        is DocumentWordAnnotationToken -> {
             visit("time", FieldShape.MESSAGE, message.time)
             visit("text", FieldShape.SCALAR, message.text)
         }
 
-        is CommonWordAnnotationTranslation -> {
+        is DocumentWordAnnotationTranslation -> {
             visit("language", FieldShape.OPTIONAL, message.language)
             visit("text", FieldShape.SCALAR, message.text)
         }
 
-        is CommonWordAnnotationRoman -> {
+        is DocumentWordAnnotationRoman -> {
             visit("time", FieldShape.MESSAGE, message.time)
             visit("language", FieldShape.OPTIONAL, message.language)
             visit("scheme", FieldShape.OPTIONAL, message.scheme)
             visit("tokens", FieldShape.LIST_MESSAGE, message.tokens)
         }
 
-        is CommonWordAnnotationRuby -> {
+        is DocumentWordAnnotationRuby -> {
             visit("time", FieldShape.MESSAGE, message.time)
             visit("language", FieldShape.OPTIONAL, message.language)
             visit("scheme", FieldShape.OPTIONAL, message.scheme)
             visit("tokens", FieldShape.LIST_MESSAGE, message.tokens)
         }
 
-        is CommonWordAnnotation -> {
+        is DocumentWordAnnotation -> {
             visit("rubies", FieldShape.LIST_MESSAGE, message.rubies)
             visit("romans", FieldShape.LIST_MESSAGE, message.romans)
             visit("translations", FieldShape.LIST_MESSAGE, message.translations)
         }
 
-        is RuntimeLanguageUsage -> {
-            visit("tag", FieldShape.SCALAR, message.tag)
-            visit("count", FieldShape.SCALAR, message.count)
-        }
-
-        is RuntimeWordEmphasis -> {
-            visit("value", FieldShape.OPTIONAL, message.value)
-            visit("derived", FieldShape.OPTIONAL, message.derived)
-        }
-
-        is RuntimeWord -> {
-            visit("type", FieldShape.ENUM, message.type)
-            visit("time", FieldShape.MESSAGE, message.time)
-            visit("language", FieldShape.OPTIONAL, message.language)
-            visit("text", FieldShape.SCALAR, message.text)
-            visit("annotation", FieldShape.MESSAGE, message.annotation)
-            visit("emphasis", FieldShape.MESSAGE, message.emphasis)
-        }
-
-        is RuntimeLineContent -> {
-            visit("words", FieldShape.LIST_MESSAGE, message.words)
-            visit("text", FieldShape.OPTIONAL, message.text)
-        }
-
-        is RuntimeLineBackground -> {
-            visit("id", FieldShape.SCALAR, message.id)
-            visit("time", FieldShape.MESSAGE, message.time)
-            visit("agents", FieldShape.LIST_SCALAR, message.agents)
-            visit("languages", FieldShape.LIST_SCALAR, message.languages)
-            visit("content", FieldShape.MESSAGE, message.content)
-            visit("annotation", FieldShape.MESSAGE, message.annotation)
-        }
-
-        is RuntimeLine -> {
-            visit("id", FieldShape.SCALAR, message.id)
-            visit("type", FieldShape.ENUM, message.type)
-            visit("time", FieldShape.MESSAGE, message.time)
-            visit("part", FieldShape.MESSAGE, message.part)
-            visit("agents", FieldShape.LIST_SCALAR, message.agents)
-            visit("languages", FieldShape.LIST_SCALAR, message.languages)
-            visit("content", FieldShape.MESSAGE, message.content)
-            visit("annotation", FieldShape.MESSAGE, message.annotation)
-            visit("backgrounds", FieldShape.LIST_MESSAGE, message.backgrounds)
-        }
-
-        is RuntimeLyric -> {
-            visit("version", FieldShape.SCALAR, message.version)
-            visit("format", FieldShape.SCALAR, message.format)
-            visit("profile", FieldShape.SCALAR, message.profile)
-            visit("status", FieldShape.ENUM, message.status)
-            visit("timing", FieldShape.ENUM, message.timing)
-            visit("meta", FieldShape.MESSAGE, message.meta)
-            visit("extra", FieldShape.MAP, message.extra)
-            visit("languages", FieldShape.LIST_MESSAGE, message.languages)
-            visit("agents", FieldShape.LIST_MESSAGE, message.agents)
-            visit("lines", FieldShape.LIST_MESSAGE, message.lines)
-        }
-
-        is StorageWord -> {
+        is DocumentWord -> {
             visit("type", FieldShape.ENUM, message.type)
             visit("time", FieldShape.MESSAGE, message.time)
             visit("language", FieldShape.OPTIONAL, message.language)
@@ -394,12 +366,28 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("emphasis", FieldShape.OPTIONAL, message.emphasis)
         }
 
-        is StorageLineContent -> {
+        is DocumentLineAnnotationRoman -> {
+            visit("language", FieldShape.OPTIONAL, message.language)
+            visit("text", FieldShape.SCALAR, message.text)
+            visit("scheme", FieldShape.OPTIONAL, message.scheme)
+        }
+
+        is DocumentLineAnnotationTranslation -> {
+            visit("language", FieldShape.OPTIONAL, message.language)
+            visit("text", FieldShape.SCALAR, message.text)
+        }
+
+        is DocumentLineAnnotation -> {
+            visit("romans", FieldShape.LIST_MESSAGE, message.romans)
+            visit("translations", FieldShape.LIST_MESSAGE, message.translations)
+        }
+
+        is DocumentLineContent -> {
             visit("words", FieldShape.LIST_MESSAGE, message.words)
             visit("text", FieldShape.OPTIONAL, message.text)
         }
 
-        is StorageLineBackground -> {
+        is DocumentLineBackground -> {
             visit("id", FieldShape.SCALAR, message.id)
             visit("time", FieldShape.MESSAGE, message.time)
             visit("agents", FieldShape.LIST_SCALAR, message.agents)
@@ -408,7 +396,7 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("annotation", FieldShape.MESSAGE, message.annotation)
         }
 
-        is StorageLine -> {
+        is DocumentLine -> {
             visit("id", FieldShape.SCALAR, message.id)
             visit("type", FieldShape.ENUM, message.type)
             visit("time", FieldShape.MESSAGE, message.time)
@@ -420,13 +408,117 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("backgrounds", FieldShape.LIST_MESSAGE, message.backgrounds)
         }
 
-        is StorageLyric -> {
+        is DocumentLyric -> {
             visit("version", FieldShape.SCALAR, message.version)
             visit("format", FieldShape.SCALAR, message.format)
             visit("profile", FieldShape.SCALAR, message.profile)
             visit("timing", FieldShape.ENUM, message.timing)
             visit("meta", FieldShape.MESSAGE, message.meta)
             visit("extra", FieldShape.MAP, message.extra)
+            visit("agents", FieldShape.LIST_MESSAGE, message.agents)
+            visit("lines", FieldShape.LIST_MESSAGE, message.lines)
+        }
+
+        is EnrichedLanguageUsage -> {
+            visit("tag", FieldShape.SCALAR, message.tag)
+            visit("count", FieldShape.SCALAR, message.count)
+        }
+
+        is EnrichedWordAnnotationToken -> {
+            visit("time", FieldShape.MESSAGE, message.time)
+            visit("text", FieldShape.SCALAR, message.text)
+        }
+
+        is EnrichedWordAnnotationTranslation -> {
+            visit("language", FieldShape.OPTIONAL, message.language)
+            visit("text", FieldShape.SCALAR, message.text)
+        }
+
+        is EnrichedWordAnnotationRoman -> {
+            visit("time", FieldShape.MESSAGE, message.time)
+            visit("language", FieldShape.OPTIONAL, message.language)
+            visit("scheme", FieldShape.OPTIONAL, message.scheme)
+            visit("tokens", FieldShape.LIST_MESSAGE, message.tokens)
+        }
+
+        is EnrichedWordAnnotationRuby -> {
+            visit("time", FieldShape.MESSAGE, message.time)
+            visit("language", FieldShape.OPTIONAL, message.language)
+            visit("scheme", FieldShape.OPTIONAL, message.scheme)
+            visit("tokens", FieldShape.LIST_MESSAGE, message.tokens)
+        }
+
+        is EnrichedWordAnnotation -> {
+            visit("rubies", FieldShape.LIST_MESSAGE, message.rubies)
+            visit("romans", FieldShape.LIST_MESSAGE, message.romans)
+            visit("translations", FieldShape.LIST_MESSAGE, message.translations)
+        }
+
+        is EnrichedWordEmphasis -> {
+            visit("value", FieldShape.OPTIONAL, message.value)
+            visit("derived", FieldShape.OPTIONAL, message.derived)
+        }
+
+        is EnrichedWord -> {
+            visit("type", FieldShape.ENUM, message.type)
+            visit("time", FieldShape.MESSAGE, message.time)
+            visit("language", FieldShape.OPTIONAL, message.language)
+            visit("text", FieldShape.SCALAR, message.text)
+            visit("annotation", FieldShape.MESSAGE, message.annotation)
+            visit("emphasis", FieldShape.MESSAGE, message.emphasis)
+        }
+
+        is EnrichedLineAnnotationRoman -> {
+            visit("language", FieldShape.OPTIONAL, message.language)
+            visit("text", FieldShape.SCALAR, message.text)
+            visit("scheme", FieldShape.OPTIONAL, message.scheme)
+        }
+
+        is EnrichedLineAnnotationTranslation -> {
+            visit("language", FieldShape.OPTIONAL, message.language)
+            visit("text", FieldShape.SCALAR, message.text)
+        }
+
+        is EnrichedLineAnnotation -> {
+            visit("romans", FieldShape.LIST_MESSAGE, message.romans)
+            visit("translations", FieldShape.LIST_MESSAGE, message.translations)
+        }
+
+        is EnrichedLineContent -> {
+            visit("words", FieldShape.LIST_MESSAGE, message.words)
+            visit("text", FieldShape.OPTIONAL, message.text)
+        }
+
+        is EnrichedLineBackground -> {
+            visit("id", FieldShape.SCALAR, message.id)
+            visit("time", FieldShape.MESSAGE, message.time)
+            visit("agents", FieldShape.LIST_SCALAR, message.agents)
+            visit("languages", FieldShape.LIST_SCALAR, message.languages)
+            visit("content", FieldShape.MESSAGE, message.content)
+            visit("annotation", FieldShape.MESSAGE, message.annotation)
+        }
+
+        is EnrichedLine -> {
+            visit("id", FieldShape.SCALAR, message.id)
+            visit("type", FieldShape.ENUM, message.type)
+            visit("time", FieldShape.MESSAGE, message.time)
+            visit("part", FieldShape.MESSAGE, message.part)
+            visit("agents", FieldShape.LIST_SCALAR, message.agents)
+            visit("languages", FieldShape.LIST_SCALAR, message.languages)
+            visit("content", FieldShape.MESSAGE, message.content)
+            visit("annotation", FieldShape.MESSAGE, message.annotation)
+            visit("backgrounds", FieldShape.LIST_MESSAGE, message.backgrounds)
+        }
+
+        is EnrichedLyric -> {
+            visit("version", FieldShape.SCALAR, message.version)
+            visit("format", FieldShape.SCALAR, message.format)
+            visit("profile", FieldShape.SCALAR, message.profile)
+            visit("status", FieldShape.ENUM, message.status)
+            visit("timing", FieldShape.ENUM, message.timing)
+            visit("meta", FieldShape.MESSAGE, message.meta)
+            visit("extra", FieldShape.MAP, message.extra)
+            visit("languages", FieldShape.LIST_MESSAGE, message.languages)
             visit("agents", FieldShape.LIST_MESSAGE, message.agents)
             visit("lines", FieldShape.LIST_MESSAGE, message.lines)
         }
@@ -450,25 +542,6 @@ internal fun readField(message: Any, name: String): Any? {
             "type" -> message.type.value
             "raw" -> message.raw
             "names" -> message.names
-            else -> null
-        }
-
-        is CommonLineAnnotationRoman -> when (name) {
-            "language" -> message.language
-            "text" -> message.text
-            "scheme" -> message.scheme
-            else -> null
-        }
-
-        is CommonLineAnnotationTranslation -> when (name) {
-            "language" -> message.language
-            "text" -> message.text
-            else -> null
-        }
-
-        is CommonLineAnnotation -> when (name) {
-            "romans" -> message.romans
-            "translations" -> message.translations
             else -> null
         }
 
@@ -519,19 +592,19 @@ internal fun readField(message: Any, name: String): Any? {
             else -> null
         }
 
-        is CommonWordAnnotationToken -> when (name) {
+        is DocumentWordAnnotationToken -> when (name) {
             "time" -> message.time
             "text" -> message.text
             else -> null
         }
 
-        is CommonWordAnnotationTranslation -> when (name) {
+        is DocumentWordAnnotationTranslation -> when (name) {
             "language" -> message.language
             "text" -> message.text
             else -> null
         }
 
-        is CommonWordAnnotationRoman -> when (name) {
+        is DocumentWordAnnotationRoman -> when (name) {
             "time" -> message.time
             "language" -> message.language
             "scheme" -> message.scheme
@@ -539,7 +612,7 @@ internal fun readField(message: Any, name: String): Any? {
             else -> null
         }
 
-        is CommonWordAnnotationRuby -> when (name) {
+        is DocumentWordAnnotationRuby -> when (name) {
             "time" -> message.time
             "language" -> message.language
             "scheme" -> message.scheme
@@ -547,26 +620,14 @@ internal fun readField(message: Any, name: String): Any? {
             else -> null
         }
 
-        is CommonWordAnnotation -> when (name) {
+        is DocumentWordAnnotation -> when (name) {
             "rubies" -> message.rubies
             "romans" -> message.romans
             "translations" -> message.translations
             else -> null
         }
 
-        is RuntimeLanguageUsage -> when (name) {
-            "tag" -> message.tag
-            "count" -> message.count
-            else -> null
-        }
-
-        is RuntimeWordEmphasis -> when (name) {
-            "value" -> message.value
-            "derived" -> message.derived
-            else -> null
-        }
-
-        is RuntimeWord -> when (name) {
+        is DocumentWord -> when (name) {
             "type" -> message.type.value
             "time" -> message.time
             "language" -> message.language
@@ -576,13 +637,32 @@ internal fun readField(message: Any, name: String): Any? {
             else -> null
         }
 
-        is RuntimeLineContent -> when (name) {
+        is DocumentLineAnnotationRoman -> when (name) {
+            "language" -> message.language
+            "text" -> message.text
+            "scheme" -> message.scheme
+            else -> null
+        }
+
+        is DocumentLineAnnotationTranslation -> when (name) {
+            "language" -> message.language
+            "text" -> message.text
+            else -> null
+        }
+
+        is DocumentLineAnnotation -> when (name) {
+            "romans" -> message.romans
+            "translations" -> message.translations
+            else -> null
+        }
+
+        is DocumentLineContent -> when (name) {
             "words" -> message.words
             "text" -> message.text
             else -> null
         }
 
-        is RuntimeLineBackground -> when (name) {
+        is DocumentLineBackground -> when (name) {
             "id" -> message.id
             "time" -> message.time
             "agents" -> message.agents
@@ -592,7 +672,7 @@ internal fun readField(message: Any, name: String): Any? {
             else -> null
         }
 
-        is RuntimeLine -> when (name) {
+        is DocumentLine -> when (name) {
             "id" -> message.id
             "type" -> message.type.value
             "time" -> message.time
@@ -605,7 +685,124 @@ internal fun readField(message: Any, name: String): Any? {
             else -> null
         }
 
-        is RuntimeLyric -> when (name) {
+        is DocumentLyric -> when (name) {
+            "version" -> message.version
+            "format" -> message.format
+            "profile" -> message.profile
+            "timing" -> message.timing.value
+            "meta" -> message.meta
+            "extra" -> message.extra
+            "agents" -> message.agents
+            "lines" -> message.lines
+            else -> null
+        }
+
+        is EnrichedLanguageUsage -> when (name) {
+            "tag" -> message.tag
+            "count" -> message.count
+            else -> null
+        }
+
+        is EnrichedWordAnnotationToken -> when (name) {
+            "time" -> message.time
+            "text" -> message.text
+            else -> null
+        }
+
+        is EnrichedWordAnnotationTranslation -> when (name) {
+            "language" -> message.language
+            "text" -> message.text
+            else -> null
+        }
+
+        is EnrichedWordAnnotationRoman -> when (name) {
+            "time" -> message.time
+            "language" -> message.language
+            "scheme" -> message.scheme
+            "tokens" -> message.tokens
+            else -> null
+        }
+
+        is EnrichedWordAnnotationRuby -> when (name) {
+            "time" -> message.time
+            "language" -> message.language
+            "scheme" -> message.scheme
+            "tokens" -> message.tokens
+            else -> null
+        }
+
+        is EnrichedWordAnnotation -> when (name) {
+            "rubies" -> message.rubies
+            "romans" -> message.romans
+            "translations" -> message.translations
+            else -> null
+        }
+
+        is EnrichedWordEmphasis -> when (name) {
+            "value" -> message.value
+            "derived" -> message.derived
+            else -> null
+        }
+
+        is EnrichedWord -> when (name) {
+            "type" -> message.type.value
+            "time" -> message.time
+            "language" -> message.language
+            "text" -> message.text
+            "annotation" -> message.annotation
+            "emphasis" -> message.emphasis
+            else -> null
+        }
+
+        is EnrichedLineAnnotationRoman -> when (name) {
+            "language" -> message.language
+            "text" -> message.text
+            "scheme" -> message.scheme
+            else -> null
+        }
+
+        is EnrichedLineAnnotationTranslation -> when (name) {
+            "language" -> message.language
+            "text" -> message.text
+            else -> null
+        }
+
+        is EnrichedLineAnnotation -> when (name) {
+            "romans" -> message.romans
+            "translations" -> message.translations
+            else -> null
+        }
+
+        is EnrichedLineContent -> when (name) {
+            "words" -> message.words
+            "text" -> message.text
+            else -> null
+        }
+
+        is EnrichedLineBackground -> when (name) {
+            "id" -> message.id
+            "time" -> message.time
+            "agents" -> message.agents
+            "languages" -> message.languages
+            "content" -> message.content
+            "annotation" -> message.annotation
+            else -> null
+        }
+
+        is EnrichedLine -> when (name) {
+            "id" -> message.id
+            "type" -> message.type.value
+            "time" -> message.time
+            "part" -> message.part
+            "agents" -> message.agents
+            "languages" -> message.languages
+            "content" -> message.content
+            "annotation" -> message.annotation
+            "backgrounds" -> message.backgrounds
+            else -> null
+        }
+
+        is EnrichedLyric -> when (name) {
             "version" -> message.version
             "format" -> message.format
             "profile" -> message.profile
@@ -614,57 +811,6 @@ internal fun readField(message: Any, name: String): Any? {
             "meta" -> message.meta
             "extra" -> message.extra
             "languages" -> message.languages
-            "agents" -> message.agents
-            "lines" -> message.lines
-            else -> null
-        }
-
-        is StorageWord -> when (name) {
-            "type" -> message.type.value
-            "time" -> message.time
-            "language" -> message.language
-            "text" -> message.text
-            "annotation" -> message.annotation
-            "emphasis" -> message.emphasis
-            else -> null
-        }
-
-        is StorageLineContent -> when (name) {
-            "words" -> message.words
-            "text" -> message.text
-            else -> null
-        }
-
-        is StorageLineBackground -> when (name) {
-            "id" -> message.id
-            "time" -> message.time
-            "agents" -> message.agents
-            "languages" -> message.languages
-            "content" -> message.content
-            "annotation" -> message.annotation
-            else -> null
-        }
-
-        is StorageLine -> when (name) {
-            "id" -> message.id
-            "type" -> message.type.value
-            "time" -> message.time
-            "part" -> message.part
-            "agents" -> message.agents
-            "languages" -> message.languages
-            "content" -> message.content
-            "annotation" -> message.annotation
-            "backgrounds" -> message.backgrounds
-            else -> null
-        }
-
-        is StorageLyric -> when (name) {
-            "version" -> message.version
-            "format" -> message.format
-            "profile" -> message.profile
-            "timing" -> message.timing.value
-            "meta" -> message.meta
-            "extra" -> message.extra
             "agents" -> message.agents
             "lines" -> message.lines
             else -> null
@@ -682,8 +828,6 @@ internal fun isUnresolved(value: Any): Boolean {
     return when (value) {
         is CommonAgentType -> value.value != 1 && value.value != 2 && value.value != 3
 
-        is CommonLineType -> value.value != 1 && value.value != 2
-
         is CommonCreditRole ->
             value.value != 1 && value.value != 2 && value.value != 3 && value.value != 4 && value.value != 5 && value.value != 6 &&
                 value.value != 7 &&
@@ -698,9 +842,15 @@ internal fun isUnresolved(value: Any): Boolean {
 
         is CommonTiming -> value.value != 1 && value.value != 2 && value.value != 3
 
-        is CommonWordType -> value.value != 1 && value.value != 2
+        is DocumentWordType -> value.value != 1 && value.value != 2
 
-        is RuntimeLyricStatus -> value.value != 1 && value.value != 2
+        is DocumentLineType -> value.value != 1 && value.value != 2
+
+        is EnrichedWordType -> value.value != 1 && value.value != 2
+
+        is EnrichedLineType -> value.value != 1 && value.value != 2
+
+        is EnrichedLyricStatus -> value.value != 1 && value.value != 2
 
         else -> false
     }

@@ -1,55 +1,57 @@
 import { describe, it } from 'node:test'
 import { deepStrictEqual } from 'node:assert/strict'
 
-import { runtime, storage } from '@root/index'
+import { enriched, document } from '@root/index'
 
-const textLine = (start: number, end?: number): runtime.Line => {
-  return runtime.makeLineNormal({ time: runtime.makeTimeRange({ start, end }), content: runtime.makeLineContentText('x') })
+const textLine = (start: number, end?: number): enriched.Line => {
+  return enriched.makeLineNormal({ time: enriched.makeTimeRange({ start, end }), content: enriched.makeLineContentText('x') })
 }
 
-const lineTimed = (...lines: runtime.Line[]): runtime.Lyric => {
-  return runtime.makeLyric({ format: 'lrc', timing: runtime.Timing.LINE, status: runtime.LyricStatus.VALID, lines })
+const lineTimed = (...lines: enriched.Line[]): enriched.Lyric => {
+  return enriched.makeLyric({ format: 'lrc', timing: enriched.Timing.LINE, status: enriched.LyricStatus.VALID, lines })
 }
 
-const validatePartsInBothLayers = (parts: (runtime.Part | undefined)[]): runtime.Diagnostic[][] => {
-  const played = runtime.makeLyric({
-    timing: runtime.Timing.NONE,
-    status: runtime.LyricStatus.VALID,
-    lines: parts.map((part) => runtime.makeLineNormal({ part, content: runtime.makeLineContentText('line') })),
+const validatePartsInBothLayers = (parts: (enriched.Part | undefined)[]): enriched.Diagnostic[][] => {
+  const played = enriched.makeLyric({
+    timing: enriched.Timing.NONE,
+    status: enriched.LyricStatus.VALID,
+    lines: parts.map((part) => enriched.makeLineNormal({ part, content: enriched.makeLineContentText('line') })),
   })
-  const stored = storage.makeLyric({
-    timing: storage.Timing.NONE,
-    lines: parts.map((part) => storage.makeLineNormal({ part, content: storage.makeLineContentText('line') })),
+  const stored = document.makeLyric({
+    timing: document.Timing.NONE,
+    lines: parts.map((part) => document.makeLineNormal({ part, content: document.makeLineContentText('line') })),
   })
-  return [runtime.validateLyric(played), storage.validateLyric(stored)]
+  return [enriched.validateLyric(played), document.validateLyric(stored)]
 }
 
 describe('validate', () => {
   it('requires an emphasis decision when its origin is set', () => {
     for (const derived of [false, true]) {
-      const line = runtime.makeLineNormal({
-        time: runtime.makeTimeRange({ start: 1000, end: 5000 }),
-        content: runtime.makeLineContentWords([
-          runtime.makeWordNormal({
+      const line = enriched.makeLineNormal({
+        time: enriched.makeTimeRange({ start: 1000, end: 5000 }),
+        content: enriched.makeLineContentWords([
+          enriched.makeWordNormal({
             text: 'ah',
-            time: runtime.makeTimeRange({ start: 1000, end: 5000 }),
-            emphasis: runtime.makeWordEmphasis({ derived }),
+            time: enriched.makeTimeRange({ start: 1000, end: 5000 }),
+            emphasis: enriched.makeWordEmphasis({ derived }),
           }),
         ]),
       })
-      const lyric = runtime.canonicalizeLyric(runtime.makeLyric({ timing: runtime.Timing.WORD, status: runtime.LyricStatus.VALID, lines: [line] }))
-      deepStrictEqual(runtime.validateLyric(lyric), [{ path: 'lines[0].content.words[0].emphasis.value', code: 'line.word.emphasis.value.missing' }])
+      const lyric = enriched.canonicalizeLyric(
+        enriched.makeLyric({ timing: enriched.Timing.WORD, status: enriched.LyricStatus.VALID, lines: [line] }),
+      )
+      deepStrictEqual(enriched.validateLyric(lyric), [{ path: 'lines[0].content.words[0].emphasis.value', code: 'line.word.emphasis.value.missing' }])
       for (const value of [false, true]) {
-        const word = runtime.makeWordNormal({ text: 'ah', emphasis: runtime.makeWordEmphasis({ value, derived }) })
-        deepStrictEqual(runtime.validateWord(word), [])
+        const word = enriched.makeWordNormal({ text: 'ah', emphasis: enriched.makeWordEmphasis({ value, derived }) })
+        deepStrictEqual(enriched.validateWord(word), [])
       }
     }
-    deepStrictEqual(runtime.validateWord(runtime.makeWordNormal({ text: 'ah', emphasis: runtime.makeWordEmphasis() })), [])
-    deepStrictEqual(runtime.validateWord(runtime.makeWordNormal({ text: 'ah', emphasis: runtime.makeWordEmphasis({ value: false }) })), [])
+    deepStrictEqual(enriched.validateWord(enriched.makeWordNormal({ text: 'ah', emphasis: enriched.makeWordEmphasis() })), [])
+    deepStrictEqual(enriched.validateWord(enriched.makeWordNormal({ text: 'ah', emphasis: enriched.makeWordEmphasis({ value: false }) })), [])
   })
 
   it('allows consistent part ids across adjacent lines and compares ids exactly', () => {
-    const part = runtime.makePart({ type: runtime.PartType.CHORUS, id: 'Chorus', raw: 'chorus' })
+    const part = enriched.makePart({ type: enriched.PartType.CHORUS, id: 'Chorus', raw: 'chorus' })
     const parts = [
       part,
       { ...part },
@@ -57,8 +59,8 @@ describe('validate', () => {
       { ...part, id: undefined },
       { ...part, id: '' },
       undefined,
-      runtime.makePart({ type: runtime.PartType.VERSE, raw: 'Verse 1' }),
-      runtime.makePart({ type: runtime.PartType.VERSE, raw: 'Verse 2' }),
+      enriched.makePart({ type: enriched.PartType.VERSE, raw: 'Verse 1' }),
+      enriched.makePart({ type: enriched.PartType.VERSE, raw: 'Verse 2' }),
     ]
     for (const diagnostics of validatePartsInBothLayers(parts)) {
       deepStrictEqual(diagnostics, [])
@@ -66,13 +68,13 @@ describe('validate', () => {
   })
 
   it('reports inconsistent type or raw for the same part id', () => {
-    const part = runtime.makePart({ type: runtime.PartType.CHORUS, id: 'Chorus', raw: 'chorus' })
+    const part = enriched.makePart({ type: enriched.PartType.CHORUS, id: 'Chorus', raw: 'chorus' })
     const parts = [
       part,
-      { ...part, type: runtime.PartType.VERSE },
+      { ...part, type: enriched.PartType.VERSE },
       { ...part, raw: 'Chorus' },
-      runtime.makePart({ type: runtime.PartType.CHORUS, id: 'Other' }),
-      runtime.makePart({ type: runtime.PartType.CHORUS, id: 'Other', raw: '' }),
+      enriched.makePart({ type: enriched.PartType.CHORUS, id: 'Other' }),
+      enriched.makePart({ type: enriched.PartType.CHORUS, id: 'Other', raw: '' }),
     ]
     for (const diagnostics of validatePartsInBothLayers(parts)) {
       deepStrictEqual(diagnostics, [
@@ -84,7 +86,7 @@ describe('validate', () => {
   })
 
   it('reports a part id reused after another section only at the new run', () => {
-    const part = runtime.makePart({ type: runtime.PartType.CHORUS, id: 'Chorus', raw: 'chorus' })
+    const part = enriched.makePart({ type: enriched.PartType.CHORUS, id: 'Chorus', raw: 'chorus' })
     const separators = [{ ...part, id: 'Other' }, undefined, { ...part, id: '' }, { ...part, id: undefined }]
     for (const separator of separators) {
       for (const diagnostics of validatePartsInBothLayers([part, separator, part, part])) {
@@ -94,55 +96,57 @@ describe('validate', () => {
   })
 
   it('keys roman and ruby annotations by language and scheme', () => {
-    const identities = [
-      { language: 'JA-Latn', scheme: 'HEPBURN' },
-      { language: 'ja-latn', scheme: 'kunrei' },
-      { language: 'ja', scheme: 'hepburn' },
-      { language: 'ja-latn', scheme: 'hepburn' },
-      { language: 'ja-latn' },
-      { language: 'JA-LATN', scheme: '' },
-    ]
-    const word = runtime.makeWordAnnotation({
-      rubies: identities.map((identity) => runtime.makeWordAnnotationRuby(identity)),
-      romans: identities.map((identity) => runtime.makeWordAnnotationRoman(identity)),
-      translations: ['zh-Hans', 'ZH-HANS'].map((language) => runtime.makeWordAnnotationTranslation({ language, text: 'translation' })),
-    })
-    const line = runtime.makeLineAnnotation({
-      romans: identities.map((identity) => runtime.makeLineAnnotationRoman({ ...identity, text: 'roman' })),
-      translations: ['zh-Hans', 'ZH-HANS'].map((language) => runtime.makeLineAnnotationTranslation({ language, text: 'translation' })),
-    })
-    deepStrictEqual(runtime.validateWordAnnotation(word), [
-      { path: 'rubies[3]', code: 'line.word.annotation.rubies.duplicate' },
-      { path: 'rubies[5]', code: 'line.word.annotation.rubies.duplicate' },
-      { path: 'romans[3]', code: 'line.word.annotation.romans.duplicate' },
-      { path: 'romans[5]', code: 'line.word.annotation.romans.duplicate' },
-      { path: 'translations[1]', code: 'line.word.annotation.translations.language.duplicate' },
-    ])
-    deepStrictEqual(runtime.validateLineAnnotation(line), [
-      { path: 'romans[3]', code: 'line.annotation.romans.duplicate' },
-      { path: 'romans[5]', code: 'line.annotation.romans.duplicate' },
-      { path: 'translations[1]', code: 'line.annotation.translations.language.duplicate' },
-    ])
+    for (const model of [document, enriched]) {
+      const identities = [
+        { language: 'JA-Latn', scheme: 'HEPBURN' },
+        { language: 'ja-latn', scheme: 'kunrei' },
+        { language: 'ja', scheme: 'hepburn' },
+        { language: 'ja-latn', scheme: 'hepburn' },
+        { language: 'ja-latn' },
+        { language: 'JA-LATN', scheme: '' },
+      ]
+      const word = model.makeWordAnnotation({
+        rubies: identities.map((identity) => model.makeWordAnnotationRuby(identity)),
+        romans: identities.map((identity) => model.makeWordAnnotationRoman(identity)),
+        translations: ['zh-Hans', 'ZH-HANS'].map((language) => model.makeWordAnnotationTranslation({ language, text: 'translation' })),
+      })
+      const line = model.makeLineAnnotation({
+        romans: identities.map((identity) => model.makeLineAnnotationRoman({ ...identity, text: 'roman' })),
+        translations: ['zh-Hans', 'ZH-HANS'].map((language) => model.makeLineAnnotationTranslation({ language, text: 'translation' })),
+      })
+      deepStrictEqual(model.validateWordAnnotation(word), [
+        { path: 'rubies[3]', code: 'line.word.annotation.rubies.duplicate' },
+        { path: 'rubies[5]', code: 'line.word.annotation.rubies.duplicate' },
+        { path: 'romans[3]', code: 'line.word.annotation.romans.duplicate' },
+        { path: 'romans[5]', code: 'line.word.annotation.romans.duplicate' },
+        { path: 'translations[1]', code: 'line.word.annotation.translations.language.duplicate' },
+      ])
+      deepStrictEqual(model.validateLineAnnotation(line), [
+        { path: 'romans[3]', code: 'line.annotation.romans.duplicate' },
+        { path: 'romans[5]', code: 'line.annotation.romans.duplicate' },
+        { path: 'translations[1]', code: 'line.annotation.translations.language.duplicate' },
+      ])
+    }
   })
 
   it('validates annotation languages independently of scheme identifiers', () => {
     for (const language of ['ja-latn', 'ja_Latn']) {
       const identity = { language, scheme: 'custom_romanization' }
-      const line = runtime.makeLineNormal({
-        time: runtime.makeTimeRange({ start: 0, end: 1000 }),
-        content: runtime.makeLineContentWords([
-          runtime.makeWordNormal({
+      const line = enriched.makeLineNormal({
+        time: enriched.makeTimeRange({ start: 0, end: 1000 }),
+        content: enriched.makeLineContentWords([
+          enriched.makeWordNormal({
             text: 'x',
-            time: runtime.makeTimeRange({ start: 0, end: 1000 }),
-            annotation: runtime.makeWordAnnotation({
-              rubies: [runtime.makeWordAnnotationRuby({ ...identity, tokens: [runtime.makeWordAnnotationToken({ text: 'shi' })] })],
-              romans: [runtime.makeWordAnnotationRoman({ ...identity, tokens: [runtime.makeWordAnnotationToken({ text: 'shi' })] })],
+            time: enriched.makeTimeRange({ start: 0, end: 1000 }),
+            annotation: enriched.makeWordAnnotation({
+              rubies: [enriched.makeWordAnnotationRuby({ ...identity, tokens: [enriched.makeWordAnnotationToken({ text: 'shi' })] })],
+              romans: [enriched.makeWordAnnotationRoman({ ...identity, tokens: [enriched.makeWordAnnotationToken({ text: 'shi' })] })],
             }),
           }),
         ]),
-        annotation: runtime.makeLineAnnotation({ romans: [runtime.makeLineAnnotationRoman({ ...identity, text: 'shi' })] }),
+        annotation: enriched.makeLineAnnotation({ romans: [enriched.makeLineAnnotationRoman({ ...identity, text: 'shi' })] }),
       })
-      const diagnostics = runtime.validateLine(line, '', runtime.Timing.WORD)
+      const diagnostics = enriched.validateLine(line, '', enriched.Timing.WORD)
       deepStrictEqual(
         diagnostics.map((diagnostic) => [diagnostic.path, diagnostic.code]).sort(),
         language === 'ja-latn'
@@ -158,57 +162,57 @@ describe('validate', () => {
 
   it('accepts a word-level lyric', () => {
     const lines = [
-      runtime.makeLineNormal({
-        time: runtime.makeTimeRange({ start: 1000, end: 2000 }),
+      enriched.makeLineNormal({
+        time: enriched.makeTimeRange({ start: 1000, end: 2000 }),
         languages: ['en'],
-        content: runtime.makeLineContentWords([
-          runtime.makeWordNormal({ text: 'hi', language: 'en', time: runtime.makeTimeRange({ start: 1000, end: 1500 }) }),
-          runtime.makeWordSpace({ text: ' ' }),
-          runtime.makeWordNormal({ text: 'there', language: 'en', time: runtime.makeTimeRange({ start: 1500, end: 2000 }) }),
+        content: enriched.makeLineContentWords([
+          enriched.makeWordNormal({ text: 'hi', language: 'en', time: enriched.makeTimeRange({ start: 1000, end: 1500 }) }),
+          enriched.makeWordSpace({ text: ' ' }),
+          enriched.makeWordNormal({ text: 'there', language: 'en', time: enriched.makeTimeRange({ start: 1500, end: 2000 }) }),
         ]),
       }),
     ]
-    const lyric = runtime.makeLyric({
+    const lyric = enriched.makeLyric({
       format: 'lrc',
-      timing: runtime.Timing.WORD,
-      status: runtime.LyricStatus.VALID,
-      languages: runtime.deriveLanguageUsages(lines),
+      timing: enriched.Timing.WORD,
+      status: enriched.LyricStatus.VALID,
+      languages: enriched.deriveLanguageUsages(lines),
       lines,
     })
-    deepStrictEqual(runtime.validateLyric(lyric), [])
+    deepStrictEqual(enriched.validateLyric(lyric), [])
   })
 
   // The codes are a contract the other bindings copy verbatim, so they are asserted as the strings they are.
   it('reports an undeclared timing', () => {
-    const lyric = storage.makeLyric({
+    const lyric = document.makeLyric({
       format: 'lrc',
       lines: [
-        storage.makeLineNormal({
-          time: storage.makeTimeRange({ start: 1000 }),
+        document.makeLineNormal({
+          time: document.makeTimeRange({ start: 1000 }),
           languages: ['en'],
-          content: storage.makeLineContentText('hi there'),
+          content: document.makeLineContentText('hi there'),
         }),
       ],
     })
-    deepStrictEqual(storage.validateLyric(lyric), [{ path: 'timing', code: 'lyric.timing.unspecified' }])
+    deepStrictEqual(document.validateLyric(lyric), [{ path: 'timing', code: 'lyric.timing.unspecified' }])
   })
 
   it('reports undeclared languages and an unsplit word', () => {
-    const lyric = runtime.makeLyric({
+    const lyric = enriched.makeLyric({
       format: 'lrc',
-      timing: runtime.Timing.WORD,
-      status: runtime.LyricStatus.VALID,
+      timing: enriched.Timing.WORD,
+      status: enriched.LyricStatus.VALID,
       lines: [
-        runtime.makeLineNormal({
-          time: runtime.makeTimeRange({ start: 1000, end: 2000 }),
+        enriched.makeLineNormal({
+          time: enriched.makeTimeRange({ start: 1000, end: 2000 }),
           languages: ['en'],
-          content: runtime.makeLineContentWords([
-            runtime.makeWordNormal({ text: 'hi there', language: 'en', time: runtime.makeTimeRange({ start: 1000, end: 2000 }) }),
+          content: enriched.makeLineContentWords([
+            enriched.makeWordNormal({ text: 'hi there', language: 'en', time: enriched.makeTimeRange({ start: 1000, end: 2000 }) }),
           ]),
         }),
       ],
     })
-    deepStrictEqual(runtime.validateLyric(lyric), [
+    deepStrictEqual(enriched.validateLyric(lyric), [
       { path: 'languages', code: 'lyric.languages.mismatch' },
       { path: 'lines[0].content.words[0].text', code: 'word.text.separator' },
     ])
@@ -216,54 +220,54 @@ describe('validate', () => {
 
   // An untimed lyric marks out no stretches, so it reports the line itself instead of asking it for a range it may not have.
   it('reports an instrumental line in an untimed lyric', () => {
-    const lyric = runtime.makeLyric({
+    const lyric = enriched.makeLyric({
       format: 'lrc',
-      timing: runtime.Timing.NONE,
-      status: runtime.LyricStatus.VALID,
-      lines: [runtime.makeLineInstrumental()],
+      timing: enriched.Timing.NONE,
+      status: enriched.LyricStatus.VALID,
+      lines: [enriched.makeLineInstrumental()],
     })
-    deepStrictEqual(runtime.validateLyric(lyric), [{ path: 'lines[0].type', code: 'lyric.timing.none.instrumental' }])
+    deepStrictEqual(enriched.validateLyric(lyric), [{ path: 'lines[0].type', code: 'lyric.timing.none.instrumental' }])
   })
 
   // A line other than the last ends where the timeline moves on, so one left open would be shown for the rest of the song.
   it('reports a line left open above', () => {
     const lyric = lineTimed(textLine(0, 1000), textLine(1000), textLine(2000, 3000))
-    deepStrictEqual(runtime.validateLyric(lyric), [{ path: 'lines[1].time.end', code: 'lyric.line.time.end.missing' }])
+    deepStrictEqual(enriched.validateLyric(lyric), [{ path: 'lines[1].time.end', code: 'lyric.line.time.end.missing' }])
   })
 
   // Nothing in a lyric states where it stops, so the last line is the one line whose end the data cannot carry.
   it('accepts the last line left open above', () => {
     const lyric = lineTimed(textLine(0, 1000), textLine(1000, 2000), textLine(2000))
-    deepStrictEqual(runtime.validateLyric(lyric), [])
+    deepStrictEqual(enriched.validateLyric(lyric), [])
   })
 
   // A line carrying no range at all is already reported for that, so it is not asked for an end on top.
   it('reports a line with no range once', () => {
-    const lyric = lineTimed(runtime.makeLineNormal({ content: runtime.makeLineContentText('x') }), textLine(1000, 2000))
-    deepStrictEqual(runtime.validateLyric(lyric), [{ path: 'lines[0].time', code: 'lyric.timing.line.time_missing' }])
+    const lyric = lineTimed(enriched.makeLineNormal({ content: enriched.makeLineContentText('x') }), textLine(1000, 2000))
+    deepStrictEqual(enriched.validateLyric(lyric), [{ path: 'lines[0].time', code: 'lyric.timing.line.time_missing' }])
   })
 
-  // The two layers hold the same rule in two implementations, so the storage one is checked against the same case.
-  it('reports a line left open above in the storage layer', () => {
-    const lyric = storage.makeLyric({
+  // The two layers hold the same rule in two implementations, so the document one is checked against the same case.
+  it('reports a line left open above in the document layer', () => {
+    const lyric = document.makeLyric({
       format: 'lrc',
-      timing: storage.Timing.LINE,
+      timing: document.Timing.LINE,
       lines: [
-        storage.makeLineNormal({ time: storage.makeTimeRange({ start: 0 }), content: storage.makeLineContentText('x') }),
-        storage.makeLineNormal({ time: storage.makeTimeRange({ start: 1000, end: 2000 }), content: storage.makeLineContentText('y') }),
+        document.makeLineNormal({ time: document.makeTimeRange({ start: 0 }), content: document.makeLineContentText('x') }),
+        document.makeLineNormal({ time: document.makeTimeRange({ start: 1000, end: 2000 }), content: document.makeLineContentText('y') }),
       ],
     })
-    deepStrictEqual(storage.validateLyric(lyric), [{ path: 'lines[0].time.end', code: 'lyric.line.time.end.missing' }])
+    deepStrictEqual(document.validateLyric(lyric), [{ path: 'lines[0].time.end', code: 'lyric.line.time.end.missing' }])
   })
 
   // Word-level timing still marks out each line, and a line carrying no range leaves its words with nothing to fall inside.
   it('reports a word-level line with no range', () => {
     const lines = [
-      runtime.makeLineNormal({
-        content: runtime.makeLineContentWords([runtime.makeWordNormal({ text: 'x', time: runtime.makeTimeRange({ start: 1000, end: 2000 }) })]),
+      enriched.makeLineNormal({
+        content: enriched.makeLineContentWords([enriched.makeWordNormal({ text: 'x', time: enriched.makeTimeRange({ start: 1000, end: 2000 }) })]),
       }),
     ]
-    const lyric = runtime.makeLyric({ format: 'lrc', timing: runtime.Timing.WORD, status: runtime.LyricStatus.VALID, lines })
-    deepStrictEqual(runtime.validateLyric(lyric), [{ path: 'lines[0].time', code: 'lyric.timing.line.time_missing' }])
+    const lyric = enriched.makeLyric({ format: 'lrc', timing: enriched.Timing.WORD, status: enriched.LyricStatus.VALID, lines })
+    deepStrictEqual(enriched.validateLyric(lyric), [{ path: 'lines[0].time', code: 'lyric.timing.line.time_missing' }])
   })
 })

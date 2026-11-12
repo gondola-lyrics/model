@@ -1,13 +1,13 @@
 import { describe, it } from 'node:test'
 import { deepStrictEqual } from 'node:assert/strict'
 
-import { runtime, storage } from '@root/index'
+import { enriched, document } from '@root/index'
 
 describe('derive line languages', () => {
   // Returning the line's own array let a caller mutate the line through the result.
   it('returns a copy, lowercased and without repeats', () => {
-    const line = runtime.makeLineNormal({ languages: ['JA-JP', 'ja-jp', 'EN'] })
-    const languages = runtime.deriveLineLanguages(line)
+    const line = enriched.makeLineNormal({ languages: ['JA-JP', 'ja-jp', 'EN'] })
+    const languages = enriched.deriveLineLanguages(line)
 
     deepStrictEqual(languages, ['ja-jp', 'en'])
     languages.push('de')
@@ -15,45 +15,76 @@ describe('derive line languages', () => {
   })
 
   it('falls back to the tags of the words', () => {
-    const line = runtime.makeLineNormal({
-      content: runtime.makeLineContentWords([
-        runtime.makeWordNormal({ text: 'hi', language: 'EN' }),
-        runtime.makeWordSpace({ text: ' ' }),
-        runtime.makeWordNormal({ text: 'there', language: 'en' }),
+    const line = enriched.makeLineNormal({
+      content: enriched.makeLineContentWords([
+        enriched.makeWordNormal({ text: 'hi', language: 'EN' }),
+        enriched.makeWordSpace({ text: ' ' }),
+        enriched.makeWordNormal({ text: 'there', language: 'en' }),
       ]),
     })
-    deepStrictEqual(runtime.deriveLineLanguages(line), ['en'])
+    deepStrictEqual(enriched.deriveLineLanguages(line), ['en'])
   })
 })
 
 describe('derive line romans', () => {
-  it('keeps schemes separate while preserving first appearance and word spacing', () => {
-    const first = runtime.makeWordAnnotation({
+  it('preserves schemes and spacing for document annotations', () => {
+    const first = document.makeWordAnnotation({
       romans: [
-        runtime.makeWordAnnotationRoman({ language: 'JA-Latn', scheme: 'HEPBURN', tokens: [runtime.makeWordAnnotationToken({ text: 'shi' })] }),
-        runtime.makeWordAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', tokens: [runtime.makeWordAnnotationToken({ text: 'si' })] }),
-        runtime.makeWordAnnotationRoman({ language: 'ja-latn', tokens: [runtime.makeWordAnnotationToken({ text: 'default' })] }),
+        document.makeWordAnnotationRoman({ language: 'JA-Latn', scheme: 'HEPBURN', tokens: [document.makeWordAnnotationToken({ text: 'shi' })] }),
+        document.makeWordAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', tokens: [document.makeWordAnnotationToken({ text: 'si' })] }),
+        document.makeWordAnnotationRoman({ language: 'ja-latn', tokens: [document.makeWordAnnotationToken({ text: 'default' })] }),
       ],
     })
-    const last = runtime.makeWordAnnotation({
+    const last = document.makeWordAnnotation({
       romans: [
-        runtime.makeWordAnnotationRoman({ language: 'ja-latn', scheme: 'KUNREI', tokens: [runtime.makeWordAnnotationToken({ text: 'ti' })] }),
-        runtime.makeWordAnnotationRoman({ language: 'JA-LATN', scheme: 'hepburn', tokens: [runtime.makeWordAnnotationToken({ text: 'chi' })] }),
-        runtime.makeWordAnnotationRoman({ language: 'ja-latn', scheme: '', tokens: [runtime.makeWordAnnotationToken({ text: 'text' })] }),
+        document.makeWordAnnotationRoman({ language: 'ja-latn', scheme: 'KUNREI', tokens: [document.makeWordAnnotationToken({ text: 'ti' })] }),
+        document.makeWordAnnotationRoman({ language: 'JA-LATN', scheme: 'hepburn', tokens: [document.makeWordAnnotationToken({ text: 'chi' })] }),
+        document.makeWordAnnotationRoman({ language: 'ja-latn', scheme: '', tokens: [document.makeWordAnnotationToken({ text: 'text' })] }),
       ],
     })
     const words = [
-      storage.makeWordSpace({ text: ' ' }),
-      storage.makeWordNormal({ text: 'x', annotation: first }),
-      storage.makeWordSpace({ text: '  ' }),
-      storage.makeWordNormal({ text: 'omitted' }),
-      storage.makeWordNormal({ text: 'y', annotation: last }),
-      storage.makeWordSpace({ text: ' ' }),
+      document.makeWordSpace({ text: ' ' }),
+      document.makeWordNormal({ text: 'x', annotation: first }),
+      document.makeWordSpace({ text: '  ' }),
+      document.makeWordNormal({ text: 'omitted' }),
+      document.makeWordNormal({ text: 'y', annotation: last }),
+      document.makeWordSpace({ text: ' ' }),
     ]
-    deepStrictEqual(runtime.deriveLineRomans(storage.makeLineContentWords(words)), [
-      runtime.makeLineAnnotationRoman({ language: 'ja-latn', scheme: 'hepburn', text: 'shi chi' }),
-      runtime.makeLineAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', text: 'si ti' }),
-      runtime.makeLineAnnotationRoman({ language: 'ja-latn', text: 'default text' }),
+    deepStrictEqual(document.deriveLineRomans(document.makeLineContentWords(words)), [
+      document.makeLineAnnotationRoman({ language: 'ja-latn', scheme: 'hepburn', text: 'shi chi' }),
+      document.makeLineAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', text: 'si ti' }),
+      document.makeLineAnnotationRoman({ language: 'ja-latn', text: 'default text' }),
+    ])
+    deepStrictEqual(first.romans[0]?.scheme, 'HEPBURN')
+  })
+
+  it('preserves schemes and spacing for enriched annotations', () => {
+    const first = enriched.makeWordAnnotation({
+      romans: [
+        enriched.makeWordAnnotationRoman({ language: 'JA-Latn', scheme: 'HEPBURN', tokens: [enriched.makeWordAnnotationToken({ text: 'shi' })] }),
+        enriched.makeWordAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', tokens: [enriched.makeWordAnnotationToken({ text: 'si' })] }),
+        enriched.makeWordAnnotationRoman({ language: 'ja-latn', tokens: [enriched.makeWordAnnotationToken({ text: 'default' })] }),
+      ],
+    })
+    const last = enriched.makeWordAnnotation({
+      romans: [
+        enriched.makeWordAnnotationRoman({ language: 'ja-latn', scheme: 'KUNREI', tokens: [enriched.makeWordAnnotationToken({ text: 'ti' })] }),
+        enriched.makeWordAnnotationRoman({ language: 'JA-LATN', scheme: 'hepburn', tokens: [enriched.makeWordAnnotationToken({ text: 'chi' })] }),
+        enriched.makeWordAnnotationRoman({ language: 'ja-latn', scheme: '', tokens: [enriched.makeWordAnnotationToken({ text: 'text' })] }),
+      ],
+    })
+    const words = [
+      enriched.makeWordSpace({ text: ' ' }),
+      enriched.makeWordNormal({ text: 'x', annotation: first }),
+      enriched.makeWordSpace({ text: '  ' }),
+      enriched.makeWordNormal({ text: 'omitted' }),
+      enriched.makeWordNormal({ text: 'y', annotation: last }),
+      enriched.makeWordSpace({ text: ' ' }),
+    ]
+    deepStrictEqual(enriched.deriveLineRomans(enriched.makeLineContentWords(words)), [
+      enriched.makeLineAnnotationRoman({ language: 'ja-latn', scheme: 'hepburn', text: 'shi chi' }),
+      enriched.makeLineAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', text: 'si ti' }),
+      enriched.makeLineAnnotationRoman({ language: 'ja-latn', text: 'default text' }),
     ])
     deepStrictEqual(first.romans[0]?.scheme, 'HEPBURN')
   })
@@ -63,10 +94,10 @@ describe('resolve line agents', () => {
   // Resolving has to agree with what validate reports about a duplicate and an empty id, or the two tell different stories.
   it('keeps the first agent claiming an id', () => {
     const agents = [
-      runtime.makeAgent({ id: 'a', type: runtime.AgentType.PERSON, names: [runtime.makeText({ text: 'first' })] }),
-      runtime.makeAgent({ id: 'a', type: runtime.AgentType.PERSON, names: [runtime.makeText({ text: 'second' })] }),
+      enriched.makeAgent({ id: 'a', type: enriched.AgentType.PERSON, names: [enriched.makeText({ text: 'first' })] }),
+      enriched.makeAgent({ id: 'a', type: enriched.AgentType.PERSON, names: [enriched.makeText({ text: 'second' })] }),
     ]
-    const resolved = runtime.resolveLineAgents({ agents: ['a'] }, agents)
+    const resolved = enriched.resolveLineAgents({ agents: ['a'] }, agents)
     deepStrictEqual(
       resolved.map((agent) => agent.names[0]?.text),
       ['first'],
@@ -74,7 +105,7 @@ describe('resolve line agents', () => {
   })
 
   it('resolves neither an empty id nor one naming no agent', () => {
-    const agents = [runtime.makeAgent({ id: '', type: runtime.AgentType.PERSON }), runtime.makeAgent({ id: 'a', type: runtime.AgentType.PERSON })]
-    deepStrictEqual(runtime.resolveLineAgents({ agents: ['', 'ghost'] }, agents), [])
+    const agents = [enriched.makeAgent({ id: '', type: enriched.AgentType.PERSON }), enriched.makeAgent({ id: 'a', type: enriched.AgentType.PERSON })]
+    deepStrictEqual(enriched.resolveLineAgents({ agents: ['', 'ghost'] }, agents), [])
   })
 })

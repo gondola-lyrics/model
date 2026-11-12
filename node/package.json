@@ -44,13 +44,13 @@
       "types": "./dist/common.d.ts",
       "default": "./dist/common.js"
     },
-    "./runtime": {
-      "types": "./dist/runtime.d.ts",
-      "default": "./dist/runtime.js"
+    "./enriched": {
+      "types": "./dist/enriched.d.ts",
+      "default": "./dist/enriched.js"
     },
-    "./storage": {
-      "types": "./dist/storage.d.ts",
-      "default": "./dist/storage.js"
+    "./document": {
+      "types": "./dist/document.d.ts",
+      "default": "./dist/document.js"
     },
     "./version": {
       "types": "./dist/version.d.ts",

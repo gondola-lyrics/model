@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package lyric.document;
+
+import "common/agent.proto";
+import "common/meta.proto";
+import "common/timing.proto";
+import "document/line.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "LyricProto";
+option java_package = "gondola.lyrics.model.document";
+
+// Empty submessages are equivalent to unset, except TimeRange.
+// Repeated fields exclude all-default entries and preserve source order unless stated otherwise.
+// All agent ids referenced by lines, including backgrounds, must exist in agents.
+// Non-empty line ids are unique across all lines and backgrounds.
+// Non-empty BCP 47 tags must be well formed; comparison is case-insensitive and canonical form is lowercase.
+message Lyric {
+  // Schema version of this data model, always set and formatted as a semantic version.
+  // Consumers sharing the same major version can read each other's output.
+  string version = 1;
+
+  // Source format identifier assigned by the parser; empty means unknown.
+  // Compared case-insensitively; canonical form is lowercase.
+  string format = 2;
+
+  // Source-format dialect, scoped by `format` and identified by the parser.
+  // Compared case-insensitively; canonical form is lower case, and empty means unspecified.
+  string profile = 3;
+
+  // Declared timing precision.
+  lyric.common.Timing timing = 4;
+
+  lyric.common.Meta meta = 5;
+
+  // Format-specific values without typed fields; consumers may interpret them by key.
+  map<string, string> extra = 6;
+
+  // Performing agents referenced by lines.
+  repeated lyric.common.Agent agents = 7;
+
+  // Lyric lines, ordered by TimeRange.start ascending.
+  // Every line except the last requires a known end; instrumental lines always require one.
+  repeated Line lines = 8;
+}

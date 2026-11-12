@@ -6,9 +6,9 @@ import gondola.lyrics.model.utils.lowerTag
 import gondola.lyrics.model.utils.scoreTag
 
 /**
- * Picks the entry whose language matches `wanted` most closely: an exact match first, then the longest shared prefix, with ties going to the earlier entry.
- * Tags compare case-insensitively on subtag boundaries, and either side may be the more specific one, so `ja` picks `ja-JP` while `zh-Hans` never picks `zh-CN`.
- * With no match, or no `wanted`, it returns the first entry carrying no language, else the first entry only if `fallback` is set.
+ * Selects the closest language match on subtag boundaries, ignoring case.
+ *
+ * Without a match, uses an untagged entry, then the first entry only when fallback is enabled.
  */
 fun <T> pickItemByLanguage(items: List<T>, wanted: String? = null, fallback: Boolean = false, languageOf: (T) -> String?): T? {
     val range = lowerTag(wanted)
@@ -26,89 +26,11 @@ fun <T> pickItemByLanguage(items: List<T>, wanted: String? = null, fallback: Boo
 }
 
 /**
- * Picks the entry whose language matches `wanted` most closely: an exact match first, then the longest shared prefix, with ties going to the earlier entry.
- * Tags compare case-insensitively on subtag boundaries, and either side may be the more specific one, so `ja` picks `ja-JP` while `zh-Hans` never picks `zh-CN`.
- * With no match, or no `wanted`, it returns the first entry carrying no language, else the first entry only if `fallback` is set.
+ * Selects the closest language match on subtag boundaries, ignoring case.
+ *
+ * Without a match, uses an untagged entry, then the first entry only when fallback is enabled.
  */
 @JvmName("pickTextByLanguage")
 fun pickItemByLanguage(items: List<Text>, wanted: String? = null, fallback: Boolean = false): Text? {
-    return pickItemByLanguage(items, wanted, fallback) { it.language }
-}
-
-/**
- * Picks the entry whose language matches `wanted` most closely: an exact match first, then the longest shared prefix, with ties going to the earlier entry.
- * Tags compare case-insensitively on subtag boundaries, and either side may be the more specific one, so `ja` picks `ja-JP` while `zh-Hans` never picks `zh-CN`.
- * With no match, or no `wanted`, it returns the first entry carrying no language, else the first entry only if `fallback` is set.
- */
-@JvmName("pickLineAnnotationRomanByLanguage")
-fun pickItemByLanguage(items: List<LineAnnotationRoman>, wanted: String? = null, fallback: Boolean = false): LineAnnotationRoman? {
-    return pickItemByLanguage(items, wanted, fallback) { it.language }
-}
-
-/**
- * Picks the entry whose language matches `wanted` most closely: an exact match first, then the longest shared prefix, with ties going to the earlier entry.
- * Tags compare case-insensitively on subtag boundaries, and either side may be the more specific one, so `ja` picks `ja-JP` while `zh-Hans` never picks `zh-CN`.
- * With no match, or no `wanted`, it returns the first entry carrying no language, else the first entry only if `fallback` is set.
- */
-@JvmName("pickLineAnnotationTranslationByLanguage")
-fun pickItemByLanguage(items: List<LineAnnotationTranslation>, wanted: String? = null, fallback: Boolean = false): LineAnnotationTranslation? {
-    return pickItemByLanguage(items, wanted, fallback) { it.language }
-}
-
-/**
- * Picks the entry whose language matches `wanted` most closely: an exact match first, then the longest shared prefix, with ties going to the earlier entry.
- * Tags compare case-insensitively on subtag boundaries, and either side may be the more specific one, so `ja` picks `ja-JP` while `zh-Hans` never picks `zh-CN`.
- * With no match, or no `wanted`, it returns the first entry carrying no language, else the first entry only if `fallback` is set.
- */
-@JvmName("pickWordAnnotationRomanByLanguage")
-fun pickItemByLanguage(items: List<WordAnnotationRoman>, wanted: String? = null, fallback: Boolean = false): WordAnnotationRoman? {
-    return pickItemByLanguage(items, wanted, fallback) { it.language }
-}
-
-/**
- * Picks the entry whose language matches `wanted` most closely: an exact match first, then the longest shared prefix, with ties going to the earlier entry.
- * Tags compare case-insensitively on subtag boundaries, and either side may be the more specific one, so `ja` picks `ja-JP` while `zh-Hans` never picks `zh-CN`.
- * With no match, or no `wanted`, it returns the first entry carrying no language, else the first entry only if `fallback` is set.
- */
-@JvmName("pickWordAnnotationRubyByLanguage")
-fun pickItemByLanguage(items: List<WordAnnotationRuby>, wanted: String? = null, fallback: Boolean = false): WordAnnotationRuby? {
-    return pickItemByLanguage(items, wanted, fallback) { it.language }
-}
-
-/**
- * Picks the entry whose language matches `wanted` most closely: an exact match first, then the longest shared prefix, with ties going to the earlier entry.
- * Tags compare case-insensitively on subtag boundaries, and either side may be the more specific one, so `ja` picks `ja-JP` while `zh-Hans` never picks `zh-CN`.
- * With no match, or no `wanted`, it returns the first entry carrying no language, else the first entry only if `fallback` is set.
- */
-@JvmName("pickWordAnnotationTranslationByLanguage")
-fun pickItemByLanguage(items: List<WordAnnotationTranslation>, wanted: String? = null, fallback: Boolean = false): WordAnnotationTranslation? {
-    return pickItemByLanguage(items, wanted, fallback) { it.language }
-}
-
-/**
- * Picks the entry whose language matches `wanted` most closely: an exact match first, then the longest shared prefix, with ties going to the earlier entry.
- * Tags compare case-insensitively on subtag boundaries, and either side may be the more specific one, so `ja` picks `ja-JP` while `zh-Hans` never picks `zh-CN`.
- * With no match, or no `wanted`, it returns the first entry carrying no language, else the first entry only if `fallback` is set.
- */
-@JvmName("pickStorageWordByLanguage")
-fun pickItemByLanguage(
-    items: List<gondola.lyrics.model.storage.Word>,
-    wanted: String? = null,
-    fallback: Boolean = false,
-): gondola.lyrics.model.storage.Word? {
-    return pickItemByLanguage(items, wanted, fallback) { it.language }
-}
-
-/**
- * Picks the entry whose language matches `wanted` most closely: an exact match first, then the longest shared prefix, with ties going to the earlier entry.
- * Tags compare case-insensitively on subtag boundaries, and either side may be the more specific one, so `ja` picks `ja-JP` while `zh-Hans` never picks `zh-CN`.
- * With no match, or no `wanted`, it returns the first entry carrying no language, else the first entry only if `fallback` is set.
- */
-@JvmName("pickRuntimeWordByLanguage")
-fun pickItemByLanguage(
-    items: List<gondola.lyrics.model.runtime.Word>,
-    wanted: String? = null,
-    fallback: Boolean = false,
-): gondola.lyrics.model.runtime.Word? {
     return pickItemByLanguage(items, wanted, fallback) { it.language }
 }

@@ -43,7 +43,7 @@ fun canonicalizeAgent(agent: Agent): Agent {
     return agent.copy(names = canonicalizeList(agent.names, ::canonicalizeText))
 }
 
-private fun resolveAgents(ids: List<String>, agents: List<Agent>): List<Agent> {
+internal fun resolveAgents(ids: List<String>, agents: List<Agent>): List<Agent> {
     val byId = linkedMapOf<String, Agent>()
     for (agent in agents) {
         if (agent.id.isNotEmpty() && !byId.containsKey(agent.id)) {
@@ -51,40 +51,4 @@ private fun resolveAgents(ids: List<String>, agents: List<Agent>): List<Agent> {
         }
     }
     return ids.mapNotNull { byId[it] }
-}
-
-/**
- * Resolves a line's agent ids to the Agent objects they reference, in order with the lead first.
- * An id matching no agent is skipped, so a dangling reference drops out rather than leaving a hole.
- * An empty id never resolves, and the first agent claiming an id keeps it, matching what validate reports about both.
- */
-fun resolveLineAgents(line: gondola.lyrics.model.storage.Line, agents: List<Agent>): List<Agent> {
-    return resolveAgents(line.agents, agents)
-}
-
-/**
- * Resolves a line's agent ids to the Agent objects they reference, in order with the lead first.
- * An id matching no agent is skipped, so a dangling reference drops out rather than leaving a hole.
- * An empty id never resolves, and the first agent claiming an id keeps it, matching what validate reports about both.
- */
-fun resolveLineAgents(line: gondola.lyrics.model.storage.LineBackground, agents: List<Agent>): List<Agent> {
-    return resolveAgents(line.agents, agents)
-}
-
-/**
- * Resolves a line's agent ids to the Agent objects they reference, in order with the lead first.
- * An id matching no agent is skipped, so a dangling reference drops out rather than leaving a hole.
- * An empty id never resolves, and the first agent claiming an id keeps it, matching what validate reports about both.
- */
-fun resolveLineAgents(line: gondola.lyrics.model.runtime.Line, agents: List<Agent>): List<Agent> {
-    return resolveAgents(line.agents, agents)
-}
-
-/**
- * Resolves a line's agent ids to the Agent objects they reference, in order with the lead first.
- * An id matching no agent is skipped, so a dangling reference drops out rather than leaving a hole.
- * An empty id never resolves, and the first agent claiming an id keeps it, matching what validate reports about both.
- */
-fun resolveLineAgents(line: gondola.lyrics.model.runtime.LineBackground, agents: List<Agent>): List<Agent> {
-    return resolveAgents(line.agents, agents)
 }

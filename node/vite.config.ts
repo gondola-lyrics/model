@@ -1,14 +1,13 @@
-import dts from 'vite-plugin-dts'
-
 import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
+import dts from 'vite-plugin-dts'
 
 const root = import.meta.dirname
 const src = resolve(root, 'src')
 const out = resolve(root, 'dist')
 
-const runtimeSrc = resolve(src, 'runtime')
-const storageSrc = resolve(src, 'storage')
+const enrichedSrc = resolve(src, 'enriched')
+const documentSrc = resolve(src, 'document')
 
 export default defineConfig({
   resolve: {
@@ -24,6 +23,15 @@ export default defineConfig({
       include: ['src'],
       bundleTypes: true,
       outDirs: [{ dir: out }],
+      beforeWriteFile: (filePath) => {
+        if (resolve(filePath) !== resolve(out, 'index.d.ts')) {
+          return
+        }
+        // Re-export the entry declarations so root and subpath imports share enum identities.
+        return {
+          content: "export * as document from './document.js'\nexport * as enriched from './enriched.js'\n\nexport * from './version.js'\n",
+        }
+      },
     }),
   ],
   build: {
@@ -37,20 +45,20 @@ export default defineConfig({
       entry: {
         index: resolve(src, 'index.ts'),
         common: resolve(src, 'common/index.ts'),
-        runtime: resolve(runtimeSrc, 'index.ts'),
-        storage: resolve(storageSrc, 'index.ts'),
+        enriched: resolve(enrichedSrc, 'index.ts'),
+        document: resolve(documentSrc, 'index.ts'),
         version: resolve(src, 'version.ts'),
       },
       formats: ['es'],
     },
     rollupOptions: {
-      external: ['./runtime', './storage'],
+      external: ['./enriched', './document'],
       // Lets an entry chunk absorb the modules it shares, so no hashed chunk is emitted beside it.
       preserveEntrySignatures: 'allow-extension',
       output: {
         entryFileNames: '[name].js',
         chunkFileNames: '[name].js',
-        paths: { [runtimeSrc]: './runtime.js', [storageSrc]: './storage.js' },
+        paths: { [enrichedSrc]: './enriched.js', [documentSrc]: './document.js' },
       },
     },
   },

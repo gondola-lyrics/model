@@ -1,4 +1,4 @@
-export * as runtime from './runtime'
-export * as storage from './storage'
+export * as document from './document'
+export * as enriched from './enriched'
 
 export * from './version'

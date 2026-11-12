@@ -1,19 +1,19 @@
 package gondola.lyrics.model
 
-import gondola.lyrics.model.common.LineType
 import gondola.lyrics.model.common.Timing
-import gondola.lyrics.model.common.WordType
-import gondola.lyrics.model.runtime.LyricStatus
-import gondola.lyrics.model.runtime.canonicalizeLine
-import gondola.lyrics.model.runtime.canonicalizeWord
-import gondola.lyrics.model.runtime.makeLineInstrumental
-import gondola.lyrics.model.runtime.makeLineNormal
-import gondola.lyrics.model.runtime.makeLyric
-import gondola.lyrics.model.runtime.makeWordNormal
+import gondola.lyrics.model.document.WordType
+import gondola.lyrics.model.enriched.LineType
+import gondola.lyrics.model.enriched.LyricStatus
+import gondola.lyrics.model.enriched.canonicalizeLine
+import gondola.lyrics.model.enriched.canonicalizeWord
+import gondola.lyrics.model.enriched.makeLineInstrumental
+import gondola.lyrics.model.enriched.makeLineNormal
+import gondola.lyrics.model.enriched.makeLyric
+import gondola.lyrics.model.enriched.makeWordNormal
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import gondola.lyrics.model.storage.makeWordNormal as makeStorageWordNormal
-import gondola.lyrics.model.storage.makeWordSpace as makeStorageWordSpace
+import gondola.lyrics.model.document.makeWordNormal as makeDocumentWordNormal
+import gondola.lyrics.model.document.makeWordSpace as makeDocumentWordSpace
 
 class MakeTest {
     @Test
@@ -27,8 +27,8 @@ class MakeTest {
     fun stampsLineAndWordKinds() {
         assertEquals(LineType.LINE_TYPE_NORMAL, makeLineNormal().type)
         assertEquals(LineType.LINE_TYPE_INSTRUMENTAL, makeLineInstrumental().type)
-        assertEquals(WordType.WORD_TYPE_NORMAL, makeStorageWordNormal(text = "hi").type)
-        assertEquals(WordType.WORD_TYPE_SPACE, makeStorageWordSpace(text = " ").type)
+        assertEquals(WordType.WORD_TYPE_NORMAL, makeDocumentWordNormal(text = "hi").type)
+        assertEquals(WordType.WORD_TYPE_SPACE, makeDocumentWordSpace(text = " ").type)
     }
 
     // Constructors store what they are given; canonicalizing is the only thing that rewrites a tag.

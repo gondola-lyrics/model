@@ -1,52 +1,52 @@
 import { describe, it } from 'node:test'
 import { deepStrictEqual, strictEqual } from 'node:assert/strict'
 
-import { runtime, storage } from '@root/index'
+import { enriched, document } from '@root/index'
 
-const buildLyric = (): runtime.Lyric => {
+const buildLyric = (): enriched.Lyric => {
   const lines = [
-    runtime.makeLineInstrumental({ time: runtime.makeTimeRange({ start: 0, end: 1000 }) }),
-    runtime.makeLineNormal({
-      time: runtime.makeTimeRange({ start: 1000, end: 2000 }),
+    enriched.makeLineInstrumental({ time: enriched.makeTimeRange({ start: 0, end: 1000 }) }),
+    enriched.makeLineNormal({
+      time: enriched.makeTimeRange({ start: 1000, end: 2000 }),
       languages: ['en'],
-      content: runtime.makeLineContentWords([
-        runtime.makeWordNormal({ text: 'hi', language: 'en', time: runtime.makeTimeRange({ start: 1000, end: 1500 }) }),
-        runtime.makeWordSpace({ text: ' ' }),
-        runtime.makeWordNormal({ text: 'there', language: 'en', time: runtime.makeTimeRange({ start: 1500, end: 2000 }) }),
+      content: enriched.makeLineContentWords([
+        enriched.makeWordNormal({ text: 'hi', language: 'en', time: enriched.makeTimeRange({ start: 1000, end: 1500 }) }),
+        enriched.makeWordSpace({ text: ' ' }),
+        enriched.makeWordNormal({ text: 'there', language: 'en', time: enriched.makeTimeRange({ start: 1500, end: 2000 }) }),
       ]),
     }),
   ]
-  return runtime.makeLyric({
+  return enriched.makeLyric({
     format: 'lrc',
-    timing: runtime.Timing.WORD,
-    status: runtime.LyricStatus.VALID,
-    languages: runtime.deriveLanguageUsages(lines),
+    timing: enriched.Timing.WORD,
+    status: enriched.LyricStatus.VALID,
+    languages: enriched.deriveLanguageUsages(lines),
     lines,
   })
 }
 
 describe('codec', () => {
-  it('round trips a runtime lyric', () => {
+  it('round trips an enriched lyric', () => {
     const lyric = buildLyric()
-    deepStrictEqual(runtime.decode(runtime.encode(lyric)), lyric)
+    deepStrictEqual(enriched.decode(enriched.encode(lyric)), lyric)
   })
 
-  it('round trips a storage lyric', () => {
-    const lyric = storage.makeLyric({
+  it('round trips a document lyric', () => {
+    const lyric = document.makeLyric({
       format: 'lrc',
-      timing: storage.Timing.LINE,
+      timing: document.Timing.LINE,
       lines: [
-        storage.makeLineNormal({
-          time: storage.makeTimeRange({ start: 1000, end: 2000 }),
+        document.makeLineNormal({
+          time: document.makeTimeRange({ start: 1000, end: 2000 }),
           languages: ['en'],
-          content: storage.makeLineContentText('hi there'),
+          content: document.makeLineContentText('hi there'),
         }),
       ],
     })
-    deepStrictEqual(storage.decode(storage.encode(lyric)), lyric)
+    deepStrictEqual(document.decode(document.encode(lyric)), lyric)
   })
 
   it('drops a submessage that is empty for real', () => {
-    strictEqual(runtime.canonicalizeLyric({ ...buildLyric(), meta: runtime.makeMeta() }).meta, undefined)
+    strictEqual(enriched.canonicalizeLyric({ ...buildLyric(), meta: enriched.makeMeta() }).meta, undefined)
   })
 })

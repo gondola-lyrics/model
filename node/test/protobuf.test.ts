@@ -4,10 +4,15 @@ import { deepStrictEqual, ok, throws } from 'node:assert/strict'
 import { FileDescriptorSetSchema } from '@bufbuild/protobuf/wkt'
 import { create, createFileRegistry, fromBinary, toBinary } from '@bufbuild/protobuf'
 
-import { runtime, storage } from '@root/index'
+import { enriched, document } from '@root/index'
 import { read, write } from '@root/utils/wire'
-import { decodeRuntimeWordEmphasis, decodeStorageLineContent, encodeRuntimeWordEmphasis, encodeStorageLineContent } from '@root/generated/codec.gen'
-import { createRuntimeWordEmphasis, createStorageLineContent } from '@root/generated/detail.gen'
+import {
+  decodeEnrichedWordEmphasis,
+  decodeDocumentLineContent,
+  encodeEnrichedWordEmphasis,
+  encodeDocumentLineContent,
+} from '@root/generated/codec.gen'
+import { createEnrichedWordEmphasis, createDocumentLineContent } from '@root/generated/detail.gen'
 
 /**
  * The same bytes every language's tests decode, covering presence: an explicit zero end, an empty language, a false and a true emphasis, an undeclared word type and an empty text.
@@ -30,143 +35,152 @@ const fromHex = (hex: string): Uint8Array => {
 }
 
 const annotation = () => {
-  return runtime.makeWordAnnotation({
+  return enriched.makeWordAnnotation({
     rubies: [
-      runtime.makeWordAnnotationRuby({ language: 'zh-latn', scheme: 'pinyin', tokens: [runtime.makeWordAnnotationToken({ text: 'han' })] }),
-      runtime.makeWordAnnotationRuby({ language: 'ja', time: runtime.makeTimeRange({}), tokens: [runtime.makeWordAnnotationToken({ text: 'あ' })] }),
-    ],
-    romans: [
-      runtime.makeWordAnnotationRoman({
-        language: 'ja-latn',
-        scheme: 'hepburn',
-        tokens: [runtime.makeWordAnnotationToken({ time: runtime.makeTimeRange({ start: 1, end: 0 }), text: 'a' })],
+      enriched.makeWordAnnotationRuby({ language: 'zh-latn', scheme: 'pinyin', tokens: [enriched.makeWordAnnotationToken({ text: 'han' })] }),
+      enriched.makeWordAnnotationRuby({
+        language: 'ja',
+        time: enriched.makeTimeRange({}),
+        tokens: [enriched.makeWordAnnotationToken({ text: '\u3042' })],
       }),
     ],
-    translations: [runtime.makeWordAnnotationTranslation({ language: '', text: '😀' })],
+    romans: [
+      enriched.makeWordAnnotationRoman({
+        language: 'ja-latn',
+        scheme: 'hepburn',
+        tokens: [enriched.makeWordAnnotationToken({ time: enriched.makeTimeRange({ start: 1, end: 0 }), text: 'a' })],
+      }),
+    ],
+    translations: [enriched.makeWordAnnotationTranslation({ language: '', text: '😀' })],
   })
 }
 
 const meta = () => {
-  return runtime.makeMeta({
-    unknowns: [runtime.makeUnknownEntry({ key: 'k', value: 'v' }), runtime.makeUnknownEntry({ key: 'k', value: '' })],
+  return enriched.makeMeta({
+    unknowns: [enriched.makeUnknownEntry({ key: 'k', value: 'v' }), enriched.makeUnknownEntry({ key: 'k', value: '' })],
     offset: -1500,
     duration: 2 ** 32 - 1,
     language: 'EN',
-    titles: [runtime.makeText({ text: 't' })],
-    artists: [runtime.makeText({ language: '', text: 'a' })],
-    albums: [runtime.makeText()],
-    authors: [runtime.makeText({ text: 'b' })],
+    titles: [enriched.makeText({ text: 't' })],
+    artists: [enriched.makeText({ language: '', text: 'a' })],
+    albums: [enriched.makeText()],
+    authors: [enriched.makeText({ text: 'b' })],
     isrcs: ['USRC17607839', ''],
-    credits: [runtime.makeMetaCredit({ role: 99 as runtime.CreditRole, raw: '', names: [runtime.makeText({ text: 'c' })] })],
-    references: [runtime.makeMetaReference({ platform: 'x', ids: ['1', '2'] })],
+    credits: [enriched.makeMetaCredit({ role: 99 as enriched.CreditRole, raw: '', names: [enriched.makeText({ text: 'c' })] })],
+    references: [enriched.makeMetaReference({ platform: 'x', ids: ['1', '2'] })],
   })
 }
 
 const lineAnnotation = () => {
-  return runtime.makeLineAnnotation({
-    romans: [runtime.makeLineAnnotationRoman({ language: 'ja-latn', scheme: 'hepburn', text: 'r' })],
-    translations: [runtime.makeLineAnnotationTranslation({ language: 'zh', text: '译' })],
+  return enriched.makeLineAnnotation({
+    romans: [enriched.makeLineAnnotationRoman({ language: 'ja-latn', scheme: 'hepburn', text: 'r' })],
+    translations: [enriched.makeLineAnnotationTranslation({ language: 'zh', text: '译' })],
   })
 }
 
 const extra = () => {
-  const entries: Record<string, string> = { b: '2', a: '', $typeName: 'kept', ключ: 'значение' }
+  const entries: Record<string, string> = {
+    b: '2',
+    a: '',
+    $typeName: 'kept',
+    ['\u043a\u043b\u044e\u0447']: '\u0437\u043d\u0430\u0447\u0435\u043d\u0438\u0435',
+  }
   Object.defineProperty(entries, '__proto__', { value: 'kept', enumerable: true, writable: true, configurable: true })
   return entries
 }
 
-const runtimeLyric = (): runtime.Lyric => {
-  return runtime.makeLyric({
+const enrichedLyric = (): enriched.Lyric => {
+  return enriched.makeLyric({
     format: 'ttml',
     profile: 'amll',
-    status: runtime.LyricStatus.VALID,
-    timing: 99 as runtime.Timing,
+    status: enriched.LyricStatus.VALID,
+    timing: 99 as enriched.Timing,
     meta: meta(),
     extra: extra(),
-    languages: [runtime.makeLanguageUsage({ tag: 'en', count: 3 })],
-    agents: [runtime.makeAgent({ id: 'a', type: -1 as runtime.AgentType, raw: 'x', names: [runtime.makeText({ text: 'n' })] })],
+    languages: [enriched.makeLanguageUsage({ tag: 'en', count: 3 })],
+    agents: [enriched.makeAgent({ id: 'a', type: -1 as enriched.AgentType, raw: 'x', names: [enriched.makeText({ text: 'n' })] })],
     lines: [
-      runtime.makeLineNormal({
+      enriched.makeLineNormal({
         id: 'l',
-        time: runtime.makeTimeRange({ start: 0, end: 0 }),
-        part: runtime.makePart({ type: runtime.PartType.CHORUS, id: 'Chorus-A', raw: '' }),
+        time: enriched.makeTimeRange({ start: 0, end: 0 }),
+        part: enriched.makePart({ type: enriched.PartType.CHORUS, id: 'Chorus-A', raw: '' }),
         agents: ['a'],
         languages: ['en', ''],
-        content: runtime.makeLineContentWords([
-          runtime.makeWordNormal({
+        content: enriched.makeLineContentWords([
+          enriched.makeWordNormal({
             text: 'x',
             language: '',
-            time: runtime.makeTimeRange({ start: 5 }),
+            time: enriched.makeTimeRange({ start: 5 }),
             annotation: annotation(),
-            emphasis: runtime.makeWordEmphasis(),
+            emphasis: enriched.makeWordEmphasis(),
           }),
-          runtime.makeWordSpace({ text: ' ' }),
+          enriched.makeWordSpace({ text: ' ' }),
         ]),
         annotation: lineAnnotation(),
         backgrounds: [
-          runtime.makeLineBackground({
+          enriched.makeLineBackground({
             id: 'b',
-            time: runtime.makeTimeRange({ start: 1 }),
+            time: enriched.makeTimeRange({ start: 1 }),
             agents: ['a'],
             languages: ['ja'],
-            content: runtime.makeLineContentText(''),
-            annotation: runtime.makeLineAnnotation(),
+            content: enriched.makeLineContentText(''),
+            annotation: enriched.makeLineAnnotation(),
           }),
         ],
       }),
-      runtime.makeLineInstrumental(),
+      enriched.makeLineInstrumental(),
     ],
   })
 }
 
-const storageLyric = (): storage.Lyric => {
-  return storage.makeLyric({
+const documentLyric = (): document.Lyric => {
+  return document.makeLyric({
     format: 'ttml',
     profile: 'itunes',
-    timing: storage.Timing.WORD,
+    timing: document.Timing.WORD,
     meta: meta(),
     extra: extra(),
-    agents: [storage.makeAgent({ id: 'a', type: storage.AgentType.GROUP, names: [storage.makeText({ text: 'n' })] })],
+    agents: [document.makeAgent({ id: 'a', type: document.AgentType.GROUP, names: [document.makeText({ text: 'n' })] })],
     lines: [
-      storage.makeLineNormal({
+      document.makeLineNormal({
         id: 'l',
-        time: storage.makeTimeRange({ start: 0 }),
-        part: storage.makePart({ type: storage.PartType.OTHER, id: 'Section-B', raw: 'x' }),
+        time: document.makeTimeRange({ start: 0 }),
+        part: document.makePart({ type: document.PartType.OTHER, id: 'Section-B', raw: 'x' }),
         agents: ['a'],
         languages: ['en'],
-        content: storage.makeLineContentWords([
-          storage.makeWordNormal({
+        content: document.makeLineContentWords([
+          document.makeWordNormal({
             text: 'x',
             language: 'en',
-            time: storage.makeTimeRange({ start: 5, end: 6 }),
+            time: document.makeTimeRange({ start: 5, end: 6 }),
             annotation: annotation(),
             emphasis: false,
           }),
-          storage.makeWordNormal({ text: 'y', emphasis: true }),
-          storage.makeWordSpace({ text: ' ' }),
+          document.makeWordNormal({ text: 'y', emphasis: true }),
+          document.makeWordSpace({ text: ' ' }),
         ]),
         annotation: lineAnnotation(),
-        backgrounds: [storage.makeLineBackground({ content: storage.makeLineContentText('bg') })],
+        backgrounds: [document.makeLineBackground({ content: document.makeLineContentText('bg') })],
       }),
     ],
   })
 }
 
 const cases = [
-  { name: 'lyric.runtime.Lyric', encode: runtime.encode, decode: runtime.decode, build: runtimeLyric },
-  { name: 'lyric.storage.Lyric', encode: storage.encode, decode: storage.decode, build: storageLyric },
+  { name: 'lyric.enriched.Lyric', encode: enriched.encode, decode: enriched.decode, build: enrichedLyric },
+  { name: 'lyric.document.Lyric', encode: document.encode, decode: document.decode, build: documentLyric },
 ] as const
 
 describe('protobuf', () => {
   it('preserves optional emphasis fields with the official codec', () => {
-    const schema = official('lyric.runtime.WordEmphasis')
+    const schema = official('lyric.enriched.WordEmphasis')
     const values = [undefined, false, true]
     for (const value of values) {
       for (const derived of values) {
-        const emphasis = runtime.makeWordEmphasis({ value, derived })
+        const emphasis = enriched.makeWordEmphasis({ value, derived })
         const bytes = toBinary(schema, create(schema, emphasis))
-        deepStrictEqual(write(encodeRuntimeWordEmphasis, emphasis), bytes)
-        deepStrictEqual(read(createRuntimeWordEmphasis, decodeRuntimeWordEmphasis, bytes), emphasis)
+        deepStrictEqual(write(encodeEnrichedWordEmphasis, emphasis), bytes)
+        deepStrictEqual(read(createEnrichedWordEmphasis, decodeEnrichedWordEmphasis, bytes), emphasis)
       }
     }
   })
@@ -187,18 +201,18 @@ describe('protobuf', () => {
 
   it('keeps presence in the standard sample', () => {
     const bytes = fromHex(STANDARD_SAMPLE)
-    const expected: storage.LineContent = {
+    const expected: document.LineContent = {
       words: [
-        { type: storage.WordType.NORMAL, time: { start: 0, end: 0 }, text: 'a' },
-        { type: storage.WordType.NORMAL, time: { start: 5 }, language: '', text: 'a', emphasis: false },
-        { type: 99 as storage.WordType, text: 'a', emphasis: true },
+        { type: document.WordType.NORMAL, time: { start: 0, end: 0 }, text: 'a' },
+        { type: document.WordType.NORMAL, time: { start: 5 }, language: '', text: 'a', emphasis: false },
+        { type: 99 as document.WordType, text: 'a', emphasis: true },
       ],
       text: '',
     }
-    const schema = official('lyric.storage.LineContent')
+    const schema = official('lyric.document.LineContent')
 
-    deepStrictEqual(read(createStorageLineContent, decodeStorageLineContent, bytes), expected)
-    deepStrictEqual(write(encodeStorageLineContent, expected), bytes)
+    deepStrictEqual(read(createDocumentLineContent, decodeDocumentLineContent, bytes), expected)
+    deepStrictEqual(write(encodeDocumentLineContent, expected), bytes)
     deepStrictEqual(toBinary(schema, create(schema, expected as never)), bytes)
   })
 
@@ -219,7 +233,7 @@ describe('protobuf', () => {
       'groups nested past the limit': 'a306'.repeat(10002) + 'a406'.repeat(10002),
     }
     for (const [why, hex] of Object.entries(malformed)) {
-      throws(() => runtime.decode(fromHex(hex)), why)
+      throws(() => enriched.decode(fromHex(hex)), why)
     }
   })
 
@@ -242,22 +256,22 @@ describe('protobuf', () => {
       'keeps a leading BOM': ['0a03efbbbf', '0a03efbbbf'],
     }
     for (const [why, [input, output]] of Object.entries(accepted)) {
-      deepStrictEqual(Buffer.from(runtime.encode(runtime.decode(fromHex(input!)))).toString('hex'), output, why)
+      deepStrictEqual(Buffer.from(enriched.encode(enriched.decode(fromHex(input!)))).toString('hex'), output, why)
     }
     deepStrictEqual(
-      read(createStorageLineContent, decodeStorageLineContent, fromHex('0a03308001')).words[0]?.emphasis,
+      read(createDocumentLineContent, decodeDocumentLineContent, fromHex('0a03308001')).words[0]?.emphasis,
       true,
       'any set bit makes a bool true',
     )
   })
 
   it('rejects a number outside the field range', () => {
-    const lyric = runtime.makeLyric({
+    const lyric = enriched.makeLyric({
       format: '',
-      status: runtime.LyricStatus.VALID,
-      lines: [runtime.makeLineNormal({ time: runtime.makeTimeRange({ start: -1 }) })],
+      status: enriched.LyricStatus.VALID,
+      lines: [enriched.makeLineNormal({ time: enriched.makeTimeRange({ start: -1 }) })],
     })
-    throws(() => runtime.encode(lyric))
+    throws(() => enriched.encode(lyric))
   })
 
   // Whatever decode accepts has to survive encoding unchanged, or a lyric read from foreign bytes could not be saved again.

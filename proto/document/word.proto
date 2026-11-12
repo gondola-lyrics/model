@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package lyric.document;
+
+import "common/time.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "WordProto";
+option java_package = "gondola.lyrics.model.document";
+
+enum WordType {
+  // Unspecified and unrecognized values are treated as missing.
+  WORD_TYPE_UNSPECIFIED = 0;
+
+  // A sung word with non-empty text containing no Unicode White_Space characters.
+  WORD_TYPE_NORMAL = 1;
+
+  // Only type and text are set; text is a non-empty sequence of Unicode White_Space characters.
+  WORD_TYPE_SPACE = 2;
+}
+
+// A ruby or roman fragment with optional timing.
+message WordAnnotationToken {
+  // Unset inherits the annotation's effective time; an explicit range must fit within it.
+  lyric.common.TimeRange time = 1;
+
+  string text = 2;
+}
+
+// Translation of a single word into another language.
+message WordAnnotationTranslation {
+  // Target language of this translation, as a BCP 47 tag.
+  optional string language = 1;
+
+  // Translated text for the whole word.
+  string text = 2;
+}
+
+// Romanized transliteration of a single word.
+message WordAnnotationRoman {
+  // Unset inherits the annotated word's time; an explicit range must fit within it.
+  lyric.common.TimeRange time = 1;
+
+  // Language of this item, as a BCP 47 tag.
+  optional string language = 2;
+
+  // Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+  optional string scheme = 3;
+
+  // Tokens composing the item in order.
+  repeated WordAnnotationToken tokens = 4;
+}
+
+// Ruby annotation of a single word, such as furigana.
+message WordAnnotationRuby {
+  // Unset inherits the annotated word's time; an explicit range must fit within it.
+  lyric.common.TimeRange time = 1;
+
+  // Language of this item, as a BCP 47 tag.
+  optional string language = 2;
+
+  // Transliteration scheme, compared case-insensitively; unset or empty means unspecified.
+  optional string scheme = 3;
+
+  // Tokens composing the item in order.
+  repeated WordAnnotationToken tokens = 4;
+}
+
+// Ruby and roman entries are unique by language and scheme; translations are unique by language.
+// Unset and empty language or scheme values identify the same entry.
+message WordAnnotation {
+  // Ruby annotations such as furigana.
+  repeated WordAnnotationRuby rubies = 1;
+
+  repeated WordAnnotationRoman romans = 2;
+
+  repeated WordAnnotationTranslation translations = 3;
+}
+
+// A sung word, or the separator between two words.
+message Word {
+  WordType type = 1;
+
+  // Time range of the word; unset when it is not sung.
+  // A missing end may be completed according to the source format's timing policy.
+  lyric.common.TimeRange time = 2;
+
+  // Language of this word, as a BCP 47 tag; unset means undetermined.
+  optional string language = 3;
+
+  // Text of the word, exactly as the source wrote it.
+  string text = 4;
+
+  WordAnnotation annotation = 5;
+
+  // Whether the word is emphasized, as the source stated it; unset means no emphasis information.
+  // Emphasis asks for a swell when the word is sung, such as a syllable held longer than usual; it is not linguistic stress.
+  optional bool emphasis = 6;
+}

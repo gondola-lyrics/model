@@ -14,29 +14,29 @@ dependencies {
 }
 ```
 
-The library targets Java 8 bytecode and includes the Protobuf runtime as a transitive dependency.
+The library targets Java 8 bytecode and provides native Kotlin data classes with a Protobuf wire codec.
 
 ## Usage
 
 - `timing` determines the time precision of the entire lyric:
-    - `TIMING_NONE`: No timing declared; every line is plain text.
-    - `TIMING_LINE`: Each line has one time range and plain text content. Use `TIMING_WORD` if any line needs word-level timing.
-    - `TIMING_WORD`: Normal words carry their own time ranges. Plain text lines may also appear; use `TIMING_LINE` if all lines are plain text.
+  - `TIMING_NONE`: No timing declared; every line is plain text.
+  - `TIMING_LINE`: Each line has one time range and plain text content. Use `TIMING_WORD` if any line needs word-level timing.
+  - `TIMING_WORD`: Normal words carry their own time ranges. Plain text lines may also appear; use `TIMING_LINE` if all lines are plain text.
 
-Messages are immutable. Use `toBuilder()` or the generated Kotlin DSL to create a modified copy.
-Optional fields expose presence methods such as `hasTime()` and `hasEnd()`; a getter's default value alone cannot distinguish an unset field from an explicit zero.
+Messages expose immutable properties. Use data-class constructors or helpers to create values, and `copy()` to modify them.
+Optional fields use nullable values: `null` means absent, while explicit `false` and zero values remain present.
 
-### Storage Examples
+### Document Examples
 
 ```kotlin
-import gondola.lyrics.model.common.Timing
-import gondola.lyrics.model.common.makeLineAnnotation
-import gondola.lyrics.model.common.makeLineAnnotationTranslation
 import gondola.lyrics.model.common.makeTimeRange
-import gondola.lyrics.model.storage.makeLineContentText
-import gondola.lyrics.model.storage.makeLineNormal
-import gondola.lyrics.model.storage.makeLyric
-import gondola.lyrics.model.storage.validateLyric
+import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.document.makeLineAnnotation
+import gondola.lyrics.model.document.makeLineAnnotationTranslation
+import gondola.lyrics.model.document.makeLineContentText
+import gondola.lyrics.model.document.makeLineNormal
+import gondola.lyrics.model.document.makeLyric
+import gondola.lyrics.model.document.validateLyric
 
 val persisted = makeLyric(
     format = "lrc",
@@ -60,29 +60,28 @@ val persisted = makeLyric(
 validateLyric(persisted) // => []
 ```
 
-### Runtime Examples
+### Enriched Examples
 
 ```kotlin
-import gondola.lyrics.model.common.Timing
-import gondola.lyrics.model.common.getContentText
-import gondola.lyrics.model.common.makeLineAnnotation
-import gondola.lyrics.model.common.makeLineAnnotationTranslation
 import gondola.lyrics.model.common.makeTimeRange
-import gondola.lyrics.model.runtime.LyricStatus
-import gondola.lyrics.model.runtime.canonicalizeLyric
-import gondola.lyrics.model.runtime.decode
-import gondola.lyrics.model.runtime.deriveLanguageUsages
-import gondola.lyrics.model.runtime.encode
-import gondola.lyrics.model.runtime.makeLineContentWords
-import gondola.lyrics.model.runtime.makeLineInstrumental
-import gondola.lyrics.model.runtime.makeLineNormal
-import gondola.lyrics.model.runtime.makeLyric
-import gondola.lyrics.model.runtime.makeWordNormal
-import gondola.lyrics.model.runtime.makeWordSpace
-import gondola.lyrics.model.runtime.validateLyric
+import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.enriched.canonicalizeLyric
+import gondola.lyrics.model.enriched.decode
+import gondola.lyrics.model.enriched.deriveLanguageUsages
+import gondola.lyrics.model.enriched.encode
+import gondola.lyrics.model.enriched.getContentText
+import gondola.lyrics.model.enriched.LyricStatus
+import gondola.lyrics.model.enriched.makeLineAnnotation
+import gondola.lyrics.model.enriched.makeLineAnnotationTranslation
+import gondola.lyrics.model.enriched.makeLineContentWords
+import gondola.lyrics.model.enriched.makeLineInstrumental
+import gondola.lyrics.model.enriched.makeLineNormal
+import gondola.lyrics.model.enriched.makeLyric
+import gondola.lyrics.model.enriched.makeWordNormal
+import gondola.lyrics.model.enriched.makeWordSpace
+import gondola.lyrics.model.enriched.validateLyric
 
-// Both layers support interludes with a complete, non-empty time range.
-// Storage preserves those stated by the source; runtime may also carry interludes derived from timeline gaps.
+// Instrumental lines require a complete, non-empty time range.
 val interlude = makeLineInstrumental(
     time = makeTimeRange(start = 176883, end = 178550),
 )
@@ -152,7 +151,7 @@ val sung = makeLineNormal(
 val played = makeLyric(
     format = "lrc",
     timing = Timing.TIMING_WORD,
-    // Runtime requires the parser's status.
+    // Include the parser's status.
     status = LyricStatus.LYRIC_STATUS_VALID,
     // Stored usages must match the declarations on normal lines and their normal words.
     languages = deriveLanguageUsages(listOf(interlude, sung)),
@@ -161,30 +160,30 @@ val played = makeLyric(
 
 validateLyric(played) // => []
 getContentText(sung.content) // => "I wish you are still by my side"
-decode(encode(canonicalizeLyric(played))).linesCount // => 2
+decode(encode(canonicalizeLyric(played))).lines.size // => 2
 ```
 
 ### Error Examples
 
 ```kotlin
-import gondola.lyrics.model.common.Timing
 import gondola.lyrics.model.common.makeTimeRange
-import gondola.lyrics.model.runtime.LyricStatus
-import gondola.lyrics.model.runtime.makeLineContentWords
-import gondola.lyrics.model.runtime.makeWordNormal
-import gondola.lyrics.model.runtime.makeLineNormal as makeRuntimeLine
-import gondola.lyrics.model.runtime.makeLyric as makeRuntimeLyric
-import gondola.lyrics.model.runtime.validateLyric as validateRuntimeLyric
-import gondola.lyrics.model.storage.makeLineContentText
-import gondola.lyrics.model.storage.makeLineNormal as makeStorageLine
-import gondola.lyrics.model.storage.makeLyric as makeStorageLyric
-import gondola.lyrics.model.storage.validateLyric as validateStorageLyric
+import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.document.makeLineContentText
+import gondola.lyrics.model.document.makeLineNormal as makeDocumentLine
+import gondola.lyrics.model.document.makeLyric as makeDocumentLyric
+import gondola.lyrics.model.document.validateLyric as validateDocumentLyric
+import gondola.lyrics.model.enriched.LyricStatus
+import gondola.lyrics.model.enriched.makeLineContentWords
+import gondola.lyrics.model.enriched.makeLineNormal as makeEnrichedLine
+import gondola.lyrics.model.enriched.makeLyric as makeEnrichedLyric
+import gondola.lyrics.model.enriched.makeWordNormal
+import gondola.lyrics.model.enriched.validateLyric as validateEnrichedLyric
 
-val brokenPersisted = makeStorageLyric(
+val brokenPersisted = makeDocumentLyric(
     format = "lrc",
     // Timing is not declared.
     lines = listOf(
-        makeStorageLine(
+        makeDocumentLine(
             time = makeTimeRange(start = 163908),
             languages = listOf("en"),
             content = makeLineContentText("I'm still figuring out my life"),
@@ -192,16 +191,16 @@ val brokenPersisted = makeStorageLyric(
     ),
 )
 
-validateStorageLyric(brokenPersisted).map { it.path to it.code.value }
+validateDocumentLyric(brokenPersisted).map { it.path to it.code.value }
 // => [(timing, lyric.timing.unspecified)]
 
-val brokenPlayed = makeRuntimeLyric(
+val brokenPlayed = makeEnrichedLyric(
     format = "lrc",
     timing = Timing.TIMING_WORD,
     status = LyricStatus.LYRIC_STATUS_VALID,
     // Languages are not declared.
     lines = listOf(
-        makeRuntimeLine(
+        makeEnrichedLine(
             time = makeTimeRange(start = 163908, end = 169347),
             languages = listOf("en"),
             content = makeLineContentWords(
@@ -218,7 +217,7 @@ val brokenPlayed = makeRuntimeLyric(
     ),
 )
 
-validateRuntimeLyric(brokenPlayed).map { it.path to it.code.value }
+validateEnrichedLyric(brokenPlayed).map { it.path to it.code.value }
 // => [(languages, lyric.languages.mismatch), (lines[0].content.words[0].text, word.text.separator)]
 ```
 
@@ -229,7 +228,7 @@ API details are documented in the source comments. Download the matching `-sourc
 **Generate**
 
 ```bash
-./gradlew generateProto generateSchemaVersion
+python ../script/generate-proto-binding.py kotlin
 ```
 
 **Build**
@@ -241,7 +240,7 @@ API details are documented in the source comments. Download the matching `-sourc
 **Check**
 
 ```bash
-./gradlew check checkPomFileForMavenPublication
+./gradlew check
 ./gradlew spotlessApply
 ```
 

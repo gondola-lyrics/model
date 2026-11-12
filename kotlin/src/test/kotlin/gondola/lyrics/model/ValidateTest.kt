@@ -6,44 +6,44 @@ import gondola.lyrics.model.common.Part
 import gondola.lyrics.model.common.PartType
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.Timing
-import gondola.lyrics.model.common.makeLineAnnotation
-import gondola.lyrics.model.common.makeLineAnnotationRoman
-import gondola.lyrics.model.common.makeLineAnnotationTranslation
 import gondola.lyrics.model.common.makePart
 import gondola.lyrics.model.common.makeTimeRange
-import gondola.lyrics.model.common.makeWordAnnotation
-import gondola.lyrics.model.common.makeWordAnnotationRoman
-import gondola.lyrics.model.common.makeWordAnnotationRuby
-import gondola.lyrics.model.common.makeWordAnnotationToken
-import gondola.lyrics.model.common.makeWordAnnotationTranslation
-import gondola.lyrics.model.common.validateLineAnnotation
 import gondola.lyrics.model.common.validateMeta
 import gondola.lyrics.model.common.validateTimeRange
-import gondola.lyrics.model.common.validateWord
-import gondola.lyrics.model.common.validateWordAnnotation
-import gondola.lyrics.model.runtime.LanguageUsage
-import gondola.lyrics.model.runtime.Line
-import gondola.lyrics.model.runtime.Lyric
-import gondola.lyrics.model.runtime.LyricStatus
-import gondola.lyrics.model.runtime.canonicalizeLyric
-import gondola.lyrics.model.runtime.deriveLanguageUsages
-import gondola.lyrics.model.runtime.makeLineContentText
-import gondola.lyrics.model.runtime.makeLineContentWords
-import gondola.lyrics.model.runtime.makeLineInstrumental
-import gondola.lyrics.model.runtime.makeLineNormal
-import gondola.lyrics.model.runtime.makeLyric
-import gondola.lyrics.model.runtime.makeWordEmphasis
-import gondola.lyrics.model.runtime.makeWordNormal
-import gondola.lyrics.model.runtime.makeWordSpace
-import gondola.lyrics.model.runtime.validateLanguageUsage
-import gondola.lyrics.model.runtime.validateLine
-import gondola.lyrics.model.runtime.validateLyric
+import gondola.lyrics.model.enriched.LanguageUsage
+import gondola.lyrics.model.enriched.Line
+import gondola.lyrics.model.enriched.Lyric
+import gondola.lyrics.model.enriched.LyricStatus
+import gondola.lyrics.model.enriched.canonicalizeLyric
+import gondola.lyrics.model.enriched.deriveLanguageUsages
+import gondola.lyrics.model.enriched.makeLineAnnotation
+import gondola.lyrics.model.enriched.makeLineAnnotationRoman
+import gondola.lyrics.model.enriched.makeLineAnnotationTranslation
+import gondola.lyrics.model.enriched.makeLineContentText
+import gondola.lyrics.model.enriched.makeLineContentWords
+import gondola.lyrics.model.enriched.makeLineInstrumental
+import gondola.lyrics.model.enriched.makeLineNormal
+import gondola.lyrics.model.enriched.makeLyric
+import gondola.lyrics.model.enriched.makeWordAnnotation
+import gondola.lyrics.model.enriched.makeWordAnnotationRoman
+import gondola.lyrics.model.enriched.makeWordAnnotationRuby
+import gondola.lyrics.model.enriched.makeWordAnnotationToken
+import gondola.lyrics.model.enriched.makeWordAnnotationTranslation
+import gondola.lyrics.model.enriched.makeWordEmphasis
+import gondola.lyrics.model.enriched.makeWordNormal
+import gondola.lyrics.model.enriched.makeWordSpace
+import gondola.lyrics.model.enriched.validateLanguageUsage
+import gondola.lyrics.model.enriched.validateLine
+import gondola.lyrics.model.enriched.validateLineAnnotation
+import gondola.lyrics.model.enriched.validateLyric
+import gondola.lyrics.model.enriched.validateWord
+import gondola.lyrics.model.enriched.validateWordAnnotation
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import gondola.lyrics.model.storage.makeLineContentText as makeStorageLineContentText
-import gondola.lyrics.model.storage.makeLineNormal as makeStorageLineNormal
-import gondola.lyrics.model.storage.makeLyric as makeStorageLyric
-import gondola.lyrics.model.storage.validateLyric as validateStorageLyric
+import gondola.lyrics.model.document.makeLineContentText as makeDocumentLineContentText
+import gondola.lyrics.model.document.makeLineNormal as makeDocumentLineNormal
+import gondola.lyrics.model.document.makeLyric as makeDocumentLyric
+import gondola.lyrics.model.document.validateLyric as validateDocumentLyric
 
 private fun textLine(start: Long, end: Long? = null): Line {
     return makeLineNormal(time = makeTimeRange(start = start, end = end), content = makeLineContentText("x"))
@@ -63,11 +63,11 @@ private fun validatePartsInBothLayers(parts: List<Part?>): List<List<Diagnostic>
         status = LyricStatus.LYRIC_STATUS_VALID,
         lines = parts.map { makeLineNormal(part = it, content = makeLineContentText("line")) },
     )
-    val stored = makeStorageLyric(
+    val stored = makeDocumentLyric(
         timing = Timing.TIMING_NONE,
-        lines = parts.map { makeStorageLineNormal(part = it, content = makeStorageLineContentText("line")) },
+        lines = parts.map { makeDocumentLineNormal(part = it, content = makeDocumentLineContentText("line")) },
     )
-    return listOf(validateLyric(played), validateStorageLyric(stored))
+    return listOf(validateLyric(played), validateDocumentLyric(stored))
 }
 
 class ValidateTest {
@@ -171,24 +171,42 @@ class ValidateTest {
             romans = identities.map { (language, scheme) -> makeLineAnnotationRoman(language = language, scheme = scheme, text = "roman") },
             translations = listOf("zh-Hans", "ZH-HANS").map { makeLineAnnotationTranslation(language = it, text = "translation") },
         )
-        assertEquals(
-            listOf(
-                "rubies[3]" to "line.word.annotation.rubies.duplicate",
-                "rubies[5]" to "line.word.annotation.rubies.duplicate",
-                "romans[3]" to "line.word.annotation.romans.duplicate",
-                "romans[5]" to "line.word.annotation.romans.duplicate",
-                "translations[1]" to "line.word.annotation.translations.language.duplicate",
-            ),
-            validateWordAnnotation(word).asPairs(),
+        val expectedWord = listOf(
+            "rubies[3]" to "line.word.annotation.rubies.duplicate",
+            "rubies[5]" to "line.word.annotation.rubies.duplicate",
+            "romans[3]" to "line.word.annotation.romans.duplicate",
+            "romans[5]" to "line.word.annotation.romans.duplicate",
+            "translations[1]" to "line.word.annotation.translations.language.duplicate",
         )
-        assertEquals(
-            listOf(
-                "romans[3]" to "line.annotation.romans.duplicate",
-                "romans[5]" to "line.annotation.romans.duplicate",
-                "translations[1]" to "line.annotation.translations.language.duplicate",
-            ),
-            validateLineAnnotation(line).asPairs(),
+        val expectedLine = listOf(
+            "romans[3]" to "line.annotation.romans.duplicate",
+            "romans[5]" to "line.annotation.romans.duplicate",
+            "translations[1]" to "line.annotation.translations.language.duplicate",
         )
+        assertEquals(expectedWord, validateWordAnnotation(word).asPairs())
+        assertEquals(expectedLine, validateLineAnnotation(line).asPairs())
+
+        val documentWord = gondola.lyrics.model.document.makeWordAnnotation(
+            rubies = identities.map { (language, scheme) ->
+                gondola.lyrics.model.document.makeWordAnnotationRuby(language = language, scheme = scheme)
+            },
+            romans = identities.map { (language, scheme) ->
+                gondola.lyrics.model.document.makeWordAnnotationRoman(language = language, scheme = scheme)
+            },
+            translations = listOf("zh-Hans", "ZH-HANS").map {
+                gondola.lyrics.model.document.makeWordAnnotationTranslation(language = it, text = "translation")
+            },
+        )
+        val documentLine = gondola.lyrics.model.document.makeLineAnnotation(
+            romans = identities.map { (language, scheme) ->
+                gondola.lyrics.model.document.makeLineAnnotationRoman(language = language, scheme = scheme, text = "roman")
+            },
+            translations = listOf("zh-Hans", "ZH-HANS").map {
+                gondola.lyrics.model.document.makeLineAnnotationTranslation(language = it, text = "translation")
+            },
+        )
+        assertEquals(expectedWord, gondola.lyrics.model.document.validateWordAnnotation(documentWord).asPairs())
+        assertEquals(expectedLine, gondola.lyrics.model.document.validateLineAnnotation(documentLine).asPairs())
     }
 
     @Test
@@ -294,17 +312,17 @@ class ValidateTest {
     // The codes are a contract the other bindings copy verbatim, so they are asserted as the strings they are.
     @Test
     fun reportsUndeclaredTiming() {
-        val lyric = makeStorageLyric(
+        val lyric = makeDocumentLyric(
             format = "lrc",
             lines = listOf(
-                makeStorageLineNormal(
+                makeDocumentLineNormal(
                     time = makeTimeRange(start = 1000),
                     languages = listOf("en"),
-                    content = makeStorageLineContentText("hi there"),
+                    content = makeDocumentLineContentText("hi there"),
                 ),
             ),
         )
-        assertEquals(listOf("timing" to "lyric.timing.unspecified"), validateStorageLyric(lyric).asPairs())
+        assertEquals(listOf("timing" to "lyric.timing.unspecified"), validateDocumentLyric(lyric).asPairs())
     }
 
     @Test
@@ -365,18 +383,17 @@ class ValidateTest {
         assertEquals(listOf("lines[0].time" to "lyric.timing.line.time_missing"), validateLyric(lyric).asPairs())
     }
 
-    // The two layers hold the same rule in two implementations, so the storage one is checked against the same case.
     @Test
-    fun reportsLineLeftOpenAboveInStorageLayer() {
-        val lyric = makeStorageLyric(
+    fun reportsLineLeftOpenAboveInDocumentLayer() {
+        val lyric = makeDocumentLyric(
             format = "lrc",
             timing = Timing.TIMING_LINE,
             lines = listOf(
-                makeStorageLineNormal(time = makeTimeRange(start = 0), content = makeStorageLineContentText("x")),
-                makeStorageLineNormal(time = makeTimeRange(start = 1000, end = 2000), content = makeStorageLineContentText("y")),
+                makeDocumentLineNormal(time = makeTimeRange(start = 0), content = makeDocumentLineContentText("x")),
+                makeDocumentLineNormal(time = makeTimeRange(start = 1000, end = 2000), content = makeDocumentLineContentText("y")),
             ),
         )
-        assertEquals(listOf("lines[0].time.end" to "lyric.line.time.end.missing"), validateStorageLyric(lyric).asPairs())
+        assertEquals(listOf("lines[0].time.end" to "lyric.line.time.end.missing"), validateDocumentLyric(lyric).asPairs())
     }
 
     // Word-level timing still marks out each line, and a line carrying no range leaves its words with nothing to fall inside.

@@ -2,12 +2,12 @@ package gondola.lyrics.model
 
 import gondola.lyrics.model.common.Timing
 import gondola.lyrics.model.common.makeTimeRange
-import gondola.lyrics.model.runtime.LyricStatus
-import gondola.lyrics.model.runtime.makeLanguageUsage
-import gondola.lyrics.model.runtime.makeLineNormal
-import gondola.lyrics.model.runtime.makeLyric
-import gondola.lyrics.model.runtime.orderLanguageUsages
-import gondola.lyrics.model.runtime.orderLyric
+import gondola.lyrics.model.enriched.LyricStatus
+import gondola.lyrics.model.enriched.makeLanguageUsage
+import gondola.lyrics.model.enriched.makeLineNormal
+import gondola.lyrics.model.enriched.makeLyric
+import gondola.lyrics.model.enriched.orderLanguageUsages
+import gondola.lyrics.model.enriched.orderLyric
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
