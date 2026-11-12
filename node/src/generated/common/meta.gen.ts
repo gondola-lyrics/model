@@ -38,11 +38,11 @@ export enum CreditRole {
   /**
    * The contributor mixed the recording.
    */
-  MIXER = 7,
+  MIXING_ENGINEER = 7,
   /**
    * The contributor mastered the recording.
    */
-  MASTERING = 8,
+  MASTERING_ENGINEER = 8,
 }
 
 /**

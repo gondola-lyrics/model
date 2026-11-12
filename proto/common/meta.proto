@@ -33,10 +33,10 @@ enum CreditRole {
   CREDIT_ROLE_PERFORMER = 6;
 
   // The contributor mixed the recording.
-  CREDIT_ROLE_MIXER = 7;
+  CREDIT_ROLE_MIXING_ENGINEER = 7;
 
   // The contributor mastered the recording.
-  CREDIT_ROLE_MASTERING = 8;
+  CREDIT_ROLE_MASTERING_ENGINEER = 8;
 }
 
 // Contributors share one credited role in the song or recording.

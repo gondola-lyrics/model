@@ -23,8 +23,8 @@ public class CreditRole(@JvmField public val value: Int) {
             4 -> "CREDIT_ROLE_ARRANGER"
             5 -> "CREDIT_ROLE_PRODUCER"
             6 -> "CREDIT_ROLE_PERFORMER"
-            7 -> "CREDIT_ROLE_MIXER"
-            8 -> "CREDIT_ROLE_MASTERING"
+            7 -> "CREDIT_ROLE_MIXING_ENGINEER"
+            8 -> "CREDIT_ROLE_MASTERING_ENGINEER"
             else -> "CreditRole($value)"
         }
     }
@@ -68,12 +68,12 @@ public class CreditRole(@JvmField public val value: Int) {
         /**
          * The contributor mixed the recording.
          */
-        @JvmField public val CREDIT_ROLE_MIXER: CreditRole = CreditRole(7)
+        @JvmField public val CREDIT_ROLE_MIXING_ENGINEER: CreditRole = CreditRole(7)
 
         /**
          * The contributor mastered the recording.
          */
-        @JvmField public val CREDIT_ROLE_MASTERING: CreditRole = CreditRole(8)
+        @JvmField public val CREDIT_ROLE_MASTERING_ENGINEER: CreditRole = CreditRole(8)
     }
 }
 
