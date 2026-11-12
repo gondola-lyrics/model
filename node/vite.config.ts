@@ -29,7 +29,7 @@ export default defineConfig({
         }
         // Re-export the entry declarations so root and subpath imports share enum identities.
         return {
-          content: "export * as document from './document.js'\nexport * as enriched from './enriched.js'\n\nexport * from './version.js'\n",
+          content: "export * from './common.js'\nexport * from './document.js'\nexport * from './enriched.js'\nexport * from './version.js'\n",
         }
       },
     }),
@@ -52,13 +52,16 @@ export default defineConfig({
       formats: ['es'],
     },
     rollupOptions: {
-      external: ['./enriched', './document'],
+      external: ['./document', './enriched'],
       // Lets an entry chunk absorb the modules it shares, so no hashed chunk is emitted beside it.
       preserveEntrySignatures: 'allow-extension',
       output: {
         entryFileNames: '[name].js',
         chunkFileNames: '[name].js',
-        paths: { [enrichedSrc]: './enriched.js', [documentSrc]: './document.js' },
+        paths: {
+          [documentSrc]: './document.js',
+          [enrichedSrc]: './enriched.js',
+        },
       },
     },
   },

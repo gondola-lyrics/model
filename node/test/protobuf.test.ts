@@ -1,18 +1,64 @@
+import type { DocumentLineContent, DocumentLyric, EnrichedLyric } from '@root/index'
+
+import { create, createFileRegistry, fromBinary, toBinary } from '@bufbuild/protobuf'
+import { FileDescriptorSetSchema } from '@bufbuild/protobuf/wkt'
+import { deepStrictEqual, ok, throws } from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { describe, it } from 'node:test'
-import { deepStrictEqual, ok, throws } from 'node:assert/strict'
-import { FileDescriptorSetSchema } from '@bufbuild/protobuf/wkt'
-import { create, createFileRegistry, fromBinary, toBinary } from '@bufbuild/protobuf'
 
-import { enriched, document } from '@root/index'
-import { read, write } from '@root/utils/wire'
 import {
-  decodeEnrichedWordEmphasis,
   decodeDocumentLineContent,
-  encodeEnrichedWordEmphasis,
+  decodeEnrichedWordEmphasis,
   encodeDocumentLineContent,
+  encodeEnrichedWordEmphasis,
 } from '@root/generated/codec.gen'
-import { createEnrichedWordEmphasis, createDocumentLineContent } from '@root/generated/detail.gen'
+import { createDocumentLineContent, createEnrichedWordEmphasis } from '@root/generated/detail.gen'
+import {
+  AgentType,
+  CreditRole,
+  DocumentWordType,
+  EnrichedLyricStatus,
+  PartType,
+  Timing,
+  decodeDocumentLyric,
+  decodeEnrichedLyric,
+  encodeDocumentLyric,
+  encodeEnrichedLyric,
+  makeAgent,
+  makeDocumentLineBackground,
+  makeDocumentLineContentText,
+  makeDocumentLineContentWords,
+  makeDocumentLineNormal,
+  makeDocumentLyric,
+  makeDocumentWordNormal,
+  makeDocumentWordSpace,
+  makeEnrichedLanguageUsage,
+  makeEnrichedLineAnnotation,
+  makeEnrichedLineAnnotationRoman,
+  makeEnrichedLineAnnotationTranslation,
+  makeEnrichedLineBackground,
+  makeEnrichedLineContentText,
+  makeEnrichedLineContentWords,
+  makeEnrichedLineInstrumental,
+  makeEnrichedLineNormal,
+  makeEnrichedLyric,
+  makeEnrichedWordAnnotation,
+  makeEnrichedWordAnnotationRoman,
+  makeEnrichedWordAnnotationRuby,
+  makeEnrichedWordAnnotationToken,
+  makeEnrichedWordAnnotationTranslation,
+  makeEnrichedWordEmphasis,
+  makeEnrichedWordNormal,
+  makeEnrichedWordSpace,
+  makeMeta,
+  makeMetaCredit,
+  makeMetaReference,
+  makePart,
+  makeText,
+  makeTimeRange,
+  makeUnknownEntry,
+} from '@root/index'
+import { read, write } from '@root/utils/wire'
 
 /**
  * The same bytes every language's tests decode, covering presence: an explicit zero end, an empty language, a false and a true emphasis, an undeclared word type and an empty text.
@@ -35,46 +81,46 @@ const fromHex = (hex: string): Uint8Array => {
 }
 
 const annotation = () => {
-  return enriched.makeWordAnnotation({
+  return makeEnrichedWordAnnotation({
     rubies: [
-      enriched.makeWordAnnotationRuby({ language: 'zh-latn', scheme: 'pinyin', tokens: [enriched.makeWordAnnotationToken({ text: 'han' })] }),
-      enriched.makeWordAnnotationRuby({
+      makeEnrichedWordAnnotationRuby({ language: 'zh-latn', scheme: 'pinyin', tokens: [makeEnrichedWordAnnotationToken({ text: 'han' })] }),
+      makeEnrichedWordAnnotationRuby({
         language: 'ja',
-        time: enriched.makeTimeRange({}),
-        tokens: [enriched.makeWordAnnotationToken({ text: '\u3042' })],
+        time: makeTimeRange({}),
+        tokens: [makeEnrichedWordAnnotationToken({ text: '\u3042' })],
       }),
     ],
     romans: [
-      enriched.makeWordAnnotationRoman({
+      makeEnrichedWordAnnotationRoman({
         language: 'ja-latn',
         scheme: 'hepburn',
-        tokens: [enriched.makeWordAnnotationToken({ time: enriched.makeTimeRange({ start: 1, end: 0 }), text: 'a' })],
+        tokens: [makeEnrichedWordAnnotationToken({ time: makeTimeRange({ start: 1, end: 0 }), text: 'a' })],
       }),
     ],
-    translations: [enriched.makeWordAnnotationTranslation({ language: '', text: '😀' })],
+    translations: [makeEnrichedWordAnnotationTranslation({ language: '', text: '😀' })],
   })
 }
 
 const meta = () => {
-  return enriched.makeMeta({
-    unknowns: [enriched.makeUnknownEntry({ key: 'k', value: 'v' }), enriched.makeUnknownEntry({ key: 'k', value: '' })],
+  return makeMeta({
+    unknowns: [makeUnknownEntry({ key: 'k', value: 'v' }), makeUnknownEntry({ key: 'k', value: '' })],
     offset: -1500,
     duration: 2 ** 32 - 1,
     language: 'EN',
-    titles: [enriched.makeText({ text: 't' })],
-    artists: [enriched.makeText({ language: '', text: 'a' })],
-    albums: [enriched.makeText()],
-    authors: [enriched.makeText({ text: 'b' })],
+    titles: [makeText({ text: 't' })],
+    artists: [makeText({ language: '', text: 'a' })],
+    albums: [makeText()],
+    authors: [makeText({ text: 'b' })],
     isrcs: ['USRC17607839', ''],
-    credits: [enriched.makeMetaCredit({ role: 99 as enriched.CreditRole, raw: '', names: [enriched.makeText({ text: 'c' })] })],
-    references: [enriched.makeMetaReference({ platform: 'x', ids: ['1', '2'] })],
+    credits: [makeMetaCredit({ role: 99 as CreditRole, raw: '', names: [makeText({ text: 'c' })] })],
+    references: [makeMetaReference({ platform: 'x', ids: ['1', '2'] })],
   })
 }
 
 const lineAnnotation = () => {
-  return enriched.makeLineAnnotation({
-    romans: [enriched.makeLineAnnotationRoman({ language: 'ja-latn', scheme: 'hepburn', text: 'r' })],
-    translations: [enriched.makeLineAnnotationTranslation({ language: 'zh', text: '译' })],
+  return makeEnrichedLineAnnotation({
+    romans: [makeEnrichedLineAnnotationRoman({ language: 'ja-latn', scheme: 'hepburn', text: 'r' })],
+    translations: [makeEnrichedLineAnnotationTranslation({ language: 'zh', text: '译' })],
   })
 }
 
@@ -89,86 +135,86 @@ const extra = () => {
   return entries
 }
 
-const enrichedLyric = (): enriched.Lyric => {
-  return enriched.makeLyric({
+const enrichedLyric = (): EnrichedLyric => {
+  return makeEnrichedLyric({
     format: 'ttml',
     profile: 'amll',
-    status: enriched.LyricStatus.VALID,
-    timing: 99 as enriched.Timing,
+    status: EnrichedLyricStatus.VALID,
+    timing: 99 as Timing,
     meta: meta(),
     extra: extra(),
-    languages: [enriched.makeLanguageUsage({ tag: 'en', count: 3 })],
-    agents: [enriched.makeAgent({ id: 'a', type: -1 as enriched.AgentType, raw: 'x', names: [enriched.makeText({ text: 'n' })] })],
+    languages: [makeEnrichedLanguageUsage({ tag: 'en', count: 3 })],
+    agents: [makeAgent({ id: 'a', type: -1 as AgentType, raw: 'x', names: [makeText({ text: 'n' })] })],
     lines: [
-      enriched.makeLineNormal({
+      makeEnrichedLineNormal({
         id: 'l',
-        time: enriched.makeTimeRange({ start: 0, end: 0 }),
-        part: enriched.makePart({ type: enriched.PartType.CHORUS, id: 'Chorus-A', raw: '' }),
+        time: makeTimeRange({ start: 0, end: 0 }),
+        part: makePart({ type: PartType.CHORUS, id: 'Chorus-A', raw: '' }),
         agents: ['a'],
         languages: ['en', ''],
-        content: enriched.makeLineContentWords([
-          enriched.makeWordNormal({
+        content: makeEnrichedLineContentWords([
+          makeEnrichedWordNormal({
             text: 'x',
             language: '',
-            time: enriched.makeTimeRange({ start: 5 }),
+            time: makeTimeRange({ start: 5 }),
             annotation: annotation(),
-            emphasis: enriched.makeWordEmphasis(),
+            emphasis: makeEnrichedWordEmphasis(),
           }),
-          enriched.makeWordSpace({ text: ' ' }),
+          makeEnrichedWordSpace({ text: ' ' }),
         ]),
         annotation: lineAnnotation(),
         backgrounds: [
-          enriched.makeLineBackground({
+          makeEnrichedLineBackground({
             id: 'b',
-            time: enriched.makeTimeRange({ start: 1 }),
+            time: makeTimeRange({ start: 1 }),
             agents: ['a'],
             languages: ['ja'],
-            content: enriched.makeLineContentText(''),
-            annotation: enriched.makeLineAnnotation(),
+            content: makeEnrichedLineContentText(''),
+            annotation: makeEnrichedLineAnnotation(),
           }),
         ],
       }),
-      enriched.makeLineInstrumental(),
+      makeEnrichedLineInstrumental(),
     ],
   })
 }
 
-const documentLyric = (): document.Lyric => {
-  return document.makeLyric({
+const documentLyric = (): DocumentLyric => {
+  return makeDocumentLyric({
     format: 'ttml',
     profile: 'itunes',
-    timing: document.Timing.WORD,
+    timing: Timing.WORD,
     meta: meta(),
     extra: extra(),
-    agents: [document.makeAgent({ id: 'a', type: document.AgentType.GROUP, names: [document.makeText({ text: 'n' })] })],
+    agents: [makeAgent({ id: 'a', type: AgentType.GROUP, names: [makeText({ text: 'n' })] })],
     lines: [
-      document.makeLineNormal({
+      makeDocumentLineNormal({
         id: 'l',
-        time: document.makeTimeRange({ start: 0 }),
-        part: document.makePart({ type: document.PartType.OTHER, id: 'Section-B', raw: 'x' }),
+        time: makeTimeRange({ start: 0 }),
+        part: makePart({ type: PartType.OTHER, id: 'Section-B', raw: 'x' }),
         agents: ['a'],
         languages: ['en'],
-        content: document.makeLineContentWords([
-          document.makeWordNormal({
+        content: makeDocumentLineContentWords([
+          makeDocumentWordNormal({
             text: 'x',
             language: 'en',
-            time: document.makeTimeRange({ start: 5, end: 6 }),
+            time: makeTimeRange({ start: 5, end: 6 }),
             annotation: annotation(),
             emphasis: false,
           }),
-          document.makeWordNormal({ text: 'y', emphasis: true }),
-          document.makeWordSpace({ text: ' ' }),
+          makeDocumentWordNormal({ text: 'y', emphasis: true }),
+          makeDocumentWordSpace({ text: ' ' }),
         ]),
         annotation: lineAnnotation(),
-        backgrounds: [document.makeLineBackground({ content: document.makeLineContentText('bg') })],
+        backgrounds: [makeDocumentLineBackground({ content: makeDocumentLineContentText('bg') })],
       }),
     ],
   })
 }
 
 const cases = [
-  { name: 'lyric.enriched.Lyric', encode: enriched.encode, decode: enriched.decode, build: enrichedLyric },
-  { name: 'lyric.document.Lyric', encode: document.encode, decode: document.decode, build: documentLyric },
+  { name: 'lyric.enriched.Lyric', encode: encodeEnrichedLyric, decode: decodeEnrichedLyric, build: enrichedLyric },
+  { name: 'lyric.document.Lyric', encode: encodeDocumentLyric, decode: decodeDocumentLyric, build: documentLyric },
 ] as const
 
 describe('protobuf', () => {
@@ -177,7 +223,7 @@ describe('protobuf', () => {
     const values = [undefined, false, true]
     for (const value of values) {
       for (const derived of values) {
-        const emphasis = enriched.makeWordEmphasis({ value, derived })
+        const emphasis = makeEnrichedWordEmphasis({ value, derived })
         const bytes = toBinary(schema, create(schema, emphasis))
         deepStrictEqual(write(encodeEnrichedWordEmphasis, emphasis), bytes)
         deepStrictEqual(read(createEnrichedWordEmphasis, decodeEnrichedWordEmphasis, bytes), emphasis)
@@ -201,11 +247,11 @@ describe('protobuf', () => {
 
   it('keeps presence in the standard sample', () => {
     const bytes = fromHex(STANDARD_SAMPLE)
-    const expected: document.LineContent = {
+    const expected: DocumentLineContent = {
       words: [
-        { type: document.WordType.NORMAL, time: { start: 0, end: 0 }, text: 'a' },
-        { type: document.WordType.NORMAL, time: { start: 5 }, language: '', text: 'a', emphasis: false },
-        { type: 99 as document.WordType, text: 'a', emphasis: true },
+        { type: DocumentWordType.NORMAL, time: { start: 0, end: 0 }, text: 'a' },
+        { type: DocumentWordType.NORMAL, time: { start: 5 }, language: '', text: 'a', emphasis: false },
+        { type: 99 as DocumentWordType, text: 'a', emphasis: true },
       ],
       text: '',
     }
@@ -233,7 +279,7 @@ describe('protobuf', () => {
       'groups nested past the limit': 'a306'.repeat(10002) + 'a406'.repeat(10002),
     }
     for (const [why, hex] of Object.entries(malformed)) {
-      throws(() => enriched.decode(fromHex(hex)), why)
+      throws(() => decodeEnrichedLyric(fromHex(hex)), why)
     }
   })
 
@@ -256,7 +302,7 @@ describe('protobuf', () => {
       'keeps a leading BOM': ['0a03efbbbf', '0a03efbbbf'],
     }
     for (const [why, [input, output]] of Object.entries(accepted)) {
-      deepStrictEqual(Buffer.from(enriched.encode(enriched.decode(fromHex(input!)))).toString('hex'), output, why)
+      deepStrictEqual(Buffer.from(encodeEnrichedLyric(decodeEnrichedLyric(fromHex(input!)))).toString('hex'), output, why)
     }
     deepStrictEqual(
       read(createDocumentLineContent, decodeDocumentLineContent, fromHex('0a03308001')).words[0]?.emphasis,
@@ -266,12 +312,12 @@ describe('protobuf', () => {
   })
 
   it('rejects a number outside the field range', () => {
-    const lyric = enriched.makeLyric({
+    const lyric = makeEnrichedLyric({
       format: '',
-      status: enriched.LyricStatus.VALID,
-      lines: [enriched.makeLineNormal({ time: enriched.makeTimeRange({ start: -1 }) })],
+      status: EnrichedLyricStatus.VALID,
+      lines: [makeEnrichedLineNormal({ time: makeTimeRange({ start: -1 }) })],
     })
-    throws(() => enriched.encode(lyric))
+    throws(() => encodeEnrichedLyric(lyric))
   })
 
   // Whatever decode accepts has to survive encoding unchanged, or a lyric read from foreign bytes could not be saved again.

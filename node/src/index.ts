@@ -1,4 +1,4 @@
-export * as document from './document'
-export * as enriched from './enriched'
-
+export * from './common'
+export * from './document'
+export * from './enriched'
 export * from './version'

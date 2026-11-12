@@ -1,4 +1,5 @@
 import type { Diagnostic } from '@root/common'
+import type { MakeInit } from '@root/utils'
 import type { TimeRange } from '@root/generated/common/index.gen'
 import type {
   Word,
@@ -9,7 +10,6 @@ import type {
   WordAnnotationTranslation,
   WordEmphasis,
 } from '@root/generated/enriched/index.gen'
-import type { MakeInit } from '@root/utils'
 
 import { DiagnosticCode, validateTimeRange } from '@root/common'
 import { Timing } from '@root/generated/common/index.gen'
@@ -59,42 +59,42 @@ const ownsWordTimes = (timing: Timing): boolean => {
 /**
  * Creates a ruby or roman fragment with optional timing.
  */
-export const makeWordAnnotationToken = (init?: MakeInit<WordAnnotationToken>): WordAnnotationToken => {
+export const makeEnrichedWordAnnotationToken = (init?: MakeInit<WordAnnotationToken>): WordAnnotationToken => {
   return withInit(createEnrichedWordAnnotationToken(), init)
 }
 
 /**
  * Creates a word romanization without normalizing its language or scheme.
  */
-export const makeWordAnnotationRoman = (init?: MakeInit<WordAnnotationRoman>): WordAnnotationRoman => {
+export const makeEnrichedWordAnnotationRoman = (init?: MakeInit<WordAnnotationRoman>): WordAnnotationRoman => {
   return withInit(createEnrichedWordAnnotationRoman(), init)
 }
 
 /**
  * Creates a translation of a whole word.
  */
-export const makeWordAnnotationTranslation = (init?: MakeInit<WordAnnotationTranslation>): WordAnnotationTranslation => {
+export const makeEnrichedWordAnnotationTranslation = (init?: MakeInit<WordAnnotationTranslation>): WordAnnotationTranslation => {
   return withInit(createEnrichedWordAnnotationTranslation(), init)
 }
 
 /**
  * Creates a ruby annotation without normalizing its language or scheme.
  */
-export const makeWordAnnotationRuby = (init?: MakeInit<WordAnnotationRuby>): WordAnnotationRuby => {
+export const makeEnrichedWordAnnotationRuby = (init?: MakeInit<WordAnnotationRuby>): WordAnnotationRuby => {
   return withInit(createEnrichedWordAnnotationRuby(), init)
 }
 
 /**
  * Creates word annotations from the supplied lists.
  */
-export const makeWordAnnotation = (init?: MakeInit<WordAnnotation>): WordAnnotation => {
+export const makeEnrichedWordAnnotation = (init?: MakeInit<WordAnnotation>): WordAnnotation => {
   return withInit(createEnrichedWordAnnotation(), init)
 }
 
 /**
  * Checks annotation uniqueness, valid time ranges, and containment within inherited timing.
  */
-export const validateWordAnnotation = (annotation: WordAnnotation, path = '', time?: TimeRange): Diagnostic[] => {
+export const validateEnrichedWordAnnotation = (annotation: WordAnnotation, path = '', time?: TimeRange): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   /**
    * Validates the time of every item in one timed annotation list, and of every token those items hold, against both its own domain and the range containing it.
@@ -141,7 +141,7 @@ export const validateWordAnnotation = (annotation: WordAnnotation, path = '', ti
  *
  * The declared precision determines whether annotation timing is constrained by the word.
  */
-export const validateWord = (word: Word, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
+export const validateEnrichedWord = (word: Word, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
 
   if (isUnresolved(WordType, word.type)) {
@@ -177,7 +177,7 @@ export const validateWord = (word: Word, path = '', timing = Timing.UNSPECIFIED)
   }
   if (word.annotation) {
     // NONE and LINE timing validate the word list at the lyric level.
-    diagnostics.push(...validateWordAnnotation(word.annotation, childPath(path, 'annotation'), ownsWordTimes(timing) ? word.time : undefined))
+    diagnostics.push(...validateEnrichedWordAnnotation(word.annotation, childPath(path, 'annotation'), ownsWordTimes(timing) ? word.time : undefined))
   }
   const emphasis = word.emphasis
   if (emphasis?.derived !== undefined && emphasis.value === undefined) {
@@ -189,12 +189,12 @@ export const validateWord = (word: Word, path = '', timing = Timing.UNSPECIFIED)
 /**
  * Validates each word and, when word timing applies, requires sung-word times within the enclosing range.
  */
-export const validateWords = (words: Word[], time: TimeRange | undefined, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
+export const validateEnrichedWords = (words: Word[], time: TimeRange | undefined, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   const ownTimes = ownsWordTimes(timing)
   words.forEach((word, i) => {
     const wordPath = childPath(path, `words[${i}]`)
-    diagnostics.push(...validateWord(word, wordPath, timing))
+    diagnostics.push(...validateEnrichedWord(word, wordPath, timing))
     if (ownTimes && word.type === WordType.NORMAL && word.time === undefined) {
       diagnostics.push({ path: wordPath, code: DiagnosticCode.LineWordTimeMissing })
     }
@@ -209,84 +209,84 @@ export const validateWords = (words: Word[], time: TimeRange | undefined, path =
 /**
  * Copies the token and its optional time range.
  */
-export const canonicalizeWordAnnotationToken = (token: WordAnnotationToken): WordAnnotationToken => {
+export const canonicalizeEnrichedWordAnnotationToken = (token: WordAnnotationToken): WordAnnotationToken => {
   return { ...token, time: copyMessage(token.time) }
 }
 
 /**
  * Lowercases language and scheme and canonicalizes roman tokens.
  */
-export const canonicalizeWordAnnotationRoman = (roman: WordAnnotationRoman): WordAnnotationRoman => {
+export const canonicalizeEnrichedWordAnnotationRoman = (roman: WordAnnotationRoman): WordAnnotationRoman => {
   return {
     ...roman,
     time: copyMessage(roman.time),
     language: lowerTag(roman.language),
     scheme: lowerTag(roman.scheme),
-    tokens: canonicalizeList(fieldsEnrichedWordAnnotationToken, roman.tokens, canonicalizeWordAnnotationToken),
+    tokens: canonicalizeList(fieldsEnrichedWordAnnotationToken, roman.tokens, canonicalizeEnrichedWordAnnotationToken),
   }
 }
 
 /**
  * Lowercases language and scheme and canonicalizes ruby tokens.
  */
-export const canonicalizeWordAnnotationRuby = (ruby: WordAnnotationRuby): WordAnnotationRuby => {
+export const canonicalizeEnrichedWordAnnotationRuby = (ruby: WordAnnotationRuby): WordAnnotationRuby => {
   return {
     ...ruby,
     time: copyMessage(ruby.time),
     language: lowerTag(ruby.language),
     scheme: lowerTag(ruby.scheme),
-    tokens: canonicalizeList(fieldsEnrichedWordAnnotationToken, ruby.tokens, canonicalizeWordAnnotationToken),
+    tokens: canonicalizeList(fieldsEnrichedWordAnnotationToken, ruby.tokens, canonicalizeEnrichedWordAnnotationToken),
   }
 }
 
 /**
  * Lowercases the translation's language tag.
  */
-export const canonicalizeWordAnnotationTranslation = (translation: WordAnnotationTranslation): WordAnnotationTranslation => {
+export const canonicalizeEnrichedWordAnnotationTranslation = (translation: WordAnnotationTranslation): WordAnnotationTranslation => {
   return { ...translation, language: lowerTag(translation.language) }
 }
 
 /**
  * Canonicalizes annotations and drops all-default list entries.
  */
-export const canonicalizeWordAnnotation = (annotation: WordAnnotation): WordAnnotation => {
+export const canonicalizeEnrichedWordAnnotation = (annotation: WordAnnotation): WordAnnotation => {
   return {
     ...annotation,
-    rubies: canonicalizeList(fieldsEnrichedWordAnnotationRuby, annotation.rubies, canonicalizeWordAnnotationRuby),
-    romans: canonicalizeList(fieldsEnrichedWordAnnotationRoman, annotation.romans, canonicalizeWordAnnotationRoman),
-    translations: canonicalizeList(fieldsEnrichedWordAnnotationTranslation, annotation.translations, canonicalizeWordAnnotationTranslation),
+    rubies: canonicalizeList(fieldsEnrichedWordAnnotationRuby, annotation.rubies, canonicalizeEnrichedWordAnnotationRuby),
+    romans: canonicalizeList(fieldsEnrichedWordAnnotationRoman, annotation.romans, canonicalizeEnrichedWordAnnotationRoman),
+    translations: canonicalizeList(fieldsEnrichedWordAnnotationTranslation, annotation.translations, canonicalizeEnrichedWordAnnotationTranslation),
   }
 }
 
 /**
  * Uses the annotation's time, falling back to the annotated word.
  */
-export const resolveAnnotationItemTime = (item: WordAnnotationRoman | WordAnnotationRuby, word: Word): TimeRange | undefined => {
+export const resolveEnrichedAnnotationItemTime = (item: WordAnnotationRoman | WordAnnotationRuby, word: Word): TimeRange | undefined => {
   return item.time ?? word.time
 }
 
 /**
  * Uses the token's time, then its annotation's time, then the annotated word.
  */
-export const resolveAnnotationTokenTime = (
+export const resolveEnrichedAnnotationTokenTime = (
   token: WordAnnotationToken,
   item: WordAnnotationRoman | WordAnnotationRuby,
   word: Word,
 ): TimeRange | undefined => {
-  return token.time ?? resolveAnnotationItemTime(item, word)
+  return token.time ?? resolveEnrichedAnnotationItemTime(item, word)
 }
 
 /**
  * Joins word text in order, including separator words.
  */
-export const getWordsText = (words: Word[]): string => {
+export const getEnrichedWordsText = (words: Word[]): string => {
   return words.map((word) => word.text).join('')
 }
 
 /**
  * Returns distinct lowercase language tags from normal words in first-appearance order.
  */
-export const getWordsLanguages = (words: Word[]): string[] => {
+export const getEnrichedWordsLanguages = (words: Word[]): string[] => {
   const normal = words.filter((word) => word.type === WordType.NORMAL)
   return [...new Set(normal.map((word) => lowerTag(word.language)).filter((tag) => tag !== undefined))]
 }
@@ -294,14 +294,14 @@ export const getWordsLanguages = (words: Word[]): string[] => {
 /**
  * Joins annotation tokens in order without adding separators.
  */
-export const getAnnotationItemText = (item: WordAnnotationRoman | WordAnnotationRuby): string => {
+export const getEnrichedAnnotationItemText = (item: WordAnnotationRoman | WordAnnotationRuby): string => {
   return item.tokens.map((token) => token.text).join('')
 }
 
 /**
  * Creates a normal word with a fixed WORD_TYPE_NORMAL discriminator.
  */
-export const makeWordNormal = (init?: Omit<MakeInit<Word>, 'type'>): Word => {
+export const makeEnrichedWordNormal = (init?: Omit<MakeInit<Word>, 'type'>): Word => {
   return withInit(createEnrichedWord(), {
     type: WordType.NORMAL,
     time: init?.time,
@@ -315,26 +315,26 @@ export const makeWordNormal = (init?: Omit<MakeInit<Word>, 'type'>): Word => {
 /**
  * Creates a WORD_TYPE_SPACE word containing only the supplied separator.
  */
-export const makeWordSpace = (init?: Pick<MakeInit<Word>, 'text'>): Word => {
+export const makeEnrichedWordSpace = (init?: Pick<MakeInit<Word>, 'text'>): Word => {
   return withInit(createEnrichedWord(), { text: init?.text, type: WordType.SPACE })
 }
 
 /**
  * Creates an emphasis decision, preserving absent fields and explicit false values.
  */
-export const makeWordEmphasis = (init?: MakeInit<WordEmphasis>): WordEmphasis => {
+export const makeEnrichedWordEmphasis = (init?: MakeInit<WordEmphasis>): WordEmphasis => {
   return withInit(createEnrichedWordEmphasis(), init)
 }
 
 /**
  * Returns a canonical copy with normalized language and annotations, preserving explicit emphasis values.
  */
-export const canonicalizeWord = (word: Word): Word => {
+export const canonicalizeEnrichedWord = (word: Word): Word => {
   return {
     ...word,
     time: copyMessage(word.time),
     language: lowerTag(word.language),
-    annotation: canonicalizeField(fieldsEnrichedWordAnnotation, word.annotation, canonicalizeWordAnnotation),
+    annotation: canonicalizeField(fieldsEnrichedWordAnnotation, word.annotation, canonicalizeEnrichedWordAnnotation),
     emphasis: dropDefault(fieldsEnrichedWordEmphasis, copyMessage(word.emphasis)),
   }
 }

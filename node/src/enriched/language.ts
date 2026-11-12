@@ -3,10 +3,10 @@ import type { LanguageUsage } from '@root/generated/enriched/index.gen'
 import type { MakeInit } from '@root/utils'
 
 import { DiagnosticCode, isLanguageTag } from '@root/common'
+import { checkNumberDomain, childPath, compareTags, lowerTag, withInit } from '@root/utils'
 import { createEnrichedLanguageUsage } from '@root/generated/detail.gen'
 import { LineType as DocumentLineType, WordType as DocumentWordType } from '@root/generated/document/index.gen'
 import { LineType, WordType } from '@root/generated/enriched/index.gen'
-import { checkNumberDomain, childPath, compareTags, lowerTag, withInit } from '@root/utils'
 
 /**
  * The count field spans the uint32 domain.
@@ -24,14 +24,14 @@ type LanguageLine = {
 /**
  * Creates a count of normal lines declaring one language.
  */
-export const makeLanguageUsage = (init?: MakeInit<LanguageUsage>): LanguageUsage => {
+export const makeEnrichedLanguageUsage = (init?: MakeInit<LanguageUsage>): LanguageUsage => {
   return withInit(createEnrichedLanguageUsage(), init)
 }
 
 /**
  * Checks that the language tag is well formed and the count fits uint32.
  */
-export const validateLanguageUsage = (usage: LanguageUsage, path = ''): Diagnostic[] => {
+export const validateEnrichedLanguageUsage = (usage: LanguageUsage, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   if (usage.tag === '') {
     diagnostics.push({ path: childPath(path, 'tag'), code: DiagnosticCode.LanguageUsageTagEmpty })
@@ -50,7 +50,7 @@ export const validateLanguageUsage = (usage: LanguageUsage, path = ''): Diagnost
 /**
  * Orders language counts descending, then tags case-insensitively ascending.
  */
-export const orderLanguageUsages = (languages: LanguageUsage[]): LanguageUsage[] => {
+export const orderEnrichedLanguageUsages = (languages: LanguageUsage[]): LanguageUsage[] => {
   return [...languages].sort((a, b) => b.count - a.count || compareTags(a.tag, b.tag))
 }
 
@@ -59,7 +59,7 @@ export const orderLanguageUsages = (languages: LanguageUsage[]): LanguageUsage[]
  *
  * Spaces, annotations, backgrounds, and absent tags are excluded; explicit und tags are counted.
  */
-export const deriveLanguageUsages = (lines: LanguageLine[]): LanguageUsage[] => {
+export const deriveEnrichedLanguageUsages = (lines: LanguageLine[]): LanguageUsage[] => {
   const counts = new Map<string, number>()
   for (const line of lines) {
     if (!NORMAL_LINE_TYPES.has(line.type)) {
@@ -85,7 +85,7 @@ export const deriveLanguageUsages = (lines: LanguageLine[]): LanguageUsage[] => 
       counts.set(tag, (counts.get(tag) ?? 0) + 1)
     }
   }
-  return orderLanguageUsages([...counts].map(([tag, count]) => makeLanguageUsage({ tag, count })))
+  return orderEnrichedLanguageUsages([...counts].map(([tag, count]) => makeEnrichedLanguageUsage({ tag, count })))
 }
 
 /**
@@ -93,7 +93,7 @@ export const deriveLanguageUsages = (lines: LanguageLine[]): LanguageUsage[] => 
  *
  * Totals above uint32 are capped; invalid counts remain available for validation.
  */
-export const canonicalizeLanguageUsages = (languages: LanguageUsage[]): LanguageUsage[] => {
+export const canonicalizeEnrichedLanguageUsages = (languages: LanguageUsage[]): LanguageUsage[] => {
   const counts = new Map<string, number>()
   for (const usage of languages) {
     const tag = lowerTag(usage.tag)
@@ -103,5 +103,5 @@ export const canonicalizeLanguageUsages = (languages: LanguageUsage[]): Language
     }
     counts.set(tag, Math.min((counts.get(tag) ?? 0) + usage.count, MAX_COUNT))
   }
-  return orderLanguageUsages([...counts].map(([tag, count]) => makeLanguageUsage({ tag, count })))
+  return orderEnrichedLanguageUsages([...counts].map(([tag, count]) => makeEnrichedLanguageUsage({ tag, count })))
 }

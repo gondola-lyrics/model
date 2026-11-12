@@ -1,7 +1,48 @@
-import { describe, it } from 'node:test'
-import { deepStrictEqual } from 'node:assert/strict'
+import type { EnrichedLyric } from '@root/index'
 
-import { enriched, document } from '@root/index'
+import { deepStrictEqual } from 'node:assert/strict'
+import { describe, it } from 'node:test'
+
+import {
+  EnrichedLyricStatus,
+  PartType,
+  Timing,
+  canonicalizeDocumentLineAnnotation,
+  canonicalizeDocumentLyric,
+  canonicalizeDocumentWord,
+  canonicalizeDocumentWordAnnotation,
+  canonicalizeEnrichedLineAnnotation,
+  canonicalizeEnrichedLyric,
+  canonicalizeEnrichedWord,
+  canonicalizeEnrichedWordAnnotation,
+  deriveEnrichedLanguageUsages,
+  makeDocumentLineAnnotation,
+  makeDocumentLineAnnotationRoman,
+  makeDocumentLineContentText,
+  makeDocumentLineNormal,
+  makeDocumentLyric,
+  makeDocumentWordAnnotation,
+  makeDocumentWordAnnotationRoman,
+  makeDocumentWordAnnotationRuby,
+  makeDocumentWordAnnotationToken,
+  makeDocumentWordNormal,
+  makeEnrichedLineAnnotation,
+  makeEnrichedLineAnnotationRoman,
+  makeEnrichedLineContentWords,
+  makeEnrichedLineNormal,
+  makeEnrichedLyric,
+  makeEnrichedWordAnnotation,
+  makeEnrichedWordAnnotationRoman,
+  makeEnrichedWordAnnotationRuby,
+  makeEnrichedWordAnnotationToken,
+  makeEnrichedWordEmphasis,
+  makeEnrichedWordNormal,
+  makePart,
+  makeTimeRange,
+  resolveDocumentAnnotationTokenTime,
+  validateDocumentWord,
+  validateEnrichedLyric,
+} from '@root/index'
 
 const collectNodes = (node: unknown, seen = new Set<object>()): Set<object> => {
   if (node === null || typeof node !== 'object' || seen.has(node)) {
@@ -14,28 +55,28 @@ const collectNodes = (node: unknown, seen = new Set<object>()): Set<object> => {
   return seen
 }
 
-const buildLyric = (): enriched.Lyric => {
+const buildLyric = (): EnrichedLyric => {
   const lines = [
-    enriched.makeLineNormal({
-      time: enriched.makeTimeRange({ start: 1000, end: 2000 }),
+    makeEnrichedLineNormal({
+      time: makeTimeRange({ start: 1000, end: 2000 }),
       languages: ['EN'],
-      part: enriched.makePart({ type: enriched.PartType.VERSE, id: 'Verse-A', raw: 'Verse 1' }),
-      content: enriched.makeLineContentWords([
-        enriched.makeWordNormal({
+      part: makePart({ type: PartType.VERSE, id: 'Verse-A', raw: 'Verse 1' }),
+      content: makeEnrichedLineContentWords([
+        makeEnrichedWordNormal({
           text: 'hi',
           language: 'EN',
-          time: enriched.makeTimeRange({ start: 1000, end: 2000 }),
-          emphasis: enriched.makeWordEmphasis({ value: true }),
+          time: makeTimeRange({ start: 1000, end: 2000 }),
+          emphasis: makeEnrichedWordEmphasis({ value: true }),
         }),
       ]),
     }),
   ]
-  return enriched.makeLyric({
+  return makeEnrichedLyric({
     format: 'TTML',
     profile: 'AMLL',
-    timing: enriched.Timing.WORD,
-    status: enriched.LyricStatus.VALID,
-    languages: enriched.deriveLanguageUsages(lines),
+    timing: Timing.WORD,
+    status: EnrichedLyricStatus.VALID,
+    languages: deriveEnrichedLanguageUsages(lines),
     lines,
   })
 }
@@ -43,18 +84,18 @@ const buildLyric = (): enriched.Lyric => {
 describe('canonicalize', () => {
   it('lowercases the format, profile and tags', () => {
     const lyric = buildLyric()
-    const canonical = enriched.canonicalizeLyric(lyric)
+    const canonical = canonicalizeEnrichedLyric(lyric)
     deepStrictEqual(canonical.format, 'ttml')
     deepStrictEqual(canonical.profile, 'amll')
     deepStrictEqual(canonical.lines[0]?.languages, ['en'])
     deepStrictEqual(canonical.lines[0]?.content?.words[0]?.language, 'en')
     deepStrictEqual(canonical.lines[0]?.part?.id, 'Verse-A')
 
-    const persisted = document.canonicalizeLyric(
-      document.makeLyric({
+    const persisted = canonicalizeDocumentLyric(
+      makeDocumentLyric({
         format: 'TTML',
         profile: 'ITUNES',
-        lines: [document.makeLineNormal({ part: lyric.lines[0]?.part, content: document.makeLineContentText('hi') })],
+        lines: [makeDocumentLineNormal({ part: lyric.lines[0]?.part, content: makeDocumentLineContentText('hi') })],
       }),
     )
     deepStrictEqual(persisted.format, 'ttml')
@@ -63,22 +104,22 @@ describe('canonicalize', () => {
   })
 
   it('is idempotent', () => {
-    const once = enriched.canonicalizeLyric(buildLyric())
-    deepStrictEqual(enriched.canonicalizeLyric(once), once)
+    const once = canonicalizeEnrichedLyric(buildLyric())
+    deepStrictEqual(canonicalizeEnrichedLyric(once), once)
   })
 
   it('preserves explicit emphasis decisions and origin while dropping empty emphasis', () => {
     const emphases = [
-      enriched.makeWordEmphasis(),
-      enriched.makeWordEmphasis({ value: false }),
-      enriched.makeWordEmphasis({ value: true }),
-      enriched.makeWordEmphasis({ value: false, derived: false }),
-      enriched.makeWordEmphasis({ value: false, derived: true }),
-      enriched.makeWordEmphasis({ value: true, derived: false }),
-      enriched.makeWordEmphasis({ value: true, derived: true }),
+      makeEnrichedWordEmphasis(),
+      makeEnrichedWordEmphasis({ value: false }),
+      makeEnrichedWordEmphasis({ value: true }),
+      makeEnrichedWordEmphasis({ value: false, derived: false }),
+      makeEnrichedWordEmphasis({ value: false, derived: true }),
+      makeEnrichedWordEmphasis({ value: true, derived: false }),
+      makeEnrichedWordEmphasis({ value: true, derived: true }),
     ]
     const canonical = emphases.map((emphasis) => {
-      return enriched.canonicalizeWord(enriched.makeWordNormal({ text: 'ah', emphasis })).emphasis
+      return canonicalizeEnrichedWord(makeEnrichedWordNormal({ text: 'ah', emphasis })).emphasis
     })
     deepStrictEqual(canonical, [
       undefined,
@@ -92,7 +133,28 @@ describe('canonicalize', () => {
   })
 
   it('canonicalizes annotation schemes while preserving constructor input', () => {
-    for (const model of [document, enriched]) {
+    for (const model of [
+      {
+        makeWordAnnotation: makeDocumentWordAnnotation,
+        makeWordAnnotationRoman: makeDocumentWordAnnotationRoman,
+        makeWordAnnotationToken: makeDocumentWordAnnotationToken,
+        makeWordAnnotationRuby: makeDocumentWordAnnotationRuby,
+        makeLineAnnotation: makeDocumentLineAnnotation,
+        makeLineAnnotationRoman: makeDocumentLineAnnotationRoman,
+        canonicalizeWordAnnotation: canonicalizeDocumentWordAnnotation,
+        canonicalizeLineAnnotation: canonicalizeDocumentLineAnnotation,
+      },
+      {
+        makeWordAnnotation: makeEnrichedWordAnnotation,
+        makeWordAnnotationRoman: makeEnrichedWordAnnotationRoman,
+        makeWordAnnotationToken: makeEnrichedWordAnnotationToken,
+        makeWordAnnotationRuby: makeEnrichedWordAnnotationRuby,
+        makeLineAnnotation: makeEnrichedLineAnnotation,
+        makeLineAnnotationRoman: makeEnrichedLineAnnotationRoman,
+        canonicalizeWordAnnotation: canonicalizeEnrichedWordAnnotation,
+        canonicalizeLineAnnotation: canonicalizeEnrichedLineAnnotation,
+      },
+    ]) {
       for (const scheme of ['HEPBURN', '']) {
         const word = model.makeWordAnnotation({
           romans: [model.makeWordAnnotationRoman({ language: 'JA-Latn', scheme, tokens: [model.makeWordAnnotationToken({ text: 'shi' })] })],
@@ -113,17 +175,17 @@ describe('canonicalize', () => {
   })
 
   it('canonicalizes document annotations without losing timing or explicit false', () => {
-    const time = document.makeTimeRange({ start: 1000, end: 2000 })
-    const token = document.makeWordAnnotationToken({ time, text: 'shi' })
-    const word = document.makeWordNormal({
+    const time = makeTimeRange({ start: 1000, end: 2000 })
+    const token = makeDocumentWordAnnotationToken({ time, text: 'shi' })
+    const word = makeDocumentWordNormal({
       text: 'x',
       time,
       emphasis: false,
-      annotation: document.makeWordAnnotation({
-        romans: [document.makeWordAnnotationRoman({ language: 'JA-Latn', scheme: 'HEPBURN', tokens: [token] }), document.makeWordAnnotationRoman()],
+      annotation: makeDocumentWordAnnotation({
+        romans: [makeDocumentWordAnnotationRoman({ language: 'JA-Latn', scheme: 'HEPBURN', tokens: [token] }), makeDocumentWordAnnotationRoman()],
       }),
     })
-    const canonical = document.canonicalizeWord(word)
+    const canonical = canonicalizeDocumentWord(word)
     deepStrictEqual(canonical.annotation?.romans.length, 1)
     const roman = canonical.annotation!.romans[0]!
     deepStrictEqual(
@@ -131,8 +193,8 @@ describe('canonicalize', () => {
       { language: 'ja-latn', scheme: 'hepburn', tokens: [token] },
     )
     deepStrictEqual(canonical.emphasis, false)
-    deepStrictEqual(document.resolveAnnotationTokenTime(token, canonical.annotation!.romans[0]!, canonical), time)
-    deepStrictEqual(document.validateWord(canonical, '', document.Timing.WORD), [])
+    deepStrictEqual(resolveDocumentAnnotationTokenTime(token, canonical.annotation!.romans[0]!, canonical), time)
+    deepStrictEqual(validateDocumentWord(canonical, '', Timing.WORD), [])
     const originalNodes = collectNodes(word)
     deepStrictEqual(
       [...collectNodes(canonical)].filter((node) => originalNodes.has(node)),
@@ -143,13 +205,13 @@ describe('canonicalize', () => {
   // Returning a copy is the stated contract, and a subobject carried over untouched is how it was broken before.
   it('shares no mutable node with the lyric it was given', () => {
     const lyric = buildLyric()
-    const canonical = enriched.canonicalizeLyric(lyric)
+    const canonical = canonicalizeEnrichedLyric(lyric)
     const nodes = collectNodes(lyric)
     const shared = [...collectNodes(canonical)].filter((node) => nodes.has(node))
     deepStrictEqual(shared, [])
   })
 
   it('leaves a canonical lyric valid', () => {
-    deepStrictEqual(enriched.validateLyric(enriched.canonicalizeLyric(buildLyric())), [])
+    deepStrictEqual(validateEnrichedLyric(canonicalizeEnrichedLyric(buildLyric())), [])
   })
 })

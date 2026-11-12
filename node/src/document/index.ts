@@ -1,6 +1,20 @@
-export * from '@root/common'
+export type {
+  Lyric as DocumentLyric,
+  Line as DocumentLine,
+  LineAnnotation as DocumentLineAnnotation,
+  LineAnnotationRoman as DocumentLineAnnotationRoman,
+  LineAnnotationTranslation as DocumentLineAnnotationTranslation,
+  LineBackground as DocumentLineBackground,
+  LineContent as DocumentLineContent,
+  Word as DocumentWord,
+  WordAnnotation as DocumentWordAnnotation,
+  WordAnnotationRoman as DocumentWordAnnotationRoman,
+  WordAnnotationRuby as DocumentWordAnnotationRuby,
+  WordAnnotationToken as DocumentWordAnnotationToken,
+  WordAnnotationTranslation as DocumentWordAnnotationTranslation,
+} from '@root/generated/document/index.gen'
 
-export * from '@root/generated/document/index.gen'
+export { LineType as DocumentLineType, WordType as DocumentWordType } from '@root/generated/document/index.gen'
 
 export * from './lyric'
 export * from './line'

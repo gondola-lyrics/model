@@ -1,11 +1,11 @@
 import type { Diagnostic, TimeRange } from '@root/common'
-import type { LineContent, Lyric } from '@root/generated/enriched/index.gen'
 import type { MakeInit } from '@root/utils'
+import type { LineContent, Lyric } from '@root/generated/enriched/index.gen'
 
 import { DiagnosticCode, canonicalizeAgent, canonicalizeMeta, validateAgent, validateMeta } from '@root/common'
 import { validateLyricParts } from '@root/common/part'
 import { validateLyricTags } from '@root/common/tag'
-import { decodeEnrichedLyric, encodeEnrichedLyric } from '@root/generated/codec.gen'
+import { decodeEnrichedLyric as decodeEnrichedLyricMessage, encodeEnrichedLyric as encodeEnrichedLyricMessage } from '@root/generated/codec.gen'
 import { Timing } from '@root/generated/common/index.gen'
 import { createEnrichedLyric, fieldsCommonAgent, fieldsCommonMeta, fieldsEnrichedLine, fieldsEnrichedLyric } from '@root/generated/detail.gen'
 import { LineType, LyricStatus } from '@root/generated/enriched/index.gen'
@@ -23,13 +23,18 @@ import {
 import { read, write } from '@root/utils/wire'
 import { SCHEMA_VERSION } from '@root/version'
 
-import { canonicalizeLanguageUsages, deriveLanguageUsages, orderLanguageUsages, validateLanguageUsage } from './language'
-import { canonicalizeLine, orderLine, validateLine } from './line'
+import {
+  canonicalizeEnrichedLanguageUsages,
+  deriveEnrichedLanguageUsages,
+  orderEnrichedLanguageUsages,
+  validateEnrichedLanguageUsage,
+} from './language'
+import { canonicalizeEnrichedLine, orderEnrichedLine, validateEnrichedLine } from './line'
 
 /**
  * Creates a lyric with the current schema version.
  */
-export const makeLyric = (
+export const makeEnrichedLyric = (
   init: Omit<MakeInit<Lyric>, 'version' | 'status'> & {
     status: LyricStatus.VALID | LyricStatus.INVALID
   },
@@ -51,7 +56,7 @@ export const makeLyric = (
 /**
  * Checks document-wide constraints and validates agents, metadata, and lines.
  */
-export const validateLyric = (lyric: Lyric): Diagnostic[] => {
+export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
 
   if (!SEMVER_PATTERN.test(lyric.version)) {
@@ -83,7 +88,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
     diagnostics.push(...validateMeta(lyric.meta, 'meta'))
   }
 
-  // Every tag outside the lines is read here, since a line's own are read by validateLine, which knows the fields its kind forbids.
+  // Every tag outside the lines is read here, since a line's own are read by validateEnrichedLine, which knows the fields its kind forbids.
   diagnostics.push(...validateLyricTags(fieldsEnrichedLyric, lyric))
 
   const languageTags = new Set<string>()
@@ -94,11 +99,11 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
       diagnostics.push({ path, code: DiagnosticCode.LyricLanguageTagDuplicate })
     }
     languageTags.add(tag)
-    diagnostics.push(...validateLanguageUsage(usage, path))
+    diagnostics.push(...validateEnrichedLanguageUsage(usage, path))
   })
 
   // The usages are derived from the lines, so the stored list must be exactly what deriving them yields, order included.
-  const derived = deriveLanguageUsages(lyric.lines)
+  const derived = deriveEnrichedLanguageUsages(lyric.lines)
   const sameLanguages =
     lyric.languages.length === derived.length &&
     lyric.languages.every((usage, i) => usage.tag === derived[i]?.tag && usage.count === derived[i]?.count)
@@ -190,7 +195,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
       claimLineId(background.id, backgroundPath)
       checkReferences(background.agents, background.time, background.content, backgroundPath, LineType.NORMAL, forbidden, true)
     })
-    diagnostics.push(...validateLine(line, path, lyric.timing))
+    diagnostics.push(...validateEnrichedLine(line, path, lyric.timing))
   })
   // Word-level timing needs only one line split into words, since a word-level source may leave the rest whole; a lyric with no content at all declares nothing to check.
   if (lyric.timing === Timing.WORD && anyContent && !anyWords) {
@@ -214,11 +219,11 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
 /**
  * Orders lines and backgrounds by time, and language usages when present.
  */
-export const orderLyric = (lyric: Lyric): Lyric => {
+export const orderEnrichedLyric = (lyric: Lyric): Lyric => {
   return {
     ...lyric,
-    languages: orderLanguageUsages(lyric.languages),
-    lines: [...lyric.lines].sort(byTime((line) => line.time)).map(orderLine),
+    languages: orderEnrichedLanguageUsages(lyric.languages),
+    lines: [...lyric.lines].sort(byTime((line) => line.time)).map(orderEnrichedLine),
   }
 }
 
@@ -227,16 +232,16 @@ export const orderLyric = (lyric: Lyric): Lyric => {
  *
  * No mutable object or array is shared with the input.
  */
-export const canonicalizeLyric = (lyric: Lyric): Lyric => {
+export const canonicalizeEnrichedLyric = (lyric: Lyric): Lyric => {
   return {
     ...lyric,
     format: lyric.format.toLowerCase(),
     profile: lyric.profile.toLowerCase(),
     meta: canonicalizeField(fieldsCommonMeta, lyric.meta, canonicalizeMeta),
     extra: { ...lyric.extra },
-    languages: canonicalizeLanguageUsages(lyric.languages),
+    languages: canonicalizeEnrichedLanguageUsages(lyric.languages),
     agents: canonicalizeList(fieldsCommonAgent, lyric.agents, canonicalizeAgent),
-    lines: canonicalizeList(fieldsEnrichedLine, lyric.lines, canonicalizeLine).sort(byTime((line) => line.time)),
+    lines: canonicalizeList(fieldsEnrichedLine, lyric.lines, canonicalizeEnrichedLine).sort(byTime((line) => line.time)),
   }
 }
 
@@ -245,15 +250,15 @@ export const canonicalizeLyric = (lyric: Lyric): Lyric => {
  *
  * Throws on out-of-range numbers and malformed UTF-16 strings.
  */
-export const encode = (lyric: Lyric): Uint8Array => {
-  return write(encodeEnrichedLyric, lyric)
+export const encodeEnrichedLyric = (lyric: Lyric): Uint8Array => {
+  return write(encodeEnrichedLyricMessage, lyric)
 }
 
 /**
  * Decodes a lyric, discarding unknown fields.
  *
- * Throws on malformed bytes; semantic constraints are checked by validateLyric.
+ * Throws on malformed bytes; semantic constraints are checked by validateEnrichedLyric.
  */
-export const decode = (bytes: Uint8Array): Lyric => {
-  return read(createEnrichedLyric, decodeEnrichedLyric, bytes)
+export const decodeEnrichedLyric = (bytes: Uint8Array): Lyric => {
+  return read(createEnrichedLyric, decodeEnrichedLyricMessage, bytes)
 }

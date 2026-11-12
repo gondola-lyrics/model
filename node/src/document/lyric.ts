@@ -1,11 +1,11 @@
 import type { Diagnostic, TimeRange } from '@root/common'
-import type { LineContent, Lyric } from '@root/generated/document/index.gen'
 import type { MakeInit } from '@root/utils'
+import type { LineContent, Lyric } from '@root/generated/document/index.gen'
 
 import { DiagnosticCode, canonicalizeAgent, canonicalizeMeta, validateAgent, validateMeta } from '@root/common'
 import { validateLyricParts } from '@root/common/part'
 import { validateLyricTags } from '@root/common/tag'
-import { decodeDocumentLyric, encodeDocumentLyric } from '@root/generated/codec.gen'
+import { decodeDocumentLyric as decodeDocumentLyricMessage, encodeDocumentLyric as encodeDocumentLyricMessage } from '@root/generated/codec.gen'
 import { Timing } from '@root/generated/common/index.gen'
 import { createDocumentLyric, fieldsCommonAgent, fieldsCommonMeta, fieldsDocumentLine, fieldsDocumentLyric } from '@root/generated/detail.gen'
 import { LineType } from '@root/generated/document/index.gen'
@@ -23,12 +23,12 @@ import {
 import { read, write } from '@root/utils/wire'
 import { SCHEMA_VERSION } from '@root/version'
 
-import { canonicalizeLine, orderLine, validateLine } from './line'
+import { canonicalizeDocumentLine, orderDocumentLine, validateDocumentLine } from './line'
 
 /**
  * Creates a lyric with the current schema version.
  */
-export const makeLyric = (init?: Omit<MakeInit<Lyric>, 'version'>): Lyric => {
+export const makeDocumentLyric = (init?: Omit<MakeInit<Lyric>, 'version'>): Lyric => {
   return withInit(createDocumentLyric(), {
     version: SCHEMA_VERSION,
     format: init?.format,
@@ -44,7 +44,7 @@ export const makeLyric = (init?: Omit<MakeInit<Lyric>, 'version'>): Lyric => {
 /**
  * Checks document-wide constraints and validates agents, metadata, and lines.
  */
-export const validateLyric = (lyric: Lyric): Diagnostic[] => {
+export const validateDocumentLyric = (lyric: Lyric): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
 
   if (!SEMVER_PATTERN.test(lyric.version)) {
@@ -72,7 +72,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
     diagnostics.push(...validateMeta(lyric.meta, 'meta'))
   }
 
-  // Every tag outside the lines is read here, since a line's own are read by validateLine, which knows the fields its kind forbids.
+  // Every tag outside the lines is read here, since a line's own are read by validateDocumentLine, which knows the fields its kind forbids.
   diagnostics.push(...validateLyricTags(fieldsDocumentLyric, lyric))
 
   const untimed = lyric.timing === Timing.NONE
@@ -159,7 +159,7 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
       claimLineId(background.id, backgroundPath)
       checkReferences(background.agents, background.time, background.content, backgroundPath, LineType.NORMAL, forbidden, true)
     })
-    diagnostics.push(...validateLine(line, path, lyric.timing))
+    diagnostics.push(...validateDocumentLine(line, path, lyric.timing))
   })
   // Word-level timing needs only one line split into words, since a word-level source may leave the rest whole; a lyric with no content at all declares nothing to check.
   if (lyric.timing === Timing.WORD && anyContent && !anyWords) {
@@ -183,10 +183,10 @@ export const validateLyric = (lyric: Lyric): Diagnostic[] => {
 /**
  * Orders lines and backgrounds by time, and language usages when present.
  */
-export const orderLyric = (lyric: Lyric): Lyric => {
+export const orderDocumentLyric = (lyric: Lyric): Lyric => {
   return {
     ...lyric,
-    lines: [...lyric.lines].sort(byTime((line) => line.time)).map(orderLine),
+    lines: [...lyric.lines].sort(byTime((line) => line.time)).map(orderDocumentLine),
   }
 }
 
@@ -195,7 +195,7 @@ export const orderLyric = (lyric: Lyric): Lyric => {
  *
  * No mutable object or array is shared with the input.
  */
-export const canonicalizeLyric = (lyric: Lyric): Lyric => {
+export const canonicalizeDocumentLyric = (lyric: Lyric): Lyric => {
   return {
     ...lyric,
     format: lyric.format.toLowerCase(),
@@ -203,7 +203,7 @@ export const canonicalizeLyric = (lyric: Lyric): Lyric => {
     meta: canonicalizeField(fieldsCommonMeta, lyric.meta, canonicalizeMeta),
     extra: { ...lyric.extra },
     agents: canonicalizeList(fieldsCommonAgent, lyric.agents, canonicalizeAgent),
-    lines: canonicalizeList(fieldsDocumentLine, lyric.lines, canonicalizeLine).sort(byTime((line) => line.time)),
+    lines: canonicalizeList(fieldsDocumentLine, lyric.lines, canonicalizeDocumentLine).sort(byTime((line) => line.time)),
   }
 }
 
@@ -212,15 +212,15 @@ export const canonicalizeLyric = (lyric: Lyric): Lyric => {
  *
  * Throws on out-of-range numbers and malformed UTF-16 strings.
  */
-export const encode = (lyric: Lyric): Uint8Array => {
-  return write(encodeDocumentLyric, lyric)
+export const encodeDocumentLyric = (lyric: Lyric): Uint8Array => {
+  return write(encodeDocumentLyricMessage, lyric)
 }
 
 /**
  * Decodes a lyric, discarding unknown fields.
  *
- * Throws on malformed bytes; semantic constraints are checked by validateLyric.
+ * Throws on malformed bytes; semantic constraints are checked by validateDocumentLyric.
  */
-export const decode = (bytes: Uint8Array): Lyric => {
-  return read(createDocumentLyric, decodeDocumentLyric, bytes)
+export const decodeDocumentLyric = (bytes: Uint8Array): Lyric => {
+  return read(createDocumentLyric, decodeDocumentLyricMessage, bytes)
 }
