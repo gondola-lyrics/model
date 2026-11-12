@@ -46,8 +46,8 @@ message Lyric {
   // INVALID guarantees only version and status; remaining fields may be empty but still follow their normal rules.
   LyricStatus status = 4;
 
-  // Declared timing precision.
-  lyric.common.Timing timing = 5;
+  // Declared timing level of the original lyric.
+  lyric.common.TimingLevel timing = 5;
 
   lyric.common.Meta meta = 6;
 

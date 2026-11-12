@@ -4,7 +4,7 @@ package gondola.lyrics.model.document
 
 import gondola.lyrics.model.common.Agent
 import gondola.lyrics.model.common.Meta
-import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.TimingLevel
 
 /**
  * Empty submessages are equivalent to unset, except TimeRange.
@@ -30,9 +30,9 @@ public data class Lyric(
      */
     val profile: String = "",
     /**
-     * Declared timing precision.
+     * Declared timing level of the original lyric.
      */
-    val timing: Timing = Timing.TIMING_UNSPECIFIED,
+    val timing: TimingLevel = TimingLevel.TIMING_LEVEL_UNSPECIFIED,
     val meta: Meta? = null,
     /**
      * Format-specific values without typed fields; consumers may interpret them by key.

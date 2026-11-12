@@ -11,7 +11,7 @@ import type {
 } from '@root/generated/document/index.gen'
 
 import { DiagnosticCode, validateTimeRange } from '@root/common'
-import { Timing } from '@root/generated/common/index.gen'
+import { TimingLevel } from '@root/generated/common/index.gen'
 import {
   createDocumentWord,
   createDocumentWordAnnotation,
@@ -48,8 +48,8 @@ const ONLY_SEPARATORS = /^\p{White_Space}+$/u
 /**
  * Reports whether word timing constraints apply.
  */
-const ownsWordTimes = (timing: Timing): boolean => {
-  return timing !== Timing.NONE && timing !== Timing.LINE
+const ownsWordTimes = (timing: TimingLevel): boolean => {
+  return timing !== TimingLevel.NONE && timing !== TimingLevel.LINE
 }
 
 /**
@@ -135,9 +135,9 @@ export const validateDocumentWordAnnotation = (annotation: WordAnnotation, path 
 /**
  * Checks the word kind, text, permitted fields, annotations, and timing.
  *
- * The declared precision determines whether annotation timing is constrained by the word.
+ * The declared timing level determines whether annotation timing is constrained by the word.
  */
-export const validateDocumentWord = (word: Word, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
+export const validateDocumentWord = (word: Word, path = '', timing = TimingLevel.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
 
   if (isUnresolved(WordType, word.type)) {
@@ -181,7 +181,7 @@ export const validateDocumentWord = (word: Word, path = '', timing = Timing.UNSP
 /**
  * Validates each word and, when word timing applies, requires sung-word times within the enclosing range.
  */
-export const validateDocumentWords = (words: Word[], time: TimeRange | undefined, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
+export const validateDocumentWords = (words: Word[], time: TimeRange | undefined, path = '', timing = TimingLevel.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   const ownTimes = ownsWordTimes(timing)
   words.forEach((word, i) => {

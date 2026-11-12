@@ -5,7 +5,7 @@ import gondola.lyrics.model.common.Meta
 import gondola.lyrics.model.common.Part
 import gondola.lyrics.model.common.PartType
 import gondola.lyrics.model.common.TimeRange
-import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.common.makePart
 import gondola.lyrics.model.common.makeTimeRange
 import gondola.lyrics.model.common.validateMeta
@@ -51,7 +51,7 @@ private fun textLine(start: Long, end: Long? = null): Line {
 }
 
 private fun lineTimed(vararg lines: Line): Lyric {
-    return makeEnrichedLyric(format = "lrc", timing = Timing.TIMING_LINE, status = LyricStatus.LYRIC_STATUS_VALID, lines = lines.toList())
+    return makeEnrichedLyric(format = "lrc", timing = TimingLevel.TIMING_LEVEL_LINE, status = LyricStatus.LYRIC_STATUS_VALID, lines = lines.toList())
 }
 
 private fun List<Diagnostic>.asPairs(): List<Pair<String, String>> {
@@ -60,12 +60,12 @@ private fun List<Diagnostic>.asPairs(): List<Pair<String, String>> {
 
 private fun validatePartsInBothLayers(parts: List<Part?>): List<List<Diagnostic>> {
     val played = makeEnrichedLyric(
-        timing = Timing.TIMING_NONE,
+        timing = TimingLevel.TIMING_LEVEL_NONE,
         status = LyricStatus.LYRIC_STATUS_VALID,
         lines = parts.map { makeEnrichedLineNormal(part = it, content = makeEnrichedLineContentText("line")) },
     )
     val stored = makeDocumentLyric(
-        timing = Timing.TIMING_NONE,
+        timing = TimingLevel.TIMING_LEVEL_NONE,
         lines = parts.map { makeDocumentLineNormal(part = it, content = makeDocumentLineContentText("line")) },
     )
     return listOf(validateEnrichedLyric(played), validateDocumentLyric(stored))
@@ -88,7 +88,7 @@ class ValidateTest {
                 ),
             )
             val lyric = canonicalizeEnrichedLyric(
-                makeEnrichedLyric(timing = Timing.TIMING_WORD, status = LyricStatus.LYRIC_STATUS_VALID, lines = listOf(line)),
+                makeEnrichedLyric(timing = TimingLevel.TIMING_LEVEL_WORD, status = LyricStatus.LYRIC_STATUS_VALID, lines = listOf(line)),
             )
             assertEquals(
                 listOf("lines[0].content.words[0].emphasis.value" to "line.word.emphasis.value.missing"),
@@ -268,7 +268,7 @@ class ValidateTest {
                     "content.words[0].annotation.rubies[0].language" to "language.tag.malformed",
                 )
             }
-            assertEquals(expected, validateEnrichedLine(line, timing = Timing.TIMING_WORD).asPairs().sortedBy { it.first })
+            assertEquals(expected, validateEnrichedLine(line, timing = TimingLevel.TIMING_LEVEL_WORD).asPairs().sortedBy { it.first })
         }
     }
 
@@ -319,7 +319,7 @@ class ValidateTest {
         )
         val lyric = makeEnrichedLyric(
             format = "lrc",
-            timing = Timing.TIMING_WORD,
+            timing = TimingLevel.TIMING_LEVEL_WORD,
             status = LyricStatus.LYRIC_STATUS_VALID,
             languages = deriveEnrichedLanguageUsages(lines),
             lines = lines,
@@ -347,7 +347,7 @@ class ValidateTest {
     fun reportsUndeclaredLanguagesAndUnsplitWord() {
         val lyric = makeEnrichedLyric(
             format = "lrc",
-            timing = Timing.TIMING_WORD,
+            timing = TimingLevel.TIMING_LEVEL_WORD,
             status = LyricStatus.LYRIC_STATUS_VALID,
             lines = listOf(
                 makeEnrichedLineNormal(
@@ -373,7 +373,7 @@ class ValidateTest {
     fun reportsInstrumentalLineInUntimedLyric() {
         val lyric = makeEnrichedLyric(
             format = "lrc",
-            timing = Timing.TIMING_NONE,
+            timing = TimingLevel.TIMING_LEVEL_NONE,
             status = LyricStatus.LYRIC_STATUS_VALID,
             lines = listOf(makeEnrichedLineInstrumental()),
         )
@@ -405,7 +405,7 @@ class ValidateTest {
     fun reportsLineLeftOpenAboveInDocumentLayer() {
         val lyric = makeDocumentLyric(
             format = "lrc",
-            timing = Timing.TIMING_LINE,
+            timing = TimingLevel.TIMING_LEVEL_LINE,
             lines = listOf(
                 makeDocumentLineNormal(time = makeTimeRange(start = 0), content = makeDocumentLineContentText("x")),
                 makeDocumentLineNormal(time = makeTimeRange(start = 1000, end = 2000), content = makeDocumentLineContentText("y")),
@@ -422,7 +422,7 @@ class ValidateTest {
                 content = makeEnrichedLineContentWords(listOf(makeEnrichedWordNormal(text = "x", time = makeTimeRange(start = 1000, end = 2000)))),
             ),
         )
-        val lyric = makeEnrichedLyric(format = "lrc", timing = Timing.TIMING_WORD, status = LyricStatus.LYRIC_STATUS_VALID, lines = lines)
+        val lyric = makeEnrichedLyric(format = "lrc", timing = TimingLevel.TIMING_LEVEL_WORD, status = LyricStatus.LYRIC_STATUS_VALID, lines = lines)
         assertEquals(listOf("lines[0].time" to "lyric.timing.line.time_missing"), validateEnrichedLyric(lyric).asPairs())
     }
 }

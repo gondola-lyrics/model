@@ -3,7 +3,7 @@ import { describe, it } from 'node:test'
 
 import {
   EnrichedLyricStatus,
-  Timing,
+  TimingLevel,
   makeEnrichedLanguageUsage,
   makeEnrichedLineNormal,
   makeEnrichedLyric,
@@ -17,7 +17,7 @@ describe('order', () => {
   it('puts lines with no range last, in the order they came', () => {
     const lyric = makeEnrichedLyric({
       format: 'lrc',
-      timing: Timing.LINE,
+      timing: TimingLevel.LINE,
       status: EnrichedLyricStatus.VALID,
       lines: [
         makeEnrichedLineNormal({ id: 'second', time: makeTimeRange({ start: 2000 }) }),

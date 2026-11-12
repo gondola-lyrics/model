@@ -5,7 +5,7 @@ package gondola.lyrics.model.document
 import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.DiagnosticCode
 import gondola.lyrics.model.common.TimeRange
-import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.common.validateTimeRange
 import gondola.lyrics.model.utils.canonicalizeField
 import gondola.lyrics.model.utils.canonicalizeList
@@ -23,8 +23,8 @@ private val onlySeparators = Regex("${separator.pattern}+")
 /**
  * Reports whether word timing constraints apply.
  */
-private fun ownsWordTimes(timing: Timing): Boolean {
-    return timing != Timing.TIMING_NONE && timing != Timing.TIMING_LINE
+private fun ownsWordTimes(timing: TimingLevel): Boolean {
+    return timing != TimingLevel.TIMING_LEVEL_NONE && timing != TimingLevel.TIMING_LEVEL_LINE
 }
 
 /**
@@ -123,9 +123,9 @@ public fun validateDocumentWordAnnotation(annotation: WordAnnotation, path: Stri
 /**
  * Checks the word kind, text, permitted fields, annotations, and timing.
  *
- * The declared precision determines whether annotation timing is constrained by the word.
+ * The declared timing level determines whether annotation timing is constrained by the word.
  */
-public fun validateDocumentWord(word: Word, path: String = "", timing: Timing = Timing.TIMING_UNSPECIFIED): List<Diagnostic> {
+public fun validateDocumentWord(word: Word, path: String = "", timing: TimingLevel = TimingLevel.TIMING_LEVEL_UNSPECIFIED): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
     if (isUnresolved(word.type)) {
         diagnostics.add(Diagnostic(path, DiagnosticCode.WordTypeUnspecified))
@@ -172,7 +172,7 @@ public fun validateDocumentWords(
     words: List<Word>,
     time: TimeRange?,
     path: String = "",
-    timing: Timing = Timing.TIMING_UNSPECIFIED,
+    timing: TimingLevel = TimingLevel.TIMING_LEVEL_UNSPECIFIED,
 ): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
     val ownTimes = ownsWordTimes(timing)

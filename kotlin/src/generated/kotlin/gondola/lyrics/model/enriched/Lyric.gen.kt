@@ -4,7 +4,7 @@ package gondola.lyrics.model.enriched
 
 import gondola.lyrics.model.common.Agent
 import gondola.lyrics.model.common.Meta
-import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.TimingLevel
 
 /**
  * Parse validity of a lyric.
@@ -74,9 +74,9 @@ public data class Lyric(
      */
     val status: LyricStatus = LyricStatus.LYRIC_STATUS_UNSPECIFIED,
     /**
-     * Declared timing precision.
+     * Declared timing level of the original lyric.
      */
-    val timing: Timing = Timing.TIMING_UNSPECIFIED,
+    val timing: TimingLevel = TimingLevel.TIMING_LEVEL_UNSPECIFIED,
     val meta: Meta? = null,
     /**
      * Format-specific values without typed fields; consumers may interpret them by key.

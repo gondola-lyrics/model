@@ -78,7 +78,7 @@ message LineAnnotation {
 
 // Exactly one of words or text must be set.
 message LineContent {
-  // Ordered words; each sung word requires a time range under TIMING_WORD.
+  // Ordered words; each sung word requires a time range under TIMING_LEVEL_WORD.
   repeated Word words = 1;
 
   // Non-empty text for a line without word segmentation.

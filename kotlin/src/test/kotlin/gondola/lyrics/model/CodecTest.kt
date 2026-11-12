@@ -8,7 +8,7 @@ import gondola.lyrics.model.common.Part
 import gondola.lyrics.model.common.PartType
 import gondola.lyrics.model.common.Text
 import gondola.lyrics.model.common.TimeRange
-import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.common.UnknownEntry
 import gondola.lyrics.model.common.makeMeta
 import gondola.lyrics.model.common.makeTimeRange
@@ -129,7 +129,7 @@ class CodecTest {
         )
         return makeEnrichedLyric(
             format = "lrc",
-            timing = Timing.TIMING_WORD,
+            timing = TimingLevel.TIMING_LEVEL_WORD,
             status = LyricStatus.LYRIC_STATUS_VALID,
             languages = deriveEnrichedLanguageUsages(lines),
             lines = lines,
@@ -139,7 +139,7 @@ class CodecTest {
     private fun buildDocumentLyric(): DocumentLyric {
         return makeDocumentLyric(
             format = "lrc",
-            timing = Timing.TIMING_LINE,
+            timing = TimingLevel.TIMING_LEVEL_LINE,
             lines = listOf(
                 makeDocumentLineNormal(
                     time = makeTimeRange(start = 1000, end = 2000),
@@ -218,7 +218,7 @@ class CodecTest {
             format = "ttml",
             profile = "amll",
             status = LyricStatus.LYRIC_STATUS_VALID,
-            timing = Timing(-1),
+            timing = TimingLevel(-1),
             meta = meta,
             extra = mapOf("\$private" to "kept"),
             lines = listOf(
@@ -268,7 +268,7 @@ class CodecTest {
             version = "1.1.0",
             format = "ttml",
             profile = "amll",
-            timing = Timing(-1),
+            timing = TimingLevel(-1),
             meta = meta,
             extra = mapOf("\$private" to "kept"),
             lines = listOf(

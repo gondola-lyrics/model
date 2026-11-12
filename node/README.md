@@ -55,7 +55,7 @@ const timedRoman = makeDocumentLineAnnotationRoman({
 
 ```ts
 import {
-  Timing,
+  TimingLevel,
   makeDocumentLineAnnotation,
   makeDocumentLineAnnotationTranslation,
   makeDocumentLineContentText,
@@ -68,7 +68,7 @@ import {
 // [02:50.644]Like the first time tangled by the fishing line
 const persisted = makeDocumentLyric({
   format: 'lrc',
-  timing: Timing.LINE,
+  timing: TimingLevel.LINE,
   lines: [
     makeDocumentLineNormal({
       // If end is omitted, the endpoint is unknown
@@ -91,7 +91,7 @@ validateDocumentLyric(persisted) // => []
 ```ts
 import {
   EnrichedLyricStatus,
-  Timing,
+  TimingLevel,
   canonicalizeEnrichedLyric,
   decodeEnrichedLyric,
   deriveEnrichedLanguageUsages,
@@ -175,7 +175,7 @@ const sung = makeEnrichedLineNormal({
 
 const played = makeEnrichedLyric({
   format: 'lrc',
-  timing: Timing.WORD,
+  timing: TimingLevel.WORD,
   // Include the parser's status.
   status: EnrichedLyricStatus.VALID,
   // Language usages must match the declarations on normal lines and their normal words.
@@ -193,7 +193,7 @@ decodeEnrichedLyric(encodeEnrichedLyric(canonicalizeEnrichedLyric(played))).line
 ```ts
 import {
   EnrichedLyricStatus,
-  Timing,
+  TimingLevel,
   makeDocumentLineContentText,
   makeDocumentLineNormal,
   makeDocumentLyric,
@@ -224,7 +224,7 @@ validateDocumentLyric(brokenPersisted)
 
 const brokenPlayed = makeEnrichedLyric({
   format: 'lrc',
-  timing: Timing.WORD,
+  timing: TimingLevel.WORD,
   status: EnrichedLyricStatus.VALID,
   // languages is not declared
   lines: [

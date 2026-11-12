@@ -6,7 +6,7 @@ import { DiagnosticCode, canonicalizeAgent, canonicalizeMeta, validateAgent, val
 import { validateLyricParts } from '@root/common/part'
 import { validateLyricTags } from '@root/common/tag'
 import { decodeEnrichedLyric as decodeEnrichedLyricMessage, encodeEnrichedLyric as encodeEnrichedLyricMessage } from '@root/generated/codec.gen'
-import { Timing } from '@root/generated/common/index.gen'
+import { TimingLevel } from '@root/generated/common/index.gen'
 import { createEnrichedLyric, fieldsCommonAgent, fieldsCommonMeta, fieldsEnrichedLine, fieldsEnrichedLyric } from '@root/generated/detail.gen'
 import { LineType, LyricStatus } from '@root/generated/enriched/index.gen'
 import {
@@ -67,8 +67,8 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
     diagnostics.push({ path: 'status', code: DiagnosticCode.LyricStatusUnspecified })
   }
 
-  // An unresolved precision leaves every timing rule with nothing to hold the lyric to, so a lyric that never stated one is reported rather than read as untimed.
-  if (isUnresolved(Timing, lyric.timing)) {
+  // An unresolved timing level leaves every timing rule with nothing to hold the lyric to, so a lyric that never stated one is reported rather than read as untimed.
+  if (isUnresolved(TimingLevel, lyric.timing)) {
     diagnostics.push({ path: 'timing', code: DiagnosticCode.LyricTimingUnspecified })
   }
 
@@ -111,9 +111,9 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
     diagnostics.push({ path: 'languages', code: DiagnosticCode.LyricLanguagesMismatch })
   }
 
-  const untimed = lyric.timing === Timing.NONE
-  const lineTimed = lyric.timing === Timing.LINE
-  const timed = lineTimed || lyric.timing === Timing.WORD
+  const untimed = lyric.timing === TimingLevel.NONE
+  const lineTimed = lyric.timing === TimingLevel.LINE
+  const timed = lineTimed || lyric.timing === TimingLevel.WORD
   let anyContent = false
   let anyWords = false
   const lineIds = new Set<string>()
@@ -198,7 +198,7 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
     diagnostics.push(...validateEnrichedLine(line, path, lyric.timing))
   })
   // Word-level timing needs only one line split into words, since a word-level source may leave the rest whole; a lyric with no content at all declares nothing to check.
-  if (lyric.timing === Timing.WORD && anyContent && !anyWords) {
+  if (lyric.timing === TimingLevel.WORD && anyContent && !anyWords) {
     diagnostics.push({ path: 'timing', code: DiagnosticCode.LyricTimingWordMissing })
   }
   // The schema declares the list ordered, so a line starting before the one it follows is out of place.

@@ -29,8 +29,8 @@ message Lyric {
   // Compared case-insensitively; canonical form is lower case, and empty means unspecified.
   string profile = 3;
 
-  // Declared timing precision.
-  lyric.common.Timing timing = 4;
+  // Declared timing level of the original lyric.
+  lyric.common.TimingLevel timing = 4;
 
   lyric.common.Meta meta = 5;
 

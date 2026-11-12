@@ -6,7 +6,7 @@ import {
   EnrichedLineType,
   EnrichedLyricStatus,
   SCHEMA_VERSION,
-  Timing,
+  TimingLevel,
   canonicalizeEnrichedLine,
   canonicalizeEnrichedWord,
   makeDocumentWordNormal,
@@ -19,7 +19,7 @@ import {
 
 describe('make', () => {
   it('stamps the schema version it was built from', () => {
-    const lyric = makeEnrichedLyric({ format: 'lrc', timing: Timing.NONE, status: EnrichedLyricStatus.VALID })
+    const lyric = makeEnrichedLyric({ format: 'lrc', timing: TimingLevel.NONE, status: EnrichedLyricStatus.VALID })
     strictEqual(lyric.version, SCHEMA_VERSION)
   })
 

@@ -1,6 +1,6 @@
 package gondola.lyrics.model
 
-import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.document.WordType
 import gondola.lyrics.model.document.makeDocumentWordNormal
 import gondola.lyrics.model.document.makeDocumentWordSpace
@@ -18,7 +18,7 @@ import kotlin.test.assertEquals
 class MakeTest {
     @Test
     fun stampsSchemaVersion() {
-        val lyric = makeEnrichedLyric(format = "lrc", timing = Timing.TIMING_NONE, status = LyricStatus.LYRIC_STATUS_VALID)
+        val lyric = makeEnrichedLyric(format = "lrc", timing = TimingLevel.TIMING_LEVEL_NONE, status = LyricStatus.LYRIC_STATUS_VALID)
         assertEquals(SCHEMA_VERSION, lyric.version)
     }
 

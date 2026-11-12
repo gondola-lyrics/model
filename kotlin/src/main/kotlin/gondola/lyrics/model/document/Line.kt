@@ -7,7 +7,7 @@ import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.DiagnosticCode
 import gondola.lyrics.model.common.Part
 import gondola.lyrics.model.common.TimeRange
-import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.common.resolveAgents
 import gondola.lyrics.model.common.validateLineTags
 import gondola.lyrics.model.common.validatePart
@@ -50,7 +50,7 @@ public fun validateDocumentLineContent(
     content: LineContent?,
     time: TimeRange?,
     path: String = "",
-    timing: Timing = Timing.TIMING_UNSPECIFIED,
+    timing: TimingLevel = TimingLevel.TIMING_LEVEL_UNSPECIFIED,
     required: Boolean = true,
 ): List<Diagnostic> {
     return validateContentFields(!content?.words.isNullOrEmpty(), content?.text, path, required) +
@@ -438,9 +438,9 @@ public fun makeDocumentLineBackground(
 /**
  * Checks the line kind, permitted fields, timing, annotations, and backgrounds.
  *
- * An unresolved kind may omit content; TIMING_NONE reports instrumental lines through validateDocumentLyric.
+ * An unresolved kind may omit content; TIMING_LEVEL_NONE reports instrumental lines through validateDocumentLyric.
  */
-public fun validateDocumentLine(line: Line, path: String = "", timing: Timing = Timing.TIMING_UNSPECIFIED): List<Diagnostic> {
+public fun validateDocumentLine(line: Line, path: String = "", timing: TimingLevel = TimingLevel.TIMING_LEVEL_UNSPECIFIED): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
     val instrumental = line.type == LineType.LINE_TYPE_INSTRUMENTAL
     // Forbidden fields are not traversed for nested diagnostics.
@@ -452,7 +452,7 @@ public fun validateDocumentLine(line: Line, path: String = "", timing: Timing = 
     }
     val time = line.time
     // Untimed instrumental lines are reported by validateDocumentLyric instead.
-    val needsRange = instrumental && timing != Timing.TIMING_NONE
+    val needsRange = instrumental && timing != TimingLevel.TIMING_LEVEL_NONE
     if (time != null) {
         diagnostics += validateTimeRange(time, childPath(path, "time"))
         if (needsRange && time.end == null) {
@@ -517,7 +517,7 @@ public fun validateDocumentLine(line: Line, path: String = "", timing: Timing = 
 public fun validateDocumentLineBackground(
     background: LineBackground,
     path: String = "",
-    timing: Timing = Timing.TIMING_UNSPECIFIED,
+    timing: TimingLevel = TimingLevel.TIMING_LEVEL_UNSPECIFIED,
 ): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
     val time = background.time

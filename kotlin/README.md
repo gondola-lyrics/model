@@ -36,7 +36,7 @@ Optional fields use nullable values: `null` means absent, while explicit `false`
 
 ```kotlin
 import gondola.lyrics.model.common.makeTimeRange
-import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.document.makeDocumentLineAnnotation
 import gondola.lyrics.model.document.makeDocumentLineAnnotationTranslation
 import gondola.lyrics.model.document.makeDocumentLineContentText
@@ -46,7 +46,7 @@ import gondola.lyrics.model.document.validateDocumentLyric
 
 val persisted = makeDocumentLyric(
     format = "lrc",
-    timing = Timing.TIMING_LINE,
+    timing = TimingLevel.TIMING_LEVEL_LINE,
     lines = listOf(
         makeDocumentLineNormal(
             // If end is omitted, the endpoint is unknown.
@@ -70,7 +70,7 @@ validateDocumentLyric(persisted) // => []
 
 ```kotlin
 import gondola.lyrics.model.common.makeTimeRange
-import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.enriched.canonicalizeEnrichedLyric
 import gondola.lyrics.model.enriched.decodeEnrichedLyric
 import gondola.lyrics.model.enriched.deriveEnrichedLanguageUsages
@@ -156,7 +156,7 @@ val sung = makeEnrichedLineNormal(
 
 val played = makeEnrichedLyric(
     format = "lrc",
-    timing = Timing.TIMING_WORD,
+    timing = TimingLevel.TIMING_LEVEL_WORD,
     // Include the parser's status.
     status = LyricStatus.LYRIC_STATUS_VALID,
     // Stored usages must match the declarations on normal lines and their normal words.
@@ -173,7 +173,7 @@ decodeEnrichedLyric(encodeEnrichedLyric(canonicalizeEnrichedLyric(played))).line
 
 ```kotlin
 import gondola.lyrics.model.common.makeTimeRange
-import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.document.makeDocumentLineContentText
 import gondola.lyrics.model.document.makeDocumentLineNormal
 import gondola.lyrics.model.document.makeDocumentLyric
@@ -202,7 +202,7 @@ validateDocumentLyric(brokenPersisted).map { it.path to it.code.value }
 
 val brokenPlayed = makeEnrichedLyric(
     format = "lrc",
-    timing = Timing.TIMING_WORD,
+    timing = TimingLevel.TIMING_LEVEL_WORD,
     status = LyricStatus.LYRIC_STATUS_VALID,
     // Languages are not declared.
     lines = listOf(

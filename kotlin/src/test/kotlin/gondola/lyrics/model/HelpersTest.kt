@@ -5,7 +5,7 @@ import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.DiagnosticCode
 import gondola.lyrics.model.common.Meta
 import gondola.lyrics.model.common.TimeRange
-import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.common.getTimeRangeDuration
 import gondola.lyrics.model.common.makeAgent
 import gondola.lyrics.model.common.makeText
@@ -174,7 +174,7 @@ class HelpersTest {
     @Test
     fun resolvesNativeDiagnosticPathsWithPresenceAndNumericValues() {
         val lyric = Lyric(
-            timing = Timing(99),
+            timing = TimingLevel(99),
             meta = Meta(duration = 4294967295L),
             extra = mapOf("\$private" to "kept"),
             lines = listOf(

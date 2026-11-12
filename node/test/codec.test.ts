@@ -4,7 +4,7 @@ import { deepStrictEqual, strictEqual } from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import {
-  Timing,
+  TimingLevel,
   EnrichedLyricStatus,
   canonicalizeEnrichedLyric,
   deriveEnrichedLanguageUsages,
@@ -40,7 +40,7 @@ const buildLyric = (): EnrichedLyric => {
   ]
   return makeEnrichedLyric({
     format: 'lrc',
-    timing: Timing.WORD,
+    timing: TimingLevel.WORD,
     status: EnrichedLyricStatus.VALID,
     languages: deriveEnrichedLanguageUsages(lines),
     lines,
@@ -56,7 +56,7 @@ describe('codec', () => {
   it('round trips a document lyric', () => {
     const lyric = makeDocumentLyric({
       format: 'lrc',
-      timing: Timing.LINE,
+      timing: TimingLevel.LINE,
       lines: [
         makeDocumentLineNormal({
           time: makeTimeRange({ start: 1000, end: 2000 }),

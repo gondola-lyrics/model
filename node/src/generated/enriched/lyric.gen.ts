@@ -2,7 +2,7 @@
 
 import type { Agent } from '../common/agent.gen'
 import type { Meta } from '../common/meta.gen'
-import type { Timing } from '../common/time.gen'
+import type { TimingLevel } from '../common/time.gen'
 import type { LanguageUsage } from './language.gen'
 import type { Line } from './line.gen'
 
@@ -53,9 +53,9 @@ export type Lyric = {
    */
   status: LyricStatus
   /**
-   * Declared timing precision.
+   * Declared timing level of the original lyric.
    */
-  timing: Timing
+  timing: TimingLevel
   meta?: Meta | undefined
   /**
    * Format-specific values without typed fields; consumers may interpret them by key.

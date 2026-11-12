@@ -98,7 +98,7 @@ export type LineAnnotation = {
  */
 export type LineContent = {
   /**
-   * Ordered words; each sung word requires a time range under TIMING_WORD.
+   * Ordered words; each sung word requires a time range under TIMING_LEVEL_WORD.
    */
   words: Word[]
   /**

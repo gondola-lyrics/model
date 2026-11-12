@@ -6,20 +6,20 @@ option java_multiple_files = true;
 option java_outer_classname = "TimeProto";
 option java_package = "gondola.lyrics.model.common";
 
-// Declared timing precision for a lyric.
-enum Timing {
-  // The field was not set; treat it as missing rather than as a resolved precision, as is every value this enum does not declare.
-  TIMING_UNSPECIFIED = 0;
+// Declared timing level of the original lyric.
+enum TimingLevel {
+  // The field was not set; treat it as missing rather than as a resolved level, as is every value this enum does not declare.
+  TIMING_LEVEL_UNSPECIFIED = 0;
 
   // Untimed; line and word TimeRange fields must be unset, so every line carries its content as plain text and no line is instrumental.
-  TIMING_NONE = 1;
+  TIMING_LEVEL_NONE = 1;
 
   // Timed at line level; every normal or background line carries a valid TimeRange and its content as plain text.
-  TIMING_LINE = 2;
+  TIMING_LEVEL_LINE = 2;
 
   // Timed per word, where syllable-level sources also land.
   // At least one normal or background line carries its content as words, each sung one holding a valid TimeRange; the rest may stay whole.
-  TIMING_WORD = 3;
+  TIMING_LEVEL_WORD = 3;
 }
 
 // A half-open time range in milliseconds: a time t falls inside when start <= t < end.

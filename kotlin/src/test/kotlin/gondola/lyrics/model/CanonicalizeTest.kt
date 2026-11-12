@@ -2,7 +2,7 @@ package gondola.lyrics.model
 
 import gondola.lyrics.model.common.Meta
 import gondola.lyrics.model.common.PartType
-import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.common.makePart
 import gondola.lyrics.model.common.makeText
 import gondola.lyrics.model.common.makeTimeRange
@@ -68,7 +68,7 @@ class CanonicalizeTest {
         return makeEnrichedLyric(
             format = "TTML",
             profile = "AMLL",
-            timing = Timing.TIMING_WORD,
+            timing = TimingLevel.TIMING_LEVEL_WORD,
             status = LyricStatus.LYRIC_STATUS_VALID,
             languages = deriveEnrichedLanguageUsages(lines),
             lines = lines,
@@ -209,7 +209,7 @@ class CanonicalizeTest {
         assertEquals(wordTime, gondola.lyrics.model.document.resolveDocumentAnnotationTokenTime(token, roman, canonical))
         assertEquals("JA-Latn", assertNotNull(word.annotation).romans[0].language)
         assertEquals(2, word.annotation.romans.size)
-        assertEquals(emptyList(), gondola.lyrics.model.document.validateDocumentWord(canonical, timing = Timing.TIMING_WORD))
+        assertEquals(emptyList(), gondola.lyrics.model.document.validateDocumentWord(canonical, timing = TimingLevel.TIMING_LEVEL_WORD))
     }
 
     @Test

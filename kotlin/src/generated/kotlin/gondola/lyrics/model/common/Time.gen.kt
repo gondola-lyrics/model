@@ -3,11 +3,11 @@
 package gondola.lyrics.model.common
 
 /**
- * Declared timing precision for a lyric.
+ * Declared timing level of the original lyric.
  */
-public class Timing(@JvmField public val value: Int) {
+public class TimingLevel(@JvmField public val value: Int) {
     override fun equals(other: Any?): Boolean {
-        return other is Timing && other.value == value
+        return other is TimingLevel && other.value == value
     }
 
     override fun hashCode(): Int {
@@ -16,35 +16,35 @@ public class Timing(@JvmField public val value: Int) {
 
     override fun toString(): String {
         return when (value) {
-            0 -> "TIMING_UNSPECIFIED"
-            1 -> "TIMING_NONE"
-            2 -> "TIMING_LINE"
-            3 -> "TIMING_WORD"
-            else -> "Timing($value)"
+            0 -> "TIMING_LEVEL_UNSPECIFIED"
+            1 -> "TIMING_LEVEL_NONE"
+            2 -> "TIMING_LEVEL_LINE"
+            3 -> "TIMING_LEVEL_WORD"
+            else -> "TimingLevel($value)"
         }
     }
 
     public companion object {
         /**
-         * The field was not set; treat it as missing rather than as a resolved precision, as is every value this enum does not declare.
+         * The field was not set; treat it as missing rather than as a resolved level, as is every value this enum does not declare.
          */
-        @JvmField public val TIMING_UNSPECIFIED: Timing = Timing(0)
+        @JvmField public val TIMING_LEVEL_UNSPECIFIED: TimingLevel = TimingLevel(0)
 
         /**
          * Untimed; line and word TimeRange fields must be unset, so every line carries its content as plain text and no line is instrumental.
          */
-        @JvmField public val TIMING_NONE: Timing = Timing(1)
+        @JvmField public val TIMING_LEVEL_NONE: TimingLevel = TimingLevel(1)
 
         /**
          * Timed at line level; every normal or background line carries a valid TimeRange and its content as plain text.
          */
-        @JvmField public val TIMING_LINE: Timing = Timing(2)
+        @JvmField public val TIMING_LEVEL_LINE: TimingLevel = TimingLevel(2)
 
         /**
          * Timed per word, where syllable-level sources also land.
          * At least one normal or background line carries its content as words, each sung one holding a valid TimeRange; the rest may stay whole.
          */
-        @JvmField public val TIMING_WORD: Timing = Timing(3)
+        @JvmField public val TIMING_LEVEL_WORD: TimingLevel = TimingLevel(3)
     }
 }
 

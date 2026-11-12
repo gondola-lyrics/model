@@ -120,7 +120,7 @@ public data class LineAnnotation(
  */
 public data class LineContent(
     /**
-     * Ordered words; each sung word requires a time range under TIMING_WORD.
+     * Ordered words; each sung word requires a time range under TIMING_LEVEL_WORD.
      */
     val words: List<Word> = emptyList(),
     /**

@@ -8,7 +8,7 @@ import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.DiagnosticCode
 import gondola.lyrics.model.common.Meta
 import gondola.lyrics.model.common.TimeRange
-import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.common.canonicalizeAgent
 import gondola.lyrics.model.common.canonicalizeMeta
 import gondola.lyrics.model.common.validateAgent
@@ -35,7 +35,7 @@ public fun makeEnrichedLyric(
     status: LyricStatus,
     format: String = "",
     profile: String = "",
-    timing: Timing = Timing.TIMING_UNSPECIFIED,
+    timing: TimingLevel = TimingLevel.TIMING_LEVEL_UNSPECIFIED,
     meta: Meta? = null,
     extra: Map<String, String> = emptyMap(),
     languages: List<LanguageUsage> = emptyList(),
@@ -70,7 +70,7 @@ public fun validateEnrichedLyric(lyric: Lyric): List<Diagnostic> {
     if (lyric.status.value == 0) {
         diagnostics += Diagnostic("status", DiagnosticCode.LyricStatusUnspecified)
     }
-    // An unresolved precision leaves every timing rule with nothing to hold the lyric to, so a lyric that never stated one is reported rather than read as untimed.
+    // An unresolved timing level leaves every timing rule with nothing to hold the lyric to, so a lyric that never stated one is reported rather than read as untimed.
     if (isUnresolved(lyric.timing)) {
         diagnostics += Diagnostic("timing", DiagnosticCode.LyricTimingUnspecified)
     }
@@ -106,9 +106,9 @@ public fun validateEnrichedLyric(lyric: Lyric): List<Diagnostic> {
     if (!sameLanguages) {
         diagnostics += Diagnostic("languages", DiagnosticCode.LyricLanguagesMismatch)
     }
-    val untimed = lyric.timing == Timing.TIMING_NONE
-    val lineTimed = lyric.timing == Timing.TIMING_LINE
-    val timed = lineTimed || lyric.timing == Timing.TIMING_WORD
+    val untimed = lyric.timing == TimingLevel.TIMING_LEVEL_NONE
+    val lineTimed = lyric.timing == TimingLevel.TIMING_LEVEL_LINE
+    val timed = lineTimed || lyric.timing == TimingLevel.TIMING_LEVEL_WORD
     var anyContent = false
     var anyWords = false
     val lineIds = mutableSetOf<String>()
@@ -209,7 +209,7 @@ public fun validateEnrichedLyric(lyric: Lyric): List<Diagnostic> {
         diagnostics += validateEnrichedLine(line, path, lyric.timing)
     }
     // Word-level timing needs only one line split into words, since a word-level source may leave the rest whole; a lyric with no content at all declares nothing to check.
-    if (lyric.timing == Timing.TIMING_WORD && anyContent && !anyWords) {
+    if (lyric.timing == TimingLevel.TIMING_LEVEL_WORD && anyContent && !anyWords) {
         diagnostics += Diagnostic("timing", DiagnosticCode.LyricTimingWordMissing)
     }
     for (index in findUnordered(lyric.lines) { line -> line.time }) {

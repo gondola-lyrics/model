@@ -14,7 +14,7 @@ import gondola.lyrics.model.common.Part as CommonPart
 import gondola.lyrics.model.common.PartType as CommonPartType
 import gondola.lyrics.model.common.Text as CommonText
 import gondola.lyrics.model.common.TimeRange as CommonTimeRange
-import gondola.lyrics.model.common.Timing as CommonTiming
+import gondola.lyrics.model.common.TimingLevel as CommonTimingLevel
 import gondola.lyrics.model.common.UnknownEntry as CommonUnknownEntry
 import gondola.lyrics.model.document.Line as DocumentLine
 import gondola.lyrics.model.document.LineAnnotation as DocumentLineAnnotation
@@ -908,7 +908,7 @@ internal fun isUnresolved(value: Any): Boolean {
                 value.value != 9 &&
                 value.value != 10
 
-        is CommonTiming -> value.value != 1 && value.value != 2 && value.value != 3
+        is CommonTimingLevel -> value.value != 1 && value.value != 2 && value.value != 3
 
         is DocumentWordType -> value.value != 1 && value.value != 2
 

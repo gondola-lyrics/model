@@ -1,7 +1,7 @@
 package gondola.lyrics.model
 
 import gondola.lyrics.model.common.TimeRange
-import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.document.Line
 import gondola.lyrics.model.document.Lyric
 import gondola.lyrics.model.document.decodeDocumentLyric
@@ -16,7 +16,7 @@ class GeneratedModelTest {
     fun roundTripPreservesUnknownEndAndExplicitZeroEnd() {
         val original = Lyric(
             version = SCHEMA_VERSION,
-            timing = Timing.TIMING_LINE,
+            timing = TimingLevel.TIMING_LEVEL_LINE,
             lines = listOf(Line(time = TimeRange(start = 1000)), Line(time = TimeRange(end = 0))),
         )
 

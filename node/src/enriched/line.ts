@@ -16,7 +16,7 @@ import type {
 
 import { DiagnosticCode, validatePart, validateTimeRange } from '@root/common'
 import { validateLineTags } from '@root/common/tag'
-import { Timing } from '@root/generated/common/index.gen'
+import { TimingLevel } from '@root/generated/common/index.gen'
 import {
   createEnrichedLine,
   createEnrichedLineAnnotation,
@@ -73,7 +73,7 @@ export const validateEnrichedLineContent = (
   content: LineContent | undefined,
   time: TimeRange | undefined,
   path = '',
-  timing = Timing.UNSPECIFIED,
+  timing = TimingLevel.UNSPECIFIED,
   required = true,
 ): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -421,7 +421,7 @@ export const makeEnrichedLineBackground = (init?: MakeInit<LineBackground>): Lin
  *
  * Unresolved kinds may omit content; untimed instrumental lines are reported by validateEnrichedLyric.
  */
-export const validateEnrichedLine = (line: Line, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
+export const validateEnrichedLine = (line: Line, path = '', timing = TimingLevel.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   // Tags are read here rather than by the lyric, since only this knows which fields a line's kind forbids, and a forbidden field is never descended into.
   if (line.type !== LineType.INSTRUMENTAL) {
@@ -434,7 +434,7 @@ export const validateEnrichedLine = (line: Line, path = '', timing = Timing.UNSP
   }
   // An instrumental line is the stretch its range marks out, so it is nothing without a range, and nothing with one that never ends or one that ends where it starts.
   // An untimed lyric marks out no stretches, so there the lyric reports the line itself and asks for no range here.
-  const needsRange = instrumental && timing !== Timing.NONE
+  const needsRange = instrumental && timing !== TimingLevel.NONE
   if (line.time) {
     diagnostics.push(...validateTimeRange(line.time, childPath(path, 'time')))
     if (needsRange && line.time.end === undefined) {
@@ -497,7 +497,7 @@ export const validateEnrichedLine = (line: Line, path = '', timing = Timing.UNSP
 /**
  * Checks background content, timing, languages, and annotations.
  */
-export const validateEnrichedLineBackground = (background: LineBackground, path = '', timing = Timing.UNSPECIFIED): Diagnostic[] => {
+export const validateEnrichedLineBackground = (background: LineBackground, path = '', timing = TimingLevel.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   if (background.time) {
     diagnostics.push(...validateTimeRange(background.time, childPath(path, 'time')))

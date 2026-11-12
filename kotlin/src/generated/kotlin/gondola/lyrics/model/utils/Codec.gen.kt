@@ -14,7 +14,7 @@ import gondola.lyrics.model.common.Part as CommonPart
 import gondola.lyrics.model.common.PartType as CommonPartType
 import gondola.lyrics.model.common.Text as CommonText
 import gondola.lyrics.model.common.TimeRange as CommonTimeRange
-import gondola.lyrics.model.common.Timing as CommonTiming
+import gondola.lyrics.model.common.TimingLevel as CommonTimingLevel
 import gondola.lyrics.model.common.UnknownEntry as CommonUnknownEntry
 import gondola.lyrics.model.document.Line as DocumentLine
 import gondola.lyrics.model.document.LineAnnotation as DocumentLineAnnotation
@@ -1051,7 +1051,7 @@ private class DocumentLyricState {
     var version: String = ""
     var format: String = ""
     var profile: String = ""
-    var timing: CommonTiming = CommonTiming.TIMING_UNSPECIFIED
+    var timing: CommonTimingLevel = CommonTimingLevel.TIMING_LEVEL_UNSPECIFIED
     var meta: CommonMetaState? = null
     val extra = LinkedHashMap<String, String>()
     val agents = ArrayList<CommonAgentState>()
@@ -1312,7 +1312,7 @@ private class EnrichedLyricState {
     var format: String = ""
     var profile: String = ""
     var status: EnrichedLyricStatus = EnrichedLyricStatus.LYRIC_STATUS_UNSPECIFIED
-    var timing: CommonTiming = CommonTiming.TIMING_UNSPECIFIED
+    var timing: CommonTimingLevel = CommonTimingLevel.TIMING_LEVEL_UNSPECIFIED
     var meta: CommonMetaState? = null
     val extra = LinkedHashMap<String, String>()
     val languages = ArrayList<EnrichedLanguageUsageState>()
@@ -2006,7 +2006,7 @@ private fun mergeDocumentLyric(r: WireReader, state: DocumentLyricState) {
 
             26 -> state.profile = r.string()
 
-            32 -> state.timing = CommonTiming(r.int32())
+            32 -> state.timing = CommonTimingLevel(r.int32())
 
             42 -> {
                 val item = state.meta ?: CommonMetaState().also { state.meta = it }
@@ -2536,7 +2536,7 @@ private fun mergeEnrichedLyric(r: WireReader, state: EnrichedLyricState) {
 
             32 -> state.status = EnrichedLyricStatus(r.int32())
 
-            40 -> state.timing = CommonTiming(r.int32())
+            40 -> state.timing = CommonTimingLevel(r.int32())
 
             50 -> {
                 val item = state.meta ?: CommonMetaState().also { state.meta = it }

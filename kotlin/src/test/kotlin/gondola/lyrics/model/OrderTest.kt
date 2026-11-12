@@ -1,6 +1,6 @@
 package gondola.lyrics.model
 
-import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.common.makeTimeRange
 import gondola.lyrics.model.enriched.LyricStatus
 import gondola.lyrics.model.enriched.makeEnrichedLanguageUsage
@@ -17,7 +17,7 @@ class OrderTest {
     fun putsLinesWithNoRangeLastInOriginalOrder() {
         val lyric = makeEnrichedLyric(
             format = "lrc",
-            timing = Timing.TIMING_LINE,
+            timing = TimingLevel.TIMING_LEVEL_LINE,
             status = LyricStatus.LYRIC_STATUS_VALID,
             lines = listOf(
                 makeEnrichedLineNormal(id = "second", time = makeTimeRange(start = 2000)),

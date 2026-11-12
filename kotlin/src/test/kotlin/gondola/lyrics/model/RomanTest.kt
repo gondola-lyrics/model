@@ -1,7 +1,7 @@
 package gondola.lyrics.model
 
 import gondola.lyrics.model.common.TimeRange
-import gondola.lyrics.model.common.Timing
+import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.document.LineAnnotationRoman
 import gondola.lyrics.model.document.LineAnnotationRomanContent
 import gondola.lyrics.model.document.LineAnnotationRomanToken
@@ -107,8 +107,11 @@ class RomanTest {
             listOf("content.tokens[2].time" to "line.annotation.roman.time.uncovered"),
             validateDocumentLineAnnotationRoman(declared).map { it.path to it.code.value },
         )
-        assertEquals(emptyList(), validateDocumentLine(line, timing = Timing.TIMING_LINE))
-        assertEquals(emptyList(), validateDocumentLyric(makeDocumentLyric(timing = Timing.TIMING_NONE, lines = listOf(line.copy(time = null)))))
+        assertEquals(emptyList(), validateDocumentLine(line, timing = TimingLevel.TIMING_LEVEL_LINE))
+        assertEquals(
+            emptyList(),
+            validateDocumentLyric(makeDocumentLyric(timing = TimingLevel.TIMING_LEVEL_NONE, lines = listOf(line.copy(time = null)))),
+        )
         val background = makeDocumentLineBackground(time = line.time, content = line.content)
         assertEquals(background.time, resolveDocumentLineAnnotationRomanTokenTime(tokens[1], roman, background))
 
@@ -122,7 +125,7 @@ class RomanTest {
         )
         assertEquals("ni  hao", getEnrichedLineAnnotationRomanText(enrichedRoman))
         assertEquals(TimeRange(start = 2300), resolveEnrichedLineAnnotationRomanTokenTime(enrichedTokens[2], enrichedRoman, enrichedLine))
-        assertEquals(emptyList(), validateEnrichedLine(enrichedLine, timing = Timing.TIMING_LINE))
+        assertEquals(emptyList(), validateEnrichedLine(enrichedLine, timing = TimingLevel.TIMING_LEVEL_LINE))
     }
 
     @Test
@@ -187,7 +190,7 @@ class RomanTest {
                 "annotation.romans[0]" to "line.annotation.romans.conflict",
                 "backgrounds[0].annotation.romans[0]" to "line.annotation.romans.conflict",
             ),
-            validateDocumentLine(line, timing = Timing.TIMING_WORD).map { it.path to it.code.value },
+            validateDocumentLine(line, timing = TimingLevel.TIMING_LEVEL_WORD).map { it.path to it.code.value },
         )
         assertEquals(
             emptyList(),
@@ -230,8 +233,8 @@ class RomanTest {
         val enrichedLine =
             makeEnrichedLineNormal(time = time, content = enrichedContent, annotation = enrichedAnnotation, backgrounds = listOf(enrichedBackground))
         assertEquals(
-            validateDocumentLine(line, timing = Timing.TIMING_WORD).map { it.path to it.code.value },
-            validateEnrichedLine(enrichedLine, timing = Timing.TIMING_WORD).map { it.path to it.code.value },
+            validateDocumentLine(line, timing = TimingLevel.TIMING_LEVEL_WORD).map { it.path to it.code.value },
+            validateEnrichedLine(enrichedLine, timing = TimingLevel.TIMING_LEVEL_WORD).map { it.path to it.code.value },
         )
     }
 }

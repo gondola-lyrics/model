@@ -2,7 +2,7 @@ import { deepStrictEqual } from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import {
-  Timing,
+  TimingLevel,
   canonicalizeDocumentLineAnnotationRoman,
   canonicalizeEnrichedLineAnnotationRoman,
   getDocumentLineAnnotationRomanText,
@@ -213,7 +213,10 @@ describe('line roman content', () => {
     const enrichedBackground = makeEnrichedLineBackground({ time, content: enrichedWords, annotation: enrichedAnnotation })
     const enrichedLine = makeEnrichedLineNormal({ time, content: enrichedWords, annotation: enrichedAnnotation, backgrounds: [enrichedBackground] })
 
-    for (const diagnostics of [validateDocumentLine(documentLine, 'line', Timing.WORD), validateEnrichedLine(enrichedLine, 'line', Timing.WORD)]) {
+    for (const diagnostics of [
+      validateDocumentLine(documentLine, 'line', TimingLevel.WORD),
+      validateEnrichedLine(enrichedLine, 'line', TimingLevel.WORD),
+    ]) {
       deepStrictEqual(
         diagnostics.map((diagnostic) => [diagnostic.path, diagnostic.code]),
         [
@@ -230,7 +233,7 @@ describe('line roman content', () => {
           backgrounds: [{ ...documentBackground, content: makeDocumentLineContentText('bg') }],
         },
         '',
-        Timing.WORD,
+        TimingLevel.WORD,
       ),
       [],
     )
@@ -242,7 +245,7 @@ describe('line roman content', () => {
           backgrounds: [{ ...enrichedBackground, content: makeEnrichedLineContentText('bg') }],
         },
         '',
-        Timing.WORD,
+        TimingLevel.WORD,
       ),
       [],
     )
@@ -254,7 +257,7 @@ describe('line roman content', () => {
           backgrounds: [],
         },
         '',
-        Timing.WORD,
+        TimingLevel.WORD,
       ),
       [],
     )
@@ -266,7 +269,7 @@ describe('line roman content', () => {
           backgrounds: [],
         },
         '',
-        Timing.WORD,
+        TimingLevel.WORD,
       ),
       [],
     )
@@ -280,7 +283,7 @@ describe('line roman content', () => {
       ]),
     })
     const lyric = makeDocumentLyric({
-      timing: Timing.NONE,
+      timing: TimingLevel.NONE,
       lines: [
         makeDocumentLineNormal({ content: makeDocumentLineContentText('original'), annotation: makeDocumentLineAnnotation({ romans: [roman] }) }),
       ],
@@ -300,6 +303,6 @@ describe('line roman content', () => {
         ],
       }),
     })
-    deepStrictEqual(validateEnrichedLine(enriched, '', Timing.LINE), [])
+    deepStrictEqual(validateEnrichedLine(enriched, '', TimingLevel.LINE), [])
   })
 })

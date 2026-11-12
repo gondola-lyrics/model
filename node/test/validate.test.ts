@@ -6,7 +6,7 @@ import { describe, it } from 'node:test'
 import {
   EnrichedLyricStatus,
   PartType,
-  Timing,
+  TimingLevel,
   canonicalizeEnrichedLyric,
   deriveEnrichedLanguageUsages,
   makeDocumentLineAnnotation,
@@ -54,17 +54,17 @@ const textLine = (start: number, end?: number): EnrichedLine => {
 }
 
 const lineTimed = (...lines: EnrichedLine[]): EnrichedLyric => {
-  return makeEnrichedLyric({ format: 'lrc', timing: Timing.LINE, status: EnrichedLyricStatus.VALID, lines })
+  return makeEnrichedLyric({ format: 'lrc', timing: TimingLevel.LINE, status: EnrichedLyricStatus.VALID, lines })
 }
 
 const validatePartsInBothLayers = (parts: (Part | undefined)[]): Diagnostic[][] => {
   const played = makeEnrichedLyric({
-    timing: Timing.NONE,
+    timing: TimingLevel.NONE,
     status: EnrichedLyricStatus.VALID,
     lines: parts.map((part) => makeEnrichedLineNormal({ part, content: makeEnrichedLineContentText('line') })),
   })
   const stored = makeDocumentLyric({
-    timing: Timing.NONE,
+    timing: TimingLevel.NONE,
     lines: parts.map((part) => makeDocumentLineNormal({ part, content: makeDocumentLineContentText('line') })),
   })
   return [validateEnrichedLyric(played), validateDocumentLyric(stored)]
@@ -83,7 +83,7 @@ describe('validate', () => {
           }),
         ]),
       })
-      const lyric = canonicalizeEnrichedLyric(makeEnrichedLyric({ timing: Timing.WORD, status: EnrichedLyricStatus.VALID, lines: [line] }))
+      const lyric = canonicalizeEnrichedLyric(makeEnrichedLyric({ timing: TimingLevel.WORD, status: EnrichedLyricStatus.VALID, lines: [line] }))
       deepStrictEqual(validateEnrichedLyric(lyric), [{ path: 'lines[0].content.words[0].emphasis.value', code: 'line.word.emphasis.value.missing' }])
       for (const value of [false, true]) {
         const word = makeEnrichedWordNormal({ text: 'ah', emphasis: makeEnrichedWordEmphasis({ value, derived }) })
@@ -225,7 +225,7 @@ describe('validate', () => {
           ],
         }),
       })
-      const diagnostics = validateEnrichedLine(line, '', Timing.WORD)
+      const diagnostics = validateEnrichedLine(line, '', TimingLevel.WORD)
       deepStrictEqual(
         diagnostics.map((diagnostic) => [diagnostic.path, diagnostic.code]).sort(),
         language === 'ja-latn'
@@ -253,7 +253,7 @@ describe('validate', () => {
     ]
     const lyric = makeEnrichedLyric({
       format: 'lrc',
-      timing: Timing.WORD,
+      timing: TimingLevel.WORD,
       status: EnrichedLyricStatus.VALID,
       languages: deriveEnrichedLanguageUsages(lines),
       lines,
@@ -279,7 +279,7 @@ describe('validate', () => {
   it('reports undeclared languages and an unsplit word', () => {
     const lyric = makeEnrichedLyric({
       format: 'lrc',
-      timing: Timing.WORD,
+      timing: TimingLevel.WORD,
       status: EnrichedLyricStatus.VALID,
       lines: [
         makeEnrichedLineNormal({
@@ -301,7 +301,7 @@ describe('validate', () => {
   it('reports an instrumental line in an untimed lyric', () => {
     const lyric = makeEnrichedLyric({
       format: 'lrc',
-      timing: Timing.NONE,
+      timing: TimingLevel.NONE,
       status: EnrichedLyricStatus.VALID,
       lines: [makeEnrichedLineInstrumental()],
     })
@@ -330,7 +330,7 @@ describe('validate', () => {
   it('reports a line left open above in the document layer', () => {
     const lyric = makeDocumentLyric({
       format: 'lrc',
-      timing: Timing.LINE,
+      timing: TimingLevel.LINE,
       lines: [
         makeDocumentLineNormal({ time: makeTimeRange({ start: 0 }), content: makeDocumentLineContentText('x') }),
         makeDocumentLineNormal({ time: makeTimeRange({ start: 1000, end: 2000 }), content: makeDocumentLineContentText('y') }),
@@ -346,7 +346,7 @@ describe('validate', () => {
         content: makeEnrichedLineContentWords([makeEnrichedWordNormal({ text: 'x', time: makeTimeRange({ start: 1000, end: 2000 }) })]),
       }),
     ]
-    const lyric = makeEnrichedLyric({ format: 'lrc', timing: Timing.WORD, status: EnrichedLyricStatus.VALID, lines })
+    const lyric = makeEnrichedLyric({ format: 'lrc', timing: TimingLevel.WORD, status: EnrichedLyricStatus.VALID, lines })
     deepStrictEqual(validateEnrichedLyric(lyric), [{ path: 'lines[0].time', code: 'lyric.timing.line.time_missing' }])
   })
 })

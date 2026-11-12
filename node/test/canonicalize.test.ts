@@ -6,7 +6,7 @@ import { describe, it } from 'node:test'
 import {
   EnrichedLyricStatus,
   PartType,
-  Timing,
+  TimingLevel,
   canonicalizeDocumentLineAnnotation,
   canonicalizeDocumentLyric,
   canonicalizeDocumentWord,
@@ -76,7 +76,7 @@ const buildLyric = (): EnrichedLyric => {
   return makeEnrichedLyric({
     format: 'TTML',
     profile: 'AMLL',
-    timing: Timing.WORD,
+    timing: TimingLevel.WORD,
     status: EnrichedLyricStatus.VALID,
     languages: deriveEnrichedLanguageUsages(lines),
     lines,
@@ -200,7 +200,7 @@ describe('canonicalize', () => {
     )
     deepStrictEqual(canonical.emphasis, false)
     deepStrictEqual(resolveDocumentAnnotationTokenTime(token, canonical.annotation!.romans[0]!, canonical), time)
-    deepStrictEqual(validateDocumentWord(canonical, '', Timing.WORD), [])
+    deepStrictEqual(validateDocumentWord(canonical, '', TimingLevel.WORD), [])
     const originalNodes = collectNodes(word)
     deepStrictEqual(
       [...collectNodes(canonical)].filter((node) => originalNodes.has(node)),
