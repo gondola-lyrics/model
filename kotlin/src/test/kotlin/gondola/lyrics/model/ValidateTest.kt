@@ -7,6 +7,7 @@ import gondola.lyrics.model.common.PartType
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.common.makePart
+import gondola.lyrics.model.common.makeTextToken
 import gondola.lyrics.model.common.makeTimeRange
 import gondola.lyrics.model.common.validateMeta
 import gondola.lyrics.model.common.validateTimeRange
@@ -32,7 +33,6 @@ import gondola.lyrics.model.enriched.makeEnrichedLyric
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotation
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRoman
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRuby
-import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationToken
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationTranslation
 import gondola.lyrics.model.enriched.makeEnrichedWordEmphasis
 import gondola.lyrics.model.enriched.makeEnrichedWordNormal
@@ -235,14 +235,14 @@ class ValidateTest {
                                     makeEnrichedWordAnnotationRuby(
                                         language = language,
                                         scheme = scheme,
-                                        tokens = listOf(makeEnrichedWordAnnotationToken(text = "shi")),
+                                        tokens = listOf(makeTextToken(text = "shi")),
                                     ),
                                 ),
                                 romans = listOf(
                                     makeEnrichedWordAnnotationRoman(
                                         language = language,
                                         scheme = scheme,
-                                        tokens = listOf(makeEnrichedWordAnnotationToken(text = "shi")),
+                                        tokens = listOf(makeTextToken(text = "shi")),
                                     ),
                                 ),
                             ),

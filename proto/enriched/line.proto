@@ -3,6 +3,7 @@ syntax = "proto3";
 package lyric.enriched;
 
 import "common/part.proto";
+import "common/text.proto";
 import "common/time.proto";
 import "enriched/word.proto";
 
@@ -23,21 +24,12 @@ enum LineType {
   LINE_TYPE_INSTRUMENTAL = 2;
 }
 
-// Token boundaries follow the source and need not match the original words.
-message LineAnnotationRomanToken {
-  // Unset uses the annotation's range, then the line's; an explicit range is never filled field by field.
-  // An explicit range must fit a declared annotation range, but need not fit the original line.
-  lyric.common.TimeRange time = 1;
-
-  // Non-empty source text, preserving whitespace and punctuation.
-  string text = 2;
-}
-
 // Exactly one of tokens or text must be set.
 message LineAnnotationRomanContent {
   // Non-empty source fragments in text order; at least one carries an explicit time range.
   // Fragments concatenate without added separators, preserving their boundaries and whitespace.
-  repeated LineAnnotationRomanToken tokens = 1;
+  // Unset token time follows the annotation, then the line; explicit ranges must fit a declared annotation range.
+  repeated lyric.common.TextToken tokens = 1;
 
   // Non-empty whole-line text without token segmentation.
   optional string text = 2;

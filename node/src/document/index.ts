@@ -4,7 +4,6 @@ export type {
   LineAnnotation as DocumentLineAnnotation,
   LineAnnotationRoman as DocumentLineAnnotationRoman,
   LineAnnotationRomanContent as DocumentLineAnnotationRomanContent,
-  LineAnnotationRomanToken as DocumentLineAnnotationRomanToken,
   LineAnnotationTranslation as DocumentLineAnnotationTranslation,
   LineBackground as DocumentLineBackground,
   LineContent as DocumentLineContent,
@@ -12,7 +11,6 @@ export type {
   WordAnnotation as DocumentWordAnnotation,
   WordAnnotationRoman as DocumentWordAnnotationRoman,
   WordAnnotationRuby as DocumentWordAnnotationRuby,
-  WordAnnotationToken as DocumentWordAnnotationToken,
   WordAnnotationTranslation as DocumentWordAnnotationTranslation,
 } from '@root/generated/document/index.gen'
 

@@ -1,12 +1,11 @@
 import type { Diagnostic } from '@root/common'
 import type { MakeInit } from '@root/utils'
-import type { TimeRange } from '@root/generated/common/index.gen'
+import type { TextToken, TimeRange } from '@root/generated/common/index.gen'
 import type {
   Line,
   LineAnnotation,
   LineAnnotationRoman,
   LineAnnotationRomanContent,
-  LineAnnotationRomanToken,
   LineAnnotationTranslation,
   LineBackground,
   LineContent,
@@ -14,28 +13,27 @@ import type {
   WordAnnotationRoman,
 } from '@root/generated/enriched/index.gen'
 
-import { DiagnosticCode, validatePart, validateTimeRange } from '@root/common'
+import { DiagnosticCode, canonicalizeTextToken, validatePart, validateTextToken, validateTimeRange } from '@root/common'
 import { validateLineTags } from '@root/common/tag'
 import { TimingLevel } from '@root/generated/common/index.gen'
 import {
-  createEnrichedLine,
-  createEnrichedLineAnnotation,
-  createEnrichedLineAnnotationRoman,
-  createEnrichedLineAnnotationRomanContent,
-  createEnrichedLineAnnotationRomanToken,
-  createEnrichedLineAnnotationTranslation,
-  createEnrichedLineBackground,
-  createEnrichedLineContent,
   fieldsCommonPart,
+  fieldsCommonTextToken,
   fieldsEnrichedLine,
   fieldsEnrichedLineAnnotation,
   fieldsEnrichedLineAnnotationRoman,
   fieldsEnrichedLineAnnotationRomanContent,
-  fieldsEnrichedLineAnnotationRomanToken,
   fieldsEnrichedLineAnnotationTranslation,
   fieldsEnrichedLineBackground,
   fieldsEnrichedLineContent,
   fieldsEnrichedWord,
+  createEnrichedLine,
+  createEnrichedLineAnnotation,
+  createEnrichedLineAnnotationRoman,
+  createEnrichedLineAnnotationRomanContent,
+  createEnrichedLineAnnotationTranslation,
+  createEnrichedLineBackground,
+  createEnrichedLineContent,
 } from '@root/generated/detail.gen'
 import { LineType, WordType } from '@root/generated/enriched/index.gen'
 import {
@@ -125,16 +123,9 @@ export const makeEnrichedLineAnnotation = (init?: MakeInit<LineAnnotation>): Lin
 }
 
 /**
- * Creates a source fragment, preserving its text and optional timing.
- */
-export const makeEnrichedLineAnnotationRomanToken = (init?: MakeInit<LineAnnotationRomanToken>): LineAnnotationRomanToken => {
-  return withInit(createEnrichedLineAnnotationRomanToken(), init)
-}
-
-/**
  * Creates roman content from source fragments without adding whole-line text.
  */
-export const makeEnrichedLineAnnotationRomanContentTokens = (tokens: LineAnnotationRomanToken[]): LineAnnotationRomanContent => {
+export const makeEnrichedLineAnnotationRomanContentTokens = (tokens: TextToken[]): LineAnnotationRomanContent => {
   return withInit(createEnrichedLineAnnotationRomanContent(), { tokens })
 }
 
@@ -175,9 +166,7 @@ export const validateEnrichedLineAnnotationRomanContent = (
     if (token.text === '') {
       diagnostics.push({ path: childPath(tokenPath, 'text'), code: DiagnosticCode.LineAnnotationRomanTokenTextEmpty })
     }
-    if (token.time) {
-      diagnostics.push(...validateTimeRange(token.time, childPath(tokenPath, 'time')))
-    }
+    diagnostics.push(...validateTextToken(token, tokenPath))
     if (isTimeRangeUncovered(token.time, time)) {
       diagnostics.push({ path: childPath(tokenPath, 'time'), code: DiagnosticCode.LineAnnotationRomanTimeUncovered })
     }
@@ -247,19 +236,12 @@ export const makeEnrichedLineAnnotationTranslation = (init?: MakeInit<LineAnnota
 }
 
 /**
- * Copies the source fragment and its optional time without changing text.
- */
-export const canonicalizeEnrichedLineAnnotationRomanToken = (token: LineAnnotationRomanToken): LineAnnotationRomanToken => {
-  return { ...token, time: copyMessage(token.time) }
-}
-
-/**
  * Copies roman content, preserving fragment order, whitespace, and explicit timing.
  */
 export const canonicalizeEnrichedLineAnnotationRomanContent = (content: LineAnnotationRomanContent): LineAnnotationRomanContent => {
   return {
     ...content,
-    tokens: canonicalizeList(fieldsEnrichedLineAnnotationRomanToken, content.tokens, canonicalizeEnrichedLineAnnotationRomanToken),
+    tokens: canonicalizeList(fieldsCommonTextToken, content.tokens, canonicalizeTextToken),
   }
 }
 
@@ -294,7 +276,7 @@ export const resolveEnrichedLineAnnotationRomanTime = (roman: LineAnnotationRoma
  * Uses the entire token time, then the romanization's time, then the owning line's time.
  */
 export const resolveEnrichedLineAnnotationRomanTokenTime = (
-  token: LineAnnotationRomanToken,
+  token: TextToken,
   roman: LineAnnotationRoman,
   line: { time?: TimeRange | undefined },
 ): TimeRange | undefined => {

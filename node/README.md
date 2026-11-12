@@ -32,7 +32,7 @@ import {
   makeDocumentLineAnnotationRoman,
   makeDocumentLineAnnotationRomanContentText,
   makeDocumentLineAnnotationRomanContentTokens,
-  makeDocumentLineAnnotationRomanToken,
+  makeTextToken,
 } from '@gondola-lyrics/model'
 
 const plainRoman = makeDocumentLineAnnotationRoman({
@@ -45,8 +45,8 @@ const timedRoman = makeDocumentLineAnnotationRoman({
   language: 'zh-latn',
   scheme: 'pinyin',
   content: makeDocumentLineAnnotationRomanContentTokens([
-    makeDocumentLineAnnotationRomanToken({ time: { start: 1000, end: 1800 }, text: 'ni ' }),
-    makeDocumentLineAnnotationRomanToken({ time: { start: 2000 }, text: 'hao' }),
+    makeTextToken({ time: { start: 1000, end: 1800 }, text: 'ni ' }),
+    makeTextToken({ time: { start: 2000 }, text: 'hao' }),
   ]),
 })
 ```

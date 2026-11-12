@@ -25,7 +25,6 @@ import {
   makeDocumentWordAnnotation,
   makeDocumentWordAnnotationRoman,
   makeDocumentWordAnnotationRuby,
-  makeDocumentWordAnnotationToken,
   makeDocumentWordNormal,
   makeEnrichedLineAnnotation,
   makeEnrichedLineAnnotationRoman,
@@ -36,7 +35,7 @@ import {
   makeEnrichedWordAnnotation,
   makeEnrichedWordAnnotationRoman,
   makeEnrichedWordAnnotationRuby,
-  makeEnrichedWordAnnotationToken,
+  makeTextToken,
   makeEnrichedWordEmphasis,
   makeEnrichedWordNormal,
   makePart,
@@ -139,7 +138,6 @@ describe('canonicalize', () => {
       {
         makeWordAnnotation: makeDocumentWordAnnotation,
         makeWordAnnotationRoman: makeDocumentWordAnnotationRoman,
-        makeWordAnnotationToken: makeDocumentWordAnnotationToken,
         makeWordAnnotationRuby: makeDocumentWordAnnotationRuby,
         makeLineAnnotation: makeDocumentLineAnnotation,
         makeLineAnnotationRoman: makeDocumentLineAnnotationRoman,
@@ -150,7 +148,6 @@ describe('canonicalize', () => {
       {
         makeWordAnnotation: makeEnrichedWordAnnotation,
         makeWordAnnotationRoman: makeEnrichedWordAnnotationRoman,
-        makeWordAnnotationToken: makeEnrichedWordAnnotationToken,
         makeWordAnnotationRuby: makeEnrichedWordAnnotationRuby,
         makeLineAnnotation: makeEnrichedLineAnnotation,
         makeLineAnnotationRoman: makeEnrichedLineAnnotationRoman,
@@ -161,8 +158,8 @@ describe('canonicalize', () => {
     ]) {
       for (const scheme of ['HEPBURN', '']) {
         const word = model.makeWordAnnotation({
-          romans: [model.makeWordAnnotationRoman({ language: 'JA-Latn', scheme, tokens: [model.makeWordAnnotationToken({ text: 'shi' })] })],
-          rubies: [model.makeWordAnnotationRuby({ language: 'JA-Latn', scheme, tokens: [model.makeWordAnnotationToken({ text: 'shi' })] })],
+          romans: [model.makeWordAnnotationRoman({ language: 'JA-Latn', scheme, tokens: [makeTextToken({ text: 'shi' })] })],
+          rubies: [model.makeWordAnnotationRuby({ language: 'JA-Latn', scheme, tokens: [makeTextToken({ text: 'shi' })] })],
         })
         const line = model.makeLineAnnotation({
           romans: [model.makeLineAnnotationRoman({ language: 'JA-Latn', scheme, content: model.makeLineAnnotationRomanContentText('shi') })],
@@ -182,7 +179,7 @@ describe('canonicalize', () => {
 
   it('canonicalizes document annotations without losing timing or explicit false', () => {
     const time = makeTimeRange({ start: 1000, end: 2000 })
-    const token = makeDocumentWordAnnotationToken({ time, text: 'shi' })
+    const token = makeTextToken({ time, text: 'shi' })
     const word = makeDocumentWordNormal({
       text: 'x',
       time,

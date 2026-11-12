@@ -7,6 +7,7 @@ import gondola.lyrics.model.common.Meta
 import gondola.lyrics.model.common.Part
 import gondola.lyrics.model.common.PartType
 import gondola.lyrics.model.common.Text
+import gondola.lyrics.model.common.TextToken
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.common.UnknownEntry
@@ -27,7 +28,6 @@ import gondola.lyrics.model.enriched.Word
 import gondola.lyrics.model.enriched.WordAnnotation
 import gondola.lyrics.model.enriched.WordAnnotationRoman
 import gondola.lyrics.model.enriched.WordAnnotationRuby
-import gondola.lyrics.model.enriched.WordAnnotationToken
 import gondola.lyrics.model.enriched.WordEmphasis
 import gondola.lyrics.model.enriched.WordType
 import gondola.lyrics.model.enriched.canonicalizeEnrichedLyric
@@ -178,9 +178,14 @@ class CodecTest {
 
     @Test
     fun matchesOfficialCodecForBothLayers() {
+        val tokenExtra = linkedMapOf("Case" to "", "case" to "lower", "__proto__" to "kept", "time" to "metadata", "text" to "metadata")
         val wordAnnotation = WordAnnotation(
-            rubies = listOf(WordAnnotationRuby(language = "zh-latn", scheme = "pinyin", tokens = listOf(WordAnnotationToken(text = "han")))),
-            romans = listOf(WordAnnotationRoman(language = "ja-latn", scheme = "hepburn", tokens = listOf(WordAnnotationToken(text = "shi")))),
+            rubies = listOf(
+                WordAnnotationRuby(language = "zh-latn", scheme = "pinyin", tokens = listOf(TextToken(text = "han", extra = tokenExtra))),
+            ),
+            romans = listOf(
+                WordAnnotationRoman(language = "ja-latn", scheme = "hepburn", tokens = listOf(TextToken(text = "shi", extra = tokenExtra))),
+            ),
         )
         val lineAnnotation = LineAnnotation(
             romans = listOf(
@@ -196,9 +201,9 @@ class CodecTest {
                     time = TimeRange(start = 0),
                     content = gondola.lyrics.model.enriched.LineAnnotationRomanContent(
                         tokens = listOf(
-                            gondola.lyrics.model.enriched.LineAnnotationRomanToken(time = TimeRange(start = 0, end = 1), text = "ni"),
-                            gondola.lyrics.model.enriched.LineAnnotationRomanToken(text = "  "),
-                            gondola.lyrics.model.enriched.LineAnnotationRomanToken(time = TimeRange(start = 3), text = "hao"),
+                            TextToken(time = TimeRange(start = 0, end = 1), text = "ni", extra = tokenExtra),
+                            TextToken(text = "  ", extra = tokenExtra),
+                            TextToken(time = TimeRange(start = 3), text = "hao", extra = tokenExtra),
                         ),
                     ),
                 ),
@@ -236,14 +241,14 @@ class CodecTest {
                 gondola.lyrics.model.document.WordAnnotationRuby(
                     language = "zh-latn",
                     scheme = "pinyin",
-                    tokens = listOf(gondola.lyrics.model.document.WordAnnotationToken(text = "han")),
+                    tokens = wordAnnotation.rubies.single().tokens,
                 ),
             ),
             romans = listOf(
                 gondola.lyrics.model.document.WordAnnotationRoman(
                     language = "ja-latn",
                     scheme = "hepburn",
-                    tokens = listOf(gondola.lyrics.model.document.WordAnnotationToken(text = "shi")),
+                    tokens = wordAnnotation.romans.single().tokens,
                 ),
             ),
         )
@@ -256,9 +261,7 @@ class CodecTest {
                     content = roman.content?.let { content ->
                         gondola.lyrics.model.document.LineAnnotationRomanContent(
                             text = content.text,
-                            tokens = content.tokens.map { token ->
-                                gondola.lyrics.model.document.LineAnnotationRomanToken(time = token.time, text = token.text)
-                            },
+                            tokens = content.tokens,
                         )
                     },
                 )
@@ -299,6 +302,13 @@ class CodecTest {
             "titles" to listOf(official("lyric.common.Text", "text" to "\uD83D\uDE00")),
         )
         val officialPart = official("lyric.common.Part", "type" to 5, "id" to "Chorus-A", "raw" to "chorus")
+        val officialTokenExtra = listOf(
+            official("lyric.common.TextToken.ExtraEntry", "key" to "Case", "value" to ""),
+            official("lyric.common.TextToken.ExtraEntry", "key" to "case", "value" to "lower"),
+            official("lyric.common.TextToken.ExtraEntry", "key" to "__proto__", "value" to "kept"),
+            official("lyric.common.TextToken.ExtraEntry", "key" to "time", "value" to "metadata"),
+            official("lyric.common.TextToken.ExtraEntry", "key" to "text", "value" to "metadata"),
+        )
         for (layer in listOf("enriched", "document")) {
             val officialWordAnnotation = official(
                 "lyric.$layer.WordAnnotation",
@@ -307,7 +317,7 @@ class CodecTest {
                         "lyric.$layer.WordAnnotationRuby",
                         "language" to "zh-latn",
                         "scheme" to "pinyin",
-                        "tokens" to listOf(official("lyric.$layer.WordAnnotationToken", "text" to "han")),
+                        "tokens" to listOf(official("lyric.common.TextToken", "text" to "han", "extra" to officialTokenExtra)),
                     ),
                 ),
                 "romans" to listOf(
@@ -315,7 +325,7 @@ class CodecTest {
                         "lyric.$layer.WordAnnotationRoman",
                         "language" to "ja-latn",
                         "scheme" to "hepburn",
-                        "tokens" to listOf(official("lyric.$layer.WordAnnotationToken", "text" to "shi")),
+                        "tokens" to listOf(official("lyric.common.TextToken", "text" to "shi", "extra" to officialTokenExtra)),
                     ),
                 ),
             )
@@ -338,15 +348,17 @@ class CodecTest {
                             "lyric.$layer.LineAnnotationRomanContent",
                             "tokens" to listOf(
                                 official(
-                                    "lyric.$layer.LineAnnotationRomanToken",
+                                    "lyric.common.TextToken",
                                     "time" to official("lyric.common.TimeRange", "start" to 0L, "end" to 1L),
                                     "text" to "ni",
+                                    "extra" to officialTokenExtra,
                                 ),
-                                official("lyric.$layer.LineAnnotationRomanToken", "text" to "  "),
+                                official("lyric.common.TextToken", "text" to "  ", "extra" to officialTokenExtra),
                                 official(
-                                    "lyric.$layer.LineAnnotationRomanToken",
+                                    "lyric.common.TextToken",
                                     "time" to official("lyric.common.TimeRange", "start" to 3L),
                                     "text" to "hao",
+                                    "extra" to officialTokenExtra,
                                 ),
                             ),
                         ),

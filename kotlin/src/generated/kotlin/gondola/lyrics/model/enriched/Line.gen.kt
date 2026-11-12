@@ -3,6 +3,7 @@
 package gondola.lyrics.model.enriched
 
 import gondola.lyrics.model.common.Part
+import gondola.lyrics.model.common.TextToken
 import gondola.lyrics.model.common.TimeRange
 
 public class LineType(@JvmField public val value: Int) {
@@ -44,29 +45,15 @@ public class LineType(@JvmField public val value: Int) {
 }
 
 /**
- * Token boundaries follow the source and need not match the original words.
- */
-public data class LineAnnotationRomanToken(
-    /**
-     * Unset uses the annotation's range, then the line's; an explicit range is never filled field by field.
-     * An explicit range must fit a declared annotation range, but need not fit the original line.
-     */
-    val time: TimeRange? = null,
-    /**
-     * Non-empty source text, preserving whitespace and punctuation.
-     */
-    val text: String = "",
-)
-
-/**
  * Exactly one of tokens or text must be set.
  */
 public data class LineAnnotationRomanContent(
     /**
      * Non-empty source fragments in text order; at least one carries an explicit time range.
      * Fragments concatenate without added separators, preserving their boundaries and whitespace.
+     * Unset token time follows the annotation, then the line; explicit ranges must fit a declared annotation range.
      */
-    val tokens: List<LineAnnotationRomanToken> = emptyList(),
+    val tokens: List<TextToken> = emptyList(),
     /**
      * Non-empty whole-line text without token segmentation.
      */

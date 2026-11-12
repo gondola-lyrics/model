@@ -19,6 +19,17 @@ export type MessageFields<T> = {
   readonly phantom?: (value: T) => T
 }
 
+export const fieldsCommonTimeRange: MessageFields<common.TimeRange> = {
+  fields: [
+    { name: 'start', shape: 'scalar' },
+    { name: 'end', shape: 'optional' },
+  ],
+}
+
+export const createCommonTimeRange = (): common.TimeRange => {
+  return { start: 0 }
+}
+
 export const fieldsCommonText: MessageFields<common.Text> = {
   fields: [
     { name: 'language', shape: 'optional' },
@@ -28,6 +39,18 @@ export const fieldsCommonText: MessageFields<common.Text> = {
 
 export const createCommonText = (): common.Text => {
   return { text: '' }
+}
+
+export const fieldsCommonTextToken: MessageFields<common.TextToken> = {
+  fields: [
+    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
+    { name: 'text', shape: 'scalar' },
+    { name: 'extra', shape: 'map' },
+  ],
+}
+
+export const createCommonTextToken = (): common.TextToken => {
+  return { text: '', extra: {} }
 }
 
 export const fieldsCommonAgent: MessageFields<common.Agent> = {
@@ -109,28 +132,6 @@ export const createCommonPart = (): common.Part => {
   return { type: 0 }
 }
 
-export const fieldsCommonTimeRange: MessageFields<common.TimeRange> = {
-  fields: [
-    { name: 'start', shape: 'scalar' },
-    { name: 'end', shape: 'optional' },
-  ],
-}
-
-export const createCommonTimeRange = (): common.TimeRange => {
-  return { start: 0 }
-}
-
-export const fieldsDocumentWordAnnotationToken: MessageFields<document.WordAnnotationToken> = {
-  fields: [
-    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
-    { name: 'text', shape: 'scalar' },
-  ],
-}
-
-export const createDocumentWordAnnotationToken = (): document.WordAnnotationToken => {
-  return { text: '' }
-}
-
 export const fieldsDocumentWordAnnotationTranslation: MessageFields<document.WordAnnotationTranslation> = {
   fields: [
     { name: 'language', shape: 'optional' },
@@ -147,7 +148,7 @@ export const fieldsDocumentWordAnnotationRoman: MessageFields<document.WordAnnot
     { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
     { name: 'language', shape: 'optional' },
     { name: 'scheme', shape: 'optional' },
-    { name: 'tokens', shape: 'list-message', message: fieldsDocumentWordAnnotationToken },
+    { name: 'tokens', shape: 'list-message', message: fieldsCommonTextToken },
   ],
 }
 
@@ -160,7 +161,7 @@ export const fieldsDocumentWordAnnotationRuby: MessageFields<document.WordAnnota
     { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
     { name: 'language', shape: 'optional' },
     { name: 'scheme', shape: 'optional' },
-    { name: 'tokens', shape: 'list-message', message: fieldsDocumentWordAnnotationToken },
+    { name: 'tokens', shape: 'list-message', message: fieldsCommonTextToken },
   ],
 }
 
@@ -195,20 +196,9 @@ export const createDocumentWord = (): document.Word => {
   return { type: 0, text: '' }
 }
 
-export const fieldsDocumentLineAnnotationRomanToken: MessageFields<document.LineAnnotationRomanToken> = {
-  fields: [
-    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
-    { name: 'text', shape: 'scalar' },
-  ],
-}
-
-export const createDocumentLineAnnotationRomanToken = (): document.LineAnnotationRomanToken => {
-  return { text: '' }
-}
-
 export const fieldsDocumentLineAnnotationRomanContent: MessageFields<document.LineAnnotationRomanContent> = {
   fields: [
-    { name: 'tokens', shape: 'list-message', message: fieldsDocumentLineAnnotationRomanToken },
+    { name: 'tokens', shape: 'list-message', message: fieldsCommonTextToken },
     { name: 'text', shape: 'optional' },
   ],
 }
@@ -324,17 +314,6 @@ export const createEnrichedLanguageUsage = (): enriched.LanguageUsage => {
   return { tag: '', count: 0 }
 }
 
-export const fieldsEnrichedWordAnnotationToken: MessageFields<enriched.WordAnnotationToken> = {
-  fields: [
-    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
-    { name: 'text', shape: 'scalar' },
-  ],
-}
-
-export const createEnrichedWordAnnotationToken = (): enriched.WordAnnotationToken => {
-  return { text: '' }
-}
-
 export const fieldsEnrichedWordAnnotationTranslation: MessageFields<enriched.WordAnnotationTranslation> = {
   fields: [
     { name: 'language', shape: 'optional' },
@@ -351,7 +330,7 @@ export const fieldsEnrichedWordAnnotationRoman: MessageFields<enriched.WordAnnot
     { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
     { name: 'language', shape: 'optional' },
     { name: 'scheme', shape: 'optional' },
-    { name: 'tokens', shape: 'list-message', message: fieldsEnrichedWordAnnotationToken },
+    { name: 'tokens', shape: 'list-message', message: fieldsCommonTextToken },
   ],
 }
 
@@ -364,7 +343,7 @@ export const fieldsEnrichedWordAnnotationRuby: MessageFields<enriched.WordAnnota
     { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
     { name: 'language', shape: 'optional' },
     { name: 'scheme', shape: 'optional' },
-    { name: 'tokens', shape: 'list-message', message: fieldsEnrichedWordAnnotationToken },
+    { name: 'tokens', shape: 'list-message', message: fieldsCommonTextToken },
   ],
 }
 
@@ -410,20 +389,9 @@ export const createEnrichedWord = (): enriched.Word => {
   return { type: 0, text: '' }
 }
 
-export const fieldsEnrichedLineAnnotationRomanToken: MessageFields<enriched.LineAnnotationRomanToken> = {
-  fields: [
-    { name: 'time', shape: 'message', message: fieldsCommonTimeRange },
-    { name: 'text', shape: 'scalar' },
-  ],
-}
-
-export const createEnrichedLineAnnotationRomanToken = (): enriched.LineAnnotationRomanToken => {
-  return { text: '' }
-}
-
 export const fieldsEnrichedLineAnnotationRomanContent: MessageFields<enriched.LineAnnotationRomanContent> = {
   fields: [
-    { name: 'tokens', shape: 'list-message', message: fieldsEnrichedLineAnnotationRomanToken },
+    { name: 'tokens', shape: 'list-message', message: fieldsCommonTextToken },
     { name: 'text', shape: 'optional' },
   ],
 }

@@ -6,11 +6,14 @@ import gondola.lyrics.model.common.Agent
 import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.DiagnosticCode
 import gondola.lyrics.model.common.Part
+import gondola.lyrics.model.common.TextToken
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.TimingLevel
+import gondola.lyrics.model.common.canonicalizeTextToken
 import gondola.lyrics.model.common.resolveAgents
 import gondola.lyrics.model.common.validateLineTags
 import gondola.lyrics.model.common.validatePart
+import gondola.lyrics.model.common.validateTextToken
 import gondola.lyrics.model.common.validateTimeRange
 import gondola.lyrics.model.utils.byTime
 import gondola.lyrics.model.utils.canonicalizeField
@@ -115,16 +118,9 @@ public fun makeEnrichedLineAnnotation(
 }
 
 /**
- * Creates a source fragment, preserving its text and optional timing.
- */
-public fun makeEnrichedLineAnnotationRomanToken(time: TimeRange? = null, text: String = ""): LineAnnotationRomanToken {
-    return LineAnnotationRomanToken(time = time, text = text)
-}
-
-/**
  * Creates roman content from source fragments without adding whole-line text.
  */
-public fun makeEnrichedLineAnnotationRomanContentTokens(tokens: List<LineAnnotationRomanToken>): LineAnnotationRomanContent {
+public fun makeEnrichedLineAnnotationRomanContentTokens(tokens: List<TextToken>): LineAnnotationRomanContent {
     return LineAnnotationRomanContent(tokens = tokens)
 }
 
@@ -165,9 +161,7 @@ public fun validateEnrichedLineAnnotationRomanContent(
         if (token.text.isEmpty()) {
             diagnostics.add(Diagnostic(childPath(tokenPath, "text"), DiagnosticCode.LineAnnotationRomanTokenTextEmpty))
         }
-        if (token.time != null) {
-            diagnostics.addAll(validateTimeRange(token.time, childPath(tokenPath, "time")))
-        }
+        diagnostics.addAll(validateTextToken(token, tokenPath))
         if (isTimeRangeUncovered(token.time, time)) {
             diagnostics.add(Diagnostic(childPath(tokenPath, "time"), DiagnosticCode.LineAnnotationRomanTimeUncovered))
         }
@@ -242,17 +236,10 @@ public fun makeEnrichedLineAnnotationTranslation(language: String? = null, text:
 }
 
 /**
- * Copies the source fragment and its optional time without changing text.
- */
-public fun canonicalizeEnrichedLineAnnotationRomanToken(token: LineAnnotationRomanToken): LineAnnotationRomanToken {
-    return token.copy(time = token.time?.copy())
-}
-
-/**
  * Copies roman content, preserving fragment order, whitespace, and explicit timing.
  */
 public fun canonicalizeEnrichedLineAnnotationRomanContent(content: LineAnnotationRomanContent): LineAnnotationRomanContent {
-    return content.copy(tokens = canonicalizeList(content.tokens, ::canonicalizeEnrichedLineAnnotationRomanToken))
+    return content.copy(tokens = canonicalizeList(content.tokens, ::canonicalizeTextToken))
 }
 
 /**
@@ -291,18 +278,14 @@ public fun resolveEnrichedLineAnnotationRomanTime(roman: LineAnnotationRoman, li
 /**
  * Uses the entire token time, then the romanization's time, then the owning line's time.
  */
-public fun resolveEnrichedLineAnnotationRomanTokenTime(token: LineAnnotationRomanToken, roman: LineAnnotationRoman, line: Line): TimeRange? {
+public fun resolveEnrichedLineAnnotationRomanTokenTime(token: TextToken, roman: LineAnnotationRoman, line: Line): TimeRange? {
     return token.time ?: resolveEnrichedLineAnnotationRomanTime(roman, line)
 }
 
 /**
  * Uses the entire token time, then the romanization's time, then the owning background's time.
  */
-public fun resolveEnrichedLineAnnotationRomanTokenTime(
-    token: LineAnnotationRomanToken,
-    roman: LineAnnotationRoman,
-    line: LineBackground,
-): TimeRange? {
+public fun resolveEnrichedLineAnnotationRomanTokenTime(token: TextToken, roman: LineAnnotationRoman, line: LineBackground): TimeRange? {
     return token.time ?: resolveEnrichedLineAnnotationRomanTime(roman, line)
 }
 

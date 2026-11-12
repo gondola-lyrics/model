@@ -5,7 +5,6 @@ export type {
   LineAnnotation as EnrichedLineAnnotation,
   LineAnnotationRoman as EnrichedLineAnnotationRoman,
   LineAnnotationRomanContent as EnrichedLineAnnotationRomanContent,
-  LineAnnotationRomanToken as EnrichedLineAnnotationRomanToken,
   LineAnnotationTranslation as EnrichedLineAnnotationTranslation,
   LineBackground as EnrichedLineBackground,
   LineContent as EnrichedLineContent,
@@ -13,7 +12,6 @@ export type {
   WordAnnotation as EnrichedWordAnnotation,
   WordAnnotationRoman as EnrichedWordAnnotationRoman,
   WordAnnotationRuby as EnrichedWordAnnotationRuby,
-  WordAnnotationToken as EnrichedWordAnnotationToken,
   WordAnnotationTranslation as EnrichedWordAnnotationTranslation,
   WordEmphasis as EnrichedWordEmphasis,
 } from '@root/generated/enriched/index.gen'

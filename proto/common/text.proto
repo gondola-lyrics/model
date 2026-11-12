@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package lyric.common;
 
+import "common/time.proto";
+
 option java_multiple_files = true;
 option java_outer_classname = "TextProto";
 option java_package = "gondola.lyrics.model.common";
@@ -14,4 +16,17 @@ message Text {
 
   // The text itself, non-empty.
   string text = 2;
+}
+
+// Boundaries follow the source and need not match original words.
+message TextToken {
+  // Unset timing follows the containing annotation's rules; an explicit range is never filled field by field.
+  TimeRange time = 1;
+
+  // Text constraints are defined by the containing annotation.
+  string text = 2;
+
+  // Fragment-specific attributes without typed fields.
+  // Keys are non-empty and case-sensitive; values may be empty.
+  map<string, string> extra = 3;
 }

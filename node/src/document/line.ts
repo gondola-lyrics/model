@@ -1,12 +1,11 @@
 import type { Diagnostic } from '@root/common'
 import type { MakeInit } from '@root/utils'
-import type { TimeRange } from '@root/generated/common/index.gen'
+import type { TextToken, TimeRange } from '@root/generated/common/index.gen'
 import type {
   Line,
   LineAnnotation,
   LineAnnotationRoman,
   LineAnnotationRomanContent,
-  LineAnnotationRomanToken,
   LineAnnotationTranslation,
   LineBackground,
   LineContent,
@@ -14,28 +13,27 @@ import type {
   WordAnnotationRoman,
 } from '@root/generated/document/index.gen'
 
-import { DiagnosticCode, validatePart, validateTimeRange } from '@root/common'
+import { DiagnosticCode, canonicalizeTextToken, validatePart, validateTextToken, validateTimeRange } from '@root/common'
 import { validateLineTags } from '@root/common/tag'
 import { TimingLevel } from '@root/generated/common/index.gen'
 import {
-  createDocumentLine,
-  createDocumentLineAnnotation,
-  createDocumentLineAnnotationRoman,
-  createDocumentLineAnnotationRomanContent,
-  createDocumentLineAnnotationRomanToken,
-  createDocumentLineAnnotationTranslation,
-  createDocumentLineBackground,
-  createDocumentLineContent,
   fieldsCommonPart,
+  fieldsCommonTextToken,
   fieldsDocumentLine,
   fieldsDocumentLineAnnotation,
   fieldsDocumentLineAnnotationRoman,
   fieldsDocumentLineAnnotationRomanContent,
-  fieldsDocumentLineAnnotationRomanToken,
   fieldsDocumentLineAnnotationTranslation,
   fieldsDocumentLineBackground,
   fieldsDocumentLineContent,
   fieldsDocumentWord,
+  createDocumentLine,
+  createDocumentLineAnnotation,
+  createDocumentLineAnnotationRoman,
+  createDocumentLineAnnotationRomanContent,
+  createDocumentLineAnnotationTranslation,
+  createDocumentLineBackground,
+  createDocumentLineContent,
 } from '@root/generated/detail.gen'
 import { LineType, WordType } from '@root/generated/document/index.gen'
 import {
@@ -125,16 +123,9 @@ export const makeDocumentLineAnnotation = (init?: MakeInit<LineAnnotation>): Lin
 }
 
 /**
- * Creates a source fragment, preserving its text and optional timing.
- */
-export const makeDocumentLineAnnotationRomanToken = (init?: MakeInit<LineAnnotationRomanToken>): LineAnnotationRomanToken => {
-  return withInit(createDocumentLineAnnotationRomanToken(), init)
-}
-
-/**
  * Creates roman content from source fragments without adding whole-line text.
  */
-export const makeDocumentLineAnnotationRomanContentTokens = (tokens: LineAnnotationRomanToken[]): LineAnnotationRomanContent => {
+export const makeDocumentLineAnnotationRomanContentTokens = (tokens: TextToken[]): LineAnnotationRomanContent => {
   return withInit(createDocumentLineAnnotationRomanContent(), { tokens })
 }
 
@@ -175,9 +166,7 @@ export const validateDocumentLineAnnotationRomanContent = (
     if (token.text === '') {
       diagnostics.push({ path: childPath(tokenPath, 'text'), code: DiagnosticCode.LineAnnotationRomanTokenTextEmpty })
     }
-    if (token.time) {
-      diagnostics.push(...validateTimeRange(token.time, childPath(tokenPath, 'time')))
-    }
+    diagnostics.push(...validateTextToken(token, tokenPath))
     if (isTimeRangeUncovered(token.time, time)) {
       diagnostics.push({ path: childPath(tokenPath, 'time'), code: DiagnosticCode.LineAnnotationRomanTimeUncovered })
     }
@@ -247,19 +236,12 @@ export const makeDocumentLineAnnotationTranslation = (init?: MakeInit<LineAnnota
 }
 
 /**
- * Copies the source fragment and its optional time without changing text.
- */
-export const canonicalizeDocumentLineAnnotationRomanToken = (token: LineAnnotationRomanToken): LineAnnotationRomanToken => {
-  return { ...token, time: copyMessage(token.time) }
-}
-
-/**
  * Copies roman content, preserving fragment order, whitespace, and explicit timing.
  */
 export const canonicalizeDocumentLineAnnotationRomanContent = (content: LineAnnotationRomanContent): LineAnnotationRomanContent => {
   return {
     ...content,
-    tokens: canonicalizeList(fieldsDocumentLineAnnotationRomanToken, content.tokens, canonicalizeDocumentLineAnnotationRomanToken),
+    tokens: canonicalizeList(fieldsCommonTextToken, content.tokens, canonicalizeTextToken),
   }
 }
 
@@ -294,7 +276,7 @@ export const resolveDocumentLineAnnotationRomanTime = (roman: LineAnnotationRoma
  * Uses the entire token time, then the romanization's time, then the owning line's time.
  */
 export const resolveDocumentLineAnnotationRomanTokenTime = (
-  token: LineAnnotationRomanToken,
+  token: TextToken,
   roman: LineAnnotationRoman,
   line: { time?: TimeRange | undefined },
 ): TimeRange | undefined => {

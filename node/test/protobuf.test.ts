@@ -37,7 +37,6 @@ import {
   makeEnrichedLineAnnotationRoman,
   makeEnrichedLineAnnotationRomanContentText,
   makeEnrichedLineAnnotationRomanContentTokens,
-  makeEnrichedLineAnnotationRomanToken,
   makeEnrichedLineAnnotationTranslation,
   makeEnrichedLineBackground,
   makeEnrichedLineContentText,
@@ -48,7 +47,7 @@ import {
   makeEnrichedWordAnnotation,
   makeEnrichedWordAnnotationRoman,
   makeEnrichedWordAnnotationRuby,
-  makeEnrichedWordAnnotationToken,
+  makeTextToken,
   makeEnrichedWordAnnotationTranslation,
   makeEnrichedWordEmphasis,
   makeEnrichedWordNormal,
@@ -86,18 +85,18 @@ const fromHex = (hex: string): Uint8Array => {
 const annotation = () => {
   return makeEnrichedWordAnnotation({
     rubies: [
-      makeEnrichedWordAnnotationRuby({ language: 'zh-latn', scheme: 'pinyin', tokens: [makeEnrichedWordAnnotationToken({ text: 'han' })] }),
+      makeEnrichedWordAnnotationRuby({ language: 'zh-latn', scheme: 'pinyin', tokens: [makeTextToken({ text: 'han', extra: extra() })] }),
       makeEnrichedWordAnnotationRuby({
         language: 'ja',
         time: makeTimeRange({}),
-        tokens: [makeEnrichedWordAnnotationToken({ text: '\u3042' })],
+        tokens: [makeTextToken({ text: '\u3042', extra: { Case: '', case: 'lower' } })],
       }),
     ],
     romans: [
       makeEnrichedWordAnnotationRoman({
         language: 'ja-latn',
         scheme: 'hepburn',
-        tokens: [makeEnrichedWordAnnotationToken({ time: makeTimeRange({ start: 1, end: 0 }), text: 'a' })],
+        tokens: [makeTextToken({ time: makeTimeRange({ start: 1, end: 0 }), text: 'a', extra: extra() })],
       }),
     ],
     translations: [makeEnrichedWordAnnotationTranslation({ language: '', text: '😀' })],
@@ -134,9 +133,9 @@ const lineAnnotation = () => {
         scheme: 'pinyin',
         time: makeTimeRange({ start: 0 }),
         content: makeEnrichedLineAnnotationRomanContentTokens([
-          makeEnrichedLineAnnotationRomanToken({ time: makeTimeRange({ start: 0, end: 1 }), text: 'ni' }),
-          makeEnrichedLineAnnotationRomanToken({ text: '  ' }),
-          makeEnrichedLineAnnotationRomanToken({ time: makeTimeRange({ start: 3 }), text: 'hao' }),
+          makeTextToken({ time: makeTimeRange({ start: 0, end: 1 }), text: 'ni', extra: extra() }),
+          makeTextToken({ text: '  ', extra: { Case: '', case: 'lower' } }),
+          makeTextToken({ time: makeTimeRange({ start: 3 }), text: 'hao', extra: { 'source:id': 'token-3', text: '', time: 'metadata' } }),
         ]),
       }),
       makeEnrichedLineAnnotationRoman({ content: makeEnrichedLineAnnotationRomanContentText('') }),

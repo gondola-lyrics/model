@@ -1,32 +1,30 @@
 import type { Diagnostic } from '@root/common'
 import type { MakeInit } from '@root/utils'
-import type { TimeRange } from '@root/generated/common/index.gen'
+import type { TextToken, TimeRange } from '@root/generated/common/index.gen'
 import type {
   Word,
   WordAnnotation,
   WordAnnotationRoman,
   WordAnnotationRuby,
-  WordAnnotationToken,
   WordAnnotationTranslation,
   WordEmphasis,
 } from '@root/generated/enriched/index.gen'
 
-import { DiagnosticCode, validateTimeRange } from '@root/common'
+import { DiagnosticCode, canonicalizeTextToken, validateTextToken, validateTimeRange } from '@root/common'
 import { TimingLevel } from '@root/generated/common/index.gen'
 import {
+  fieldsCommonTextToken,
+  fieldsEnrichedWordAnnotation,
+  fieldsEnrichedWordAnnotationRoman,
+  fieldsEnrichedWordAnnotationRuby,
+  fieldsEnrichedWordAnnotationTranslation,
+  fieldsEnrichedWordEmphasis,
   createEnrichedWord,
   createEnrichedWordAnnotation,
   createEnrichedWordAnnotationRoman,
   createEnrichedWordAnnotationRuby,
-  createEnrichedWordAnnotationToken,
   createEnrichedWordAnnotationTranslation,
   createEnrichedWordEmphasis,
-  fieldsEnrichedWordAnnotation,
-  fieldsEnrichedWordAnnotationRoman,
-  fieldsEnrichedWordAnnotationRuby,
-  fieldsEnrichedWordAnnotationToken,
-  fieldsEnrichedWordAnnotationTranslation,
-  fieldsEnrichedWordEmphasis,
 } from '@root/generated/detail.gen'
 import { WordType } from '@root/generated/enriched/index.gen'
 import {
@@ -54,13 +52,6 @@ const ONLY_SEPARATORS = /^\p{White_Space}+$/u
  */
 const ownsWordTimes = (timing: TimingLevel): boolean => {
   return timing !== TimingLevel.NONE && timing !== TimingLevel.LINE
-}
-
-/**
- * Creates a ruby or roman fragment with optional timing.
- */
-export const makeEnrichedWordAnnotationToken = (init?: MakeInit<WordAnnotationToken>): WordAnnotationToken => {
-  return withInit(createEnrichedWordAnnotationToken(), init)
 }
 
 /**
@@ -112,12 +103,10 @@ export const validateEnrichedWordAnnotation = (annotation: WordAnnotation, path 
 
       const inherited = item.time ?? time
       item.tokens.forEach((token, j) => {
-        const tokenPath = childPath(itemPath, `tokens[${j}].time`)
-        if (token.time) {
-          diagnostics.push(...validateTimeRange(token.time, tokenPath))
-        }
+        const tokenPath = childPath(itemPath, `tokens[${j}]`)
+        diagnostics.push(...validateTextToken(token, tokenPath))
         if (isTimeRangeUncovered(token.time, inherited)) {
-          diagnostics.push({ path: tokenPath, code: DiagnosticCode.LineWordAnnotationTimeUncovered })
+          diagnostics.push({ path: childPath(tokenPath, 'time'), code: DiagnosticCode.LineWordAnnotationTimeUncovered })
         }
       })
     })
@@ -207,13 +196,6 @@ export const validateEnrichedWords = (words: Word[], time: TimeRange | undefined
 }
 
 /**
- * Copies the token and its optional time range.
- */
-export const canonicalizeEnrichedWordAnnotationToken = (token: WordAnnotationToken): WordAnnotationToken => {
-  return { ...token, time: copyMessage(token.time) }
-}
-
-/**
  * Lowercases language and scheme and canonicalizes roman tokens.
  */
 export const canonicalizeEnrichedWordAnnotationRoman = (roman: WordAnnotationRoman): WordAnnotationRoman => {
@@ -222,7 +204,7 @@ export const canonicalizeEnrichedWordAnnotationRoman = (roman: WordAnnotationRom
     time: copyMessage(roman.time),
     language: lowerTag(roman.language),
     scheme: lowerTag(roman.scheme),
-    tokens: canonicalizeList(fieldsEnrichedWordAnnotationToken, roman.tokens, canonicalizeEnrichedWordAnnotationToken),
+    tokens: canonicalizeList(fieldsCommonTextToken, roman.tokens, canonicalizeTextToken),
   }
 }
 
@@ -235,7 +217,7 @@ export const canonicalizeEnrichedWordAnnotationRuby = (ruby: WordAnnotationRuby)
     time: copyMessage(ruby.time),
     language: lowerTag(ruby.language),
     scheme: lowerTag(ruby.scheme),
-    tokens: canonicalizeList(fieldsEnrichedWordAnnotationToken, ruby.tokens, canonicalizeEnrichedWordAnnotationToken),
+    tokens: canonicalizeList(fieldsCommonTextToken, ruby.tokens, canonicalizeTextToken),
   }
 }
 
@@ -269,7 +251,7 @@ export const resolveEnrichedAnnotationItemTime = (item: WordAnnotationRoman | Wo
  * Uses the token's time, then its annotation's time, then the annotated word.
  */
 export const resolveEnrichedAnnotationTokenTime = (
-  token: WordAnnotationToken,
+  token: TextToken,
   item: WordAnnotationRoman | WordAnnotationRuby,
   word: Word,
 ): TimeRange | undefined => {

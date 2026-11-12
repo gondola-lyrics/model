@@ -16,3 +16,22 @@ public data class Text(
      */
     val text: String = "",
 )
+
+/**
+ * Boundaries follow the source and need not match original words.
+ */
+public data class TextToken(
+    /**
+     * Unset timing follows the containing annotation's rules; an explicit range is never filled field by field.
+     */
+    val time: TimeRange? = null,
+    /**
+     * Text constraints are defined by the containing annotation.
+     */
+    val text: String = "",
+    /**
+     * Fragment-specific attributes without typed fields.
+     * Keys are non-empty and case-sensitive; values may be empty.
+     */
+    val extra: Map<String, String> = emptyMap(),
+)

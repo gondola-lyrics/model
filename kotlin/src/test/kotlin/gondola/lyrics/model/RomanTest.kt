@@ -1,17 +1,17 @@
 package gondola.lyrics.model
 
+import gondola.lyrics.model.common.TextToken
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.TimingLevel
+import gondola.lyrics.model.common.makeTextToken
 import gondola.lyrics.model.document.LineAnnotationRoman
 import gondola.lyrics.model.document.LineAnnotationRomanContent
-import gondola.lyrics.model.document.LineAnnotationRomanToken
 import gondola.lyrics.model.document.canonicalizeDocumentLineAnnotationRoman
 import gondola.lyrics.model.document.getDocumentLineAnnotationRomanText
 import gondola.lyrics.model.document.makeDocumentLineAnnotation
 import gondola.lyrics.model.document.makeDocumentLineAnnotationRoman
 import gondola.lyrics.model.document.makeDocumentLineAnnotationRomanContentText
 import gondola.lyrics.model.document.makeDocumentLineAnnotationRomanContentTokens
-import gondola.lyrics.model.document.makeDocumentLineAnnotationRomanToken
 import gondola.lyrics.model.document.makeDocumentLineBackground
 import gondola.lyrics.model.document.makeDocumentLineContentText
 import gondola.lyrics.model.document.makeDocumentLineContentWords
@@ -19,7 +19,6 @@ import gondola.lyrics.model.document.makeDocumentLineNormal
 import gondola.lyrics.model.document.makeDocumentLyric
 import gondola.lyrics.model.document.makeDocumentWordAnnotation
 import gondola.lyrics.model.document.makeDocumentWordAnnotationRoman
-import gondola.lyrics.model.document.makeDocumentWordAnnotationToken
 import gondola.lyrics.model.document.makeDocumentWordNormal
 import gondola.lyrics.model.document.resolveDocumentLineAnnotationRomanTime
 import gondola.lyrics.model.document.resolveDocumentLineAnnotationRomanTokenTime
@@ -43,7 +42,7 @@ import kotlin.test.assertNotNull
 class RomanTest {
     @Test
     fun checksExclusiveContentAndSourceTimingAnchorsInBothLayers() {
-        val timed = LineAnnotationRomanToken(time = TimeRange(), text = "ni")
+        val timed = TextToken(time = TimeRange(), text = "ni")
         val cases = listOf(
             LineAnnotationRoman() to listOf("content" to "line.annotation.roman.content.missing"),
             LineAnnotationRoman(content = LineAnnotationRomanContent()) to listOf("content" to "line.annotation.roman.content.missing"),
@@ -53,10 +52,10 @@ class RomanTest {
                 "content" to "line.annotation.roman.content.ambiguous",
                 "content.text" to "line.annotation.roman.content.text.empty",
             ),
-            LineAnnotationRoman(content = LineAnnotationRomanContent(tokens = listOf(LineAnnotationRomanToken(text = "ni")))) to listOf(
+            LineAnnotationRoman(content = LineAnnotationRomanContent(tokens = listOf(TextToken(text = "ni")))) to listOf(
                 "content.tokens" to "line.annotation.roman.content.tokens.time.missing",
             ),
-            LineAnnotationRoman(content = LineAnnotationRomanContent(tokens = listOf(LineAnnotationRomanToken(time = TimeRange())))) to listOf(
+            LineAnnotationRoman(content = LineAnnotationRomanContent(tokens = listOf(TextToken(time = TimeRange())))) to listOf(
                 "content.tokens[0].text" to "line.annotation.roman.token.text.empty",
             ),
         )
@@ -66,16 +65,14 @@ class RomanTest {
                 content = roman.content?.let { content ->
                     gondola.lyrics.model.enriched.LineAnnotationRomanContent(
                         text = content.text,
-                        tokens = content.tokens.map { token ->
-                            gondola.lyrics.model.enriched.LineAnnotationRomanToken(time = token.time, text = token.text)
-                        },
+                        tokens = content.tokens,
                     )
                 },
             )
             assertEquals(expected, validateEnrichedLineAnnotationRoman(enriched).map { it.path to it.code.value })
         }
         val mixed = makeDocumentLineAnnotationRoman(
-            content = makeDocumentLineAnnotationRomanContentTokens(listOf(timed, makeDocumentLineAnnotationRomanToken(text = " "))),
+            content = makeDocumentLineAnnotationRomanContentTokens(listOf(timed, makeTextToken(text = " "))),
         )
         assertEquals(emptyList(), validateDocumentLineAnnotationRoman(mixed))
         assertEquals(
@@ -87,9 +84,9 @@ class RomanTest {
     @Test
     fun keepsIndependentTimingAndUnknownEndsWithoutChangingOriginalPrecision() {
         val tokens = listOf(
-            makeDocumentLineAnnotationRomanToken(time = TimeRange(start = 900, end = 1800), text = "ni"),
-            makeDocumentLineAnnotationRomanToken(text = "  "),
-            makeDocumentLineAnnotationRomanToken(time = TimeRange(start = 2300), text = "hao"),
+            makeTextToken(time = TimeRange(start = 900, end = 1800), text = "ni"),
+            makeTextToken(text = "  "),
+            makeTextToken(time = TimeRange(start = 2300), text = "hao"),
         )
         val roman = makeDocumentLineAnnotationRoman(content = makeDocumentLineAnnotationRomanContentTokens(tokens))
         val line = makeDocumentLineNormal(
@@ -115,25 +112,24 @@ class RomanTest {
         val background = makeDocumentLineBackground(time = line.time, content = line.content)
         assertEquals(background.time, resolveDocumentLineAnnotationRomanTokenTime(tokens[1], roman, background))
 
-        val enrichedTokens = tokens.map { gondola.lyrics.model.enriched.LineAnnotationRomanToken(time = it.time, text = it.text) }
         val enrichedRoman =
-            makeEnrichedLineAnnotationRoman(content = gondola.lyrics.model.enriched.LineAnnotationRomanContent(tokens = enrichedTokens))
+            makeEnrichedLineAnnotationRoman(content = gondola.lyrics.model.enriched.LineAnnotationRomanContent(tokens = tokens))
         val enrichedLine = makeEnrichedLineNormal(
             time = line.time,
             content = makeEnrichedLineContentText("original"),
             annotation = makeEnrichedLineAnnotation(romans = listOf(enrichedRoman)),
         )
         assertEquals("ni  hao", getEnrichedLineAnnotationRomanText(enrichedRoman))
-        assertEquals(TimeRange(start = 2300), resolveEnrichedLineAnnotationRomanTokenTime(enrichedTokens[2], enrichedRoman, enrichedLine))
+        assertEquals(TimeRange(start = 2300), resolveEnrichedLineAnnotationRomanTokenTime(tokens[2], enrichedRoman, enrichedLine))
         assertEquals(emptyList(), validateEnrichedLine(enrichedLine, timing = TimingLevel.TIMING_LEVEL_LINE))
     }
 
     @Test
     fun canonicalizationCopiesContentWithoutChangingSourceBoundariesOrWhitespace() {
         val tokens = mutableListOf(
-            makeDocumentLineAnnotationRomanToken(time = TimeRange(start = 2000), text = " ni"),
-            makeDocumentLineAnnotationRomanToken(text = "  "),
-            makeDocumentLineAnnotationRomanToken(time = TimeRange(start = 1000, end = 1800), text = "hao "),
+            makeTextToken(time = TimeRange(start = 2000), text = " ni"),
+            makeTextToken(text = "  "),
+            makeTextToken(time = TimeRange(start = 1000, end = 1800), text = "hao "),
         )
         val roman = makeDocumentLineAnnotationRoman(
             language = "ZH-Latn",
@@ -152,9 +148,7 @@ class RomanTest {
             language = "ZH-Latn",
             scheme = "PINYIN",
             content = gondola.lyrics.model.enriched.LineAnnotationRomanContent(
-                tokens = assertNotNull(canonical.content).tokens.map {
-                    gondola.lyrics.model.enriched.LineAnnotationRomanToken(time = it.time, text = it.text)
-                },
+                tokens = assertNotNull(canonical.content).tokens,
             ),
         )
         val enrichedCanonical = canonicalizeEnrichedLineAnnotationRoman(enriched)
@@ -176,7 +170,7 @@ class RomanTest {
                     makeDocumentWordAnnotationRoman(
                         language = "zh-latn",
                         scheme = "pinyin",
-                        tokens = listOf(makeDocumentWordAnnotationToken(text = "ni")),
+                        tokens = listOf(makeTextToken(text = "ni")),
                     ),
                 ),
             ),
@@ -210,7 +204,7 @@ class RomanTest {
                     gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRoman(
                         language = "zh-latn",
                         scheme = "pinyin",
-                        tokens = listOf(gondola.lyrics.model.enriched.makeEnrichedWordAnnotationToken(text = "ni")),
+                        tokens = listOf(makeTextToken(text = "ni")),
                     ),
                 ),
             ),

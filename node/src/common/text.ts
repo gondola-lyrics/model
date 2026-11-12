@@ -1,11 +1,12 @@
 import type { MakeInit } from '@root/utils'
-import type { Text } from '@root/generated/common/index.gen'
+import type { Text, TextToken } from '@root/generated/common/index.gen'
 import type { Diagnostic } from './diagnostic'
 
-import { DiagnosticCode } from './diagnostic'
+import { createCommonText, createCommonTextToken } from '@root/generated/detail.gen'
+import { childPath, copyMessage, lowerTag, withInit } from '@root/utils'
 
-import { lowerTag, withInit } from '@root/utils'
-import { createCommonText } from '@root/generated/detail.gen'
+import { DiagnosticCode } from './diagnostic'
+import { validateTimeRange } from './time'
 
 /**
  * Creates a Text, text with an optional BCP 47 language tag.
@@ -32,4 +33,29 @@ export const validateText = (text: Text, path = ''): Diagnostic[] => {
  */
 export const canonicalizeText = (text: Text): Text => {
   return { ...text, language: lowerTag(text.language) }
+}
+
+/**
+ * Creates a source fragment without normalizing its text or extension attributes.
+ */
+export const makeTextToken = (init?: MakeInit<TextToken>): TextToken => {
+  return withInit(createCommonTextToken(), init)
+}
+
+/**
+ * Checks explicit timing and extension keys; text constraints belong to the containing annotation.
+ */
+export const validateTextToken = (token: TextToken, path = ''): Diagnostic[] => {
+  const diagnostics = token.time === undefined ? [] : validateTimeRange(token.time, childPath(path, 'time'))
+  if (Object.hasOwn(token.extra, '')) {
+    diagnostics.push({ path: childPath(path, 'extra'), code: DiagnosticCode.TextTokenExtraKeyEmpty })
+  }
+  return diagnostics
+}
+
+/**
+ * Copies timing and extensions without changing text, keys, or values.
+ */
+export const canonicalizeTextToken = (token: TextToken): TextToken => {
+  return { ...token, time: copyMessage(token.time), extra: { ...token.extra } }
 }

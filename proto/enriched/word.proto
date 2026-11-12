@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package lyric.enriched;
 
+import "common/text.proto";
 import "common/time.proto";
 
 option java_multiple_files = true;
@@ -17,14 +18,6 @@ enum WordType {
 
   // Only type and text are set; text is a non-empty sequence of Unicode White_Space characters.
   WORD_TYPE_SPACE = 2;
-}
-
-// A ruby or roman fragment with optional timing.
-message WordAnnotationToken {
-  // Unset inherits the annotation's effective time; an explicit range must fit within it.
-  lyric.common.TimeRange time = 1;
-
-  string text = 2;
 }
 
 // Translation of a single word into another language.
@@ -48,7 +41,8 @@ message WordAnnotationRoman {
   optional string scheme = 3;
 
   // Tokens composing the item in order.
-  repeated WordAnnotationToken tokens = 4;
+  // Unset token time inherits this item's effective range; explicit token ranges must fit within it.
+  repeated lyric.common.TextToken tokens = 4;
 }
 
 // Ruby annotation of a single word, such as furigana.
@@ -63,7 +57,8 @@ message WordAnnotationRuby {
   optional string scheme = 3;
 
   // Tokens composing the item in order.
-  repeated WordAnnotationToken tokens = 4;
+  // Unset token time inherits this item's effective range; explicit token ranges must fit within it.
+  repeated lyric.common.TextToken tokens = 4;
 }
 
 // Ruby and roman entries are unique by language and scheme; translations are unique by language.

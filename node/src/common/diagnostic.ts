@@ -3,6 +3,7 @@
  */
 export enum DiagnosticCode {
   TextTextEmpty = 'text.text.empty',
+  TextTokenExtraKeyEmpty = 'text.token.extra.key.empty',
   TimeRangeEndBeforeStart = 'time.range.end.before_start',
   TimeRangeStartInvalid = 'time.range.start.invalid',
   TimeRangeEndInvalid = 'time.range.end.invalid',

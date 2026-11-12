@@ -5,6 +5,7 @@ import gondola.lyrics.model.common.PartType
 import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.common.makePart
 import gondola.lyrics.model.common.makeText
+import gondola.lyrics.model.common.makeTextToken
 import gondola.lyrics.model.common.makeTimeRange
 import gondola.lyrics.model.common.makeUnknownEntry
 import gondola.lyrics.model.document.LineType
@@ -33,7 +34,6 @@ import gondola.lyrics.model.enriched.makeEnrichedLyric
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotation
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRoman
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRuby
-import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationToken
 import gondola.lyrics.model.enriched.makeEnrichedWordEmphasis
 import gondola.lyrics.model.enriched.makeEnrichedWordNormal
 import gondola.lyrics.model.enriched.validateEnrichedLyric
@@ -137,14 +137,14 @@ class CanonicalizeTest {
                     makeEnrichedWordAnnotationRoman(
                         language = "JA-Latn",
                         scheme = scheme,
-                        tokens = listOf(makeEnrichedWordAnnotationToken(text = "shi")),
+                        tokens = listOf(makeTextToken(text = "shi")),
                     ),
                 ),
                 rubies = listOf(
                     makeEnrichedWordAnnotationRuby(
                         language = "JA-Latn",
                         scheme = scheme,
-                        tokens = listOf(makeEnrichedWordAnnotationToken(text = "shi")),
+                        tokens = listOf(makeTextToken(text = "shi")),
                     ),
                 ),
             )
@@ -183,7 +183,7 @@ class CanonicalizeTest {
     @Test
     fun canonicalizesDocumentAnnotationsWithoutLosingTimingOrExplicitFalse() {
         val wordTime = makeTimeRange(start = 1000, end = 2000)
-        val token = gondola.lyrics.model.document.makeDocumentWordAnnotationToken(time = wordTime, text = "shi")
+        val token = makeTextToken(time = wordTime, text = "shi")
         val word = gondola.lyrics.model.document.makeDocumentWordNormal(
             text = "x",
             time = wordTime,

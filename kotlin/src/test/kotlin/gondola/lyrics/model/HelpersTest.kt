@@ -9,6 +9,7 @@ import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.common.getTimeRangeDuration
 import gondola.lyrics.model.common.makeAgent
 import gondola.lyrics.model.common.makeText
+import gondola.lyrics.model.common.makeTextToken
 import gondola.lyrics.model.common.makeTimeRange
 import gondola.lyrics.model.common.resolveDiagnosticPath
 import gondola.lyrics.model.common.validateTimeRange
@@ -25,7 +26,6 @@ import gondola.lyrics.model.enriched.makeEnrichedLineContentWords
 import gondola.lyrics.model.enriched.makeEnrichedLineNormal
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotation
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRoman
-import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationToken
 import gondola.lyrics.model.enriched.makeEnrichedWordNormal
 import gondola.lyrics.model.enriched.makeEnrichedWordSpace
 import gondola.lyrics.model.enriched.resolveEnrichedLineAgents
@@ -43,14 +43,14 @@ class HelpersTest {
                 makeEnrichedWordAnnotationRoman(
                     language = "JA-Latn",
                     scheme = "HEPBURN",
-                    tokens = listOf(makeEnrichedWordAnnotationToken(text = "shi")),
+                    tokens = listOf(makeTextToken(text = "shi")),
                 ),
                 makeEnrichedWordAnnotationRoman(
                     language = "ja-latn",
                     scheme = "kunrei",
-                    tokens = listOf(makeEnrichedWordAnnotationToken(text = "si")),
+                    tokens = listOf(makeTextToken(text = "si")),
                 ),
-                makeEnrichedWordAnnotationRoman(language = "ja-latn", tokens = listOf(makeEnrichedWordAnnotationToken(text = "default"))),
+                makeEnrichedWordAnnotationRoman(language = "ja-latn", tokens = listOf(makeTextToken(text = "default"))),
             ),
         )
         val last = makeEnrichedWordAnnotation(
@@ -58,14 +58,14 @@ class HelpersTest {
                 makeEnrichedWordAnnotationRoman(
                     language = "ja-latn",
                     scheme = "KUNREI",
-                    tokens = listOf(makeEnrichedWordAnnotationToken(text = "ti")),
+                    tokens = listOf(makeTextToken(text = "ti")),
                 ),
                 makeEnrichedWordAnnotationRoman(
                     language = "JA-LATN",
                     scheme = "hepburn",
-                    tokens = listOf(makeEnrichedWordAnnotationToken(text = "chi")),
+                    tokens = listOf(makeTextToken(text = "chi")),
                 ),
-                makeEnrichedWordAnnotationRoman(language = "ja-latn", scheme = "", tokens = listOf(makeEnrichedWordAnnotationToken(text = "text"))),
+                makeEnrichedWordAnnotationRoman(language = "ja-latn", scheme = "", tokens = listOf(makeTextToken(text = "text"))),
             ),
         )
         val words = listOf(
@@ -94,9 +94,7 @@ class HelpersTest {
                             gondola.lyrics.model.document.makeDocumentWordAnnotationRoman(
                                 language = roman.language,
                                 scheme = roman.scheme,
-                                tokens = roman.tokens.map { token ->
-                                    gondola.lyrics.model.document.makeDocumentWordAnnotationToken(time = token.time, text = token.text)
-                                },
+                                tokens = roman.tokens,
                             )
                         },
                     )

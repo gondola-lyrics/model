@@ -12,7 +12,6 @@ import {
   makeDocumentLineContentWords,
   makeDocumentWordAnnotation,
   makeDocumentWordAnnotationRoman,
-  makeDocumentWordAnnotationToken,
   makeDocumentWordNormal,
   makeDocumentWordSpace,
   makeEnrichedLineAnnotationRoman,
@@ -21,7 +20,7 @@ import {
   makeEnrichedLineNormal,
   makeEnrichedWordAnnotation,
   makeEnrichedWordAnnotationRoman,
-  makeEnrichedWordAnnotationToken,
+  makeTextToken,
   makeEnrichedWordNormal,
   makeEnrichedWordSpace,
   makeText,
@@ -55,16 +54,16 @@ describe('derive line romans', () => {
   it('preserves schemes and spacing for document annotations', () => {
     const first = makeDocumentWordAnnotation({
       romans: [
-        makeDocumentWordAnnotationRoman({ language: 'JA-Latn', scheme: 'HEPBURN', tokens: [makeDocumentWordAnnotationToken({ text: 'shi' })] }),
-        makeDocumentWordAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', tokens: [makeDocumentWordAnnotationToken({ text: 'si' })] }),
-        makeDocumentWordAnnotationRoman({ language: 'ja-latn', tokens: [makeDocumentWordAnnotationToken({ text: 'default' })] }),
+        makeDocumentWordAnnotationRoman({ language: 'JA-Latn', scheme: 'HEPBURN', tokens: [makeTextToken({ text: 'shi' })] }),
+        makeDocumentWordAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', tokens: [makeTextToken({ text: 'si' })] }),
+        makeDocumentWordAnnotationRoman({ language: 'ja-latn', tokens: [makeTextToken({ text: 'default' })] }),
       ],
     })
     const last = makeDocumentWordAnnotation({
       romans: [
-        makeDocumentWordAnnotationRoman({ language: 'ja-latn', scheme: 'KUNREI', tokens: [makeDocumentWordAnnotationToken({ text: 'ti' })] }),
-        makeDocumentWordAnnotationRoman({ language: 'JA-LATN', scheme: 'hepburn', tokens: [makeDocumentWordAnnotationToken({ text: 'chi' })] }),
-        makeDocumentWordAnnotationRoman({ language: 'ja-latn', scheme: '', tokens: [makeDocumentWordAnnotationToken({ text: 'text' })] }),
+        makeDocumentWordAnnotationRoman({ language: 'ja-latn', scheme: 'KUNREI', tokens: [makeTextToken({ text: 'ti' })] }),
+        makeDocumentWordAnnotationRoman({ language: 'JA-LATN', scheme: 'hepburn', tokens: [makeTextToken({ text: 'chi' })] }),
+        makeDocumentWordAnnotationRoman({ language: 'ja-latn', scheme: '', tokens: [makeTextToken({ text: 'text' })] }),
       ],
     })
     const words = [
@@ -86,16 +85,16 @@ describe('derive line romans', () => {
   it('preserves schemes and spacing for enriched annotations', () => {
     const first = makeEnrichedWordAnnotation({
       romans: [
-        makeEnrichedWordAnnotationRoman({ language: 'JA-Latn', scheme: 'HEPBURN', tokens: [makeEnrichedWordAnnotationToken({ text: 'shi' })] }),
-        makeEnrichedWordAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', tokens: [makeEnrichedWordAnnotationToken({ text: 'si' })] }),
-        makeEnrichedWordAnnotationRoman({ language: 'ja-latn', tokens: [makeEnrichedWordAnnotationToken({ text: 'default' })] }),
+        makeEnrichedWordAnnotationRoman({ language: 'JA-Latn', scheme: 'HEPBURN', tokens: [makeTextToken({ text: 'shi' })] }),
+        makeEnrichedWordAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', tokens: [makeTextToken({ text: 'si' })] }),
+        makeEnrichedWordAnnotationRoman({ language: 'ja-latn', tokens: [makeTextToken({ text: 'default' })] }),
       ],
     })
     const last = makeEnrichedWordAnnotation({
       romans: [
-        makeEnrichedWordAnnotationRoman({ language: 'ja-latn', scheme: 'KUNREI', tokens: [makeEnrichedWordAnnotationToken({ text: 'ti' })] }),
-        makeEnrichedWordAnnotationRoman({ language: 'JA-LATN', scheme: 'hepburn', tokens: [makeEnrichedWordAnnotationToken({ text: 'chi' })] }),
-        makeEnrichedWordAnnotationRoman({ language: 'ja-latn', scheme: '', tokens: [makeEnrichedWordAnnotationToken({ text: 'text' })] }),
+        makeEnrichedWordAnnotationRoman({ language: 'ja-latn', scheme: 'KUNREI', tokens: [makeTextToken({ text: 'ti' })] }),
+        makeEnrichedWordAnnotationRoman({ language: 'JA-LATN', scheme: 'hepburn', tokens: [makeTextToken({ text: 'chi' })] }),
+        makeEnrichedWordAnnotationRoman({ language: 'ja-latn', scheme: '', tokens: [makeTextToken({ text: 'text' })] }),
       ],
     })
     const words = [

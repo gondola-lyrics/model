@@ -4,8 +4,11 @@ package gondola.lyrics.model.document
 
 import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.DiagnosticCode
+import gondola.lyrics.model.common.TextToken
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.TimingLevel
+import gondola.lyrics.model.common.canonicalizeTextToken
+import gondola.lyrics.model.common.validateTextToken
 import gondola.lyrics.model.common.validateTimeRange
 import gondola.lyrics.model.utils.canonicalizeField
 import gondola.lyrics.model.utils.canonicalizeList
@@ -28,20 +31,13 @@ private fun ownsWordTimes(timing: TimingLevel): Boolean {
 }
 
 /**
- * Creates a ruby or roman fragment with optional timing.
- */
-public fun makeDocumentWordAnnotationToken(time: TimeRange? = null, text: String = ""): WordAnnotationToken {
-    return WordAnnotationToken(time = time, text = text)
-}
-
-/**
  * Creates a word romanization without normalizing its language or scheme.
  */
 public fun makeDocumentWordAnnotationRoman(
     time: TimeRange? = null,
     language: String? = null,
     scheme: String? = null,
-    tokens: List<WordAnnotationToken> = emptyList(),
+    tokens: List<TextToken> = emptyList(),
 ): WordAnnotationRoman {
     return WordAnnotationRoman(time = time, language = language, scheme = scheme, tokens = tokens)
 }
@@ -60,7 +56,7 @@ public fun makeDocumentWordAnnotationRuby(
     time: TimeRange? = null,
     language: String? = null,
     scheme: String? = null,
-    tokens: List<WordAnnotationToken> = emptyList(),
+    tokens: List<TextToken> = emptyList(),
 ): WordAnnotationRuby {
     return WordAnnotationRuby(time = time, language = language, scheme = scheme, tokens = tokens)
 }
@@ -82,7 +78,7 @@ public fun makeDocumentWordAnnotation(
 public fun validateDocumentWordAnnotation(annotation: WordAnnotation, path: String = "", time: TimeRange? = null): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
 
-    fun validateItem(itemTime: TimeRange?, tokens: List<WordAnnotationToken>, itemPath: String) {
+    fun validateItem(itemTime: TimeRange?, tokens: List<TextToken>, itemPath: String) {
         if (itemTime != null) {
             diagnostics.addAll(validateTimeRange(itemTime, childPath(itemPath, "time")))
         }
@@ -92,13 +88,10 @@ public fun validateDocumentWordAnnotation(annotation: WordAnnotation, path: Stri
         }
         val inherited = itemTime ?: time
         tokens.forEachIndexed { index, token ->
-            val tokenPath = childPath(itemPath, "tokens[$index].time")
-            val tokenTime = token.time
-            if (tokenTime != null) {
-                diagnostics.addAll(validateTimeRange(tokenTime, tokenPath))
-            }
-            if (isTimeRangeUncovered(tokenTime, inherited)) {
-                diagnostics.add(Diagnostic(tokenPath, DiagnosticCode.LineWordAnnotationTimeUncovered))
+            val tokenPath = childPath(itemPath, "tokens[$index]")
+            diagnostics.addAll(validateTextToken(token, tokenPath))
+            if (isTimeRangeUncovered(token.time, inherited)) {
+                diagnostics.add(Diagnostic(childPath(tokenPath, "time"), DiagnosticCode.LineWordAnnotationTimeUncovered))
             }
         }
     }
@@ -191,20 +184,13 @@ public fun validateDocumentWords(
 }
 
 /**
- * Returns the immutable token unchanged.
- */
-public fun canonicalizeDocumentWordAnnotationToken(token: WordAnnotationToken): WordAnnotationToken {
-    return token
-}
-
-/**
  * Lowercases language and scheme and canonicalizes roman tokens.
  */
 public fun canonicalizeDocumentWordAnnotationRoman(roman: WordAnnotationRoman): WordAnnotationRoman {
     return roman.copy(
         language = lowerTag(roman.language),
         scheme = lowerTag(roman.scheme),
-        tokens = canonicalizeList(roman.tokens, ::canonicalizeDocumentWordAnnotationToken),
+        tokens = canonicalizeList(roman.tokens, ::canonicalizeTextToken),
     )
 }
 
@@ -215,7 +201,7 @@ public fun canonicalizeDocumentWordAnnotationRuby(ruby: WordAnnotationRuby): Wor
     return ruby.copy(
         language = lowerTag(ruby.language),
         scheme = lowerTag(ruby.scheme),
-        tokens = canonicalizeList(ruby.tokens, ::canonicalizeDocumentWordAnnotationToken),
+        tokens = canonicalizeList(ruby.tokens, ::canonicalizeTextToken),
     )
 }
 
@@ -254,14 +240,14 @@ public fun resolveDocumentAnnotationItemTime(item: WordAnnotationRuby, word: Wor
 /**
  * Uses the token's time, then its annotation's time, then the annotated word.
  */
-public fun resolveDocumentAnnotationTokenTime(token: WordAnnotationToken, item: WordAnnotationRoman, word: Word): TimeRange? {
+public fun resolveDocumentAnnotationTokenTime(token: TextToken, item: WordAnnotationRoman, word: Word): TimeRange? {
     return token.time ?: resolveDocumentAnnotationItemTime(item, word)
 }
 
 /**
  * Uses the token's time, then its annotation's time, then the annotated word.
  */
-public fun resolveDocumentAnnotationTokenTime(token: WordAnnotationToken, item: WordAnnotationRuby, word: Word): TimeRange? {
+public fun resolveDocumentAnnotationTokenTime(token: TextToken, item: WordAnnotationRuby, word: Word): TimeRange? {
     return token.time ?: resolveDocumentAnnotationItemTime(item, word)
 }
 

@@ -2,6 +2,7 @@
 
 package gondola.lyrics.model.enriched
 
+import gondola.lyrics.model.common.TextToken
 import gondola.lyrics.model.common.TimeRange
 
 public class WordType(@JvmField public val value: Int) {
@@ -41,17 +42,6 @@ public class WordType(@JvmField public val value: Int) {
 }
 
 /**
- * A ruby or roman fragment with optional timing.
- */
-public data class WordAnnotationToken(
-    /**
-     * Unset inherits the annotation's effective time; an explicit range must fit within it.
-     */
-    val time: TimeRange? = null,
-    val text: String = "",
-)
-
-/**
  * Translation of a single word into another language.
  */
 public data class WordAnnotationTranslation(
@@ -83,8 +73,9 @@ public data class WordAnnotationRoman(
     val scheme: String? = null,
     /**
      * Tokens composing the item in order.
+     * Unset token time inherits this item's effective range; explicit token ranges must fit within it.
      */
-    val tokens: List<WordAnnotationToken> = emptyList(),
+    val tokens: List<TextToken> = emptyList(),
 )
 
 /**
@@ -105,8 +96,9 @@ public data class WordAnnotationRuby(
     val scheme: String? = null,
     /**
      * Tokens composing the item in order.
+     * Unset token time inherits this item's effective range; explicit token ranges must fit within it.
      */
-    val tokens: List<WordAnnotationToken> = emptyList(),
+    val tokens: List<TextToken> = emptyList(),
 )
 
 /**

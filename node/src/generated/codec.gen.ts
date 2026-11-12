@@ -11,13 +11,13 @@ import {
   createCommonMetaReference,
   createCommonPart,
   createCommonText,
+  createCommonTextToken,
   createCommonTimeRange,
   createCommonUnknownEntry,
   createDocumentLine,
   createDocumentLineAnnotation,
   createDocumentLineAnnotationRoman,
   createDocumentLineAnnotationRomanContent,
-  createDocumentLineAnnotationRomanToken,
   createDocumentLineAnnotationTranslation,
   createDocumentLineBackground,
   createDocumentLineContent,
@@ -25,14 +25,12 @@ import {
   createDocumentWordAnnotation,
   createDocumentWordAnnotationRoman,
   createDocumentWordAnnotationRuby,
-  createDocumentWordAnnotationToken,
   createDocumentWordAnnotationTranslation,
   createEnrichedLanguageUsage,
   createEnrichedLine,
   createEnrichedLineAnnotation,
   createEnrichedLineAnnotationRoman,
   createEnrichedLineAnnotationRomanContent,
-  createEnrichedLineAnnotationRomanToken,
   createEnrichedLineAnnotationTranslation,
   createEnrichedLineBackground,
   createEnrichedLineContent,
@@ -40,7 +38,6 @@ import {
   createEnrichedWordAnnotation,
   createEnrichedWordAnnotationRoman,
   createEnrichedWordAnnotationRuby,
-  createEnrichedWordAnnotationToken,
   createEnrichedWordAnnotationTranslation,
   createEnrichedWordEmphasis,
 } from './detail.gen'
@@ -76,6 +73,32 @@ export type WireReader = {
   skip(): void
 }
 
+export const encodeCommonTimeRange = (w: WireWriter, v: common.TimeRange): void => {
+  if (v.start !== 0) {
+    w.tag(8)
+    w.uint32(v.start)
+  }
+  if (v.end !== undefined) {
+    w.tag(16)
+    w.uint32(v.end)
+  }
+}
+
+export const decodeCommonTimeRange = (r: WireReader, m: common.TimeRange): void => {
+  while (r.more()) {
+    switch (r.tag()) {
+      case 8:
+        m.start = r.uint32()
+        break
+      case 16:
+        m.end = r.uint32()
+        break
+      default:
+        r.skip()
+    }
+  }
+}
+
 export const encodeCommonText = (w: WireWriter, v: common.Text): void => {
   if (v.language !== undefined) {
     w.tag(10)
@@ -95,6 +118,39 @@ export const decodeCommonText = (r: WireReader, m: common.Text): void => {
         break
       case 18:
         m.text = r.string()
+        break
+      default:
+        r.skip()
+    }
+  }
+}
+
+export const encodeCommonTextToken = (w: WireWriter, v: common.TextToken): void => {
+  if (v.time !== undefined) {
+    w.message(10, encodeCommonTimeRange, v.time)
+  }
+  if (v.text !== '') {
+    w.tag(18)
+    w.string(v.text)
+  }
+  w.map(26, v.extra)
+}
+
+export const decodeCommonTextToken = (r: WireReader, m: common.TextToken): void => {
+  while (r.more()) {
+    switch (r.tag()) {
+      case 10: {
+        m.time ??= createCommonTimeRange()
+        const end = r.enter()
+        decodeCommonTimeRange(r, m.time)
+        r.leave(end)
+        break
+      }
+      case 18:
+        m.text = r.string()
+        break
+      case 26:
+        r.mapEntry(m.extra)
         break
       default:
         r.skip()
@@ -385,61 +441,6 @@ export const decodeCommonPart = (r: WireReader, m: common.Part): void => {
   }
 }
 
-export const encodeCommonTimeRange = (w: WireWriter, v: common.TimeRange): void => {
-  if (v.start !== 0) {
-    w.tag(8)
-    w.uint32(v.start)
-  }
-  if (v.end !== undefined) {
-    w.tag(16)
-    w.uint32(v.end)
-  }
-}
-
-export const decodeCommonTimeRange = (r: WireReader, m: common.TimeRange): void => {
-  while (r.more()) {
-    switch (r.tag()) {
-      case 8:
-        m.start = r.uint32()
-        break
-      case 16:
-        m.end = r.uint32()
-        break
-      default:
-        r.skip()
-    }
-  }
-}
-
-export const encodeDocumentWordAnnotationToken = (w: WireWriter, v: document.WordAnnotationToken): void => {
-  if (v.time !== undefined) {
-    w.message(10, encodeCommonTimeRange, v.time)
-  }
-  if (v.text !== '') {
-    w.tag(18)
-    w.string(v.text)
-  }
-}
-
-export const decodeDocumentWordAnnotationToken = (r: WireReader, m: document.WordAnnotationToken): void => {
-  while (r.more()) {
-    switch (r.tag()) {
-      case 10: {
-        m.time ??= createCommonTimeRange()
-        const end = r.enter()
-        decodeCommonTimeRange(r, m.time)
-        r.leave(end)
-        break
-      }
-      case 18:
-        m.text = r.string()
-        break
-      default:
-        r.skip()
-    }
-  }
-}
-
 export const encodeDocumentWordAnnotationTranslation = (w: WireWriter, v: document.WordAnnotationTranslation): void => {
   if (v.language !== undefined) {
     w.tag(10)
@@ -479,7 +480,7 @@ export const encodeDocumentWordAnnotationRoman = (w: WireWriter, v: document.Wor
     w.string(v.scheme)
   }
   for (const item of v.tokens) {
-    w.message(34, encodeDocumentWordAnnotationToken, item)
+    w.message(34, encodeCommonTextToken, item)
   }
 }
 
@@ -500,9 +501,9 @@ export const decodeDocumentWordAnnotationRoman = (r: WireReader, m: document.Wor
         m.scheme = r.string()
         break
       case 34: {
-        const item = createDocumentWordAnnotationToken()
+        const item = createCommonTextToken()
         const end = r.enter()
-        decodeDocumentWordAnnotationToken(r, item)
+        decodeCommonTextToken(r, item)
         r.leave(end)
         m.tokens.push(item)
         break
@@ -526,7 +527,7 @@ export const encodeDocumentWordAnnotationRuby = (w: WireWriter, v: document.Word
     w.string(v.scheme)
   }
   for (const item of v.tokens) {
-    w.message(34, encodeDocumentWordAnnotationToken, item)
+    w.message(34, encodeCommonTextToken, item)
   }
 }
 
@@ -547,9 +548,9 @@ export const decodeDocumentWordAnnotationRuby = (r: WireReader, m: document.Word
         m.scheme = r.string()
         break
       case 34: {
-        const item = createDocumentWordAnnotationToken()
+        const item = createCommonTextToken()
         const end = r.enter()
-        decodeDocumentWordAnnotationToken(r, item)
+        decodeCommonTextToken(r, item)
         r.leave(end)
         m.tokens.push(item)
         break
@@ -665,38 +666,9 @@ export const decodeDocumentWord = (r: WireReader, m: document.Word): void => {
   }
 }
 
-export const encodeDocumentLineAnnotationRomanToken = (w: WireWriter, v: document.LineAnnotationRomanToken): void => {
-  if (v.time !== undefined) {
-    w.message(10, encodeCommonTimeRange, v.time)
-  }
-  if (v.text !== '') {
-    w.tag(18)
-    w.string(v.text)
-  }
-}
-
-export const decodeDocumentLineAnnotationRomanToken = (r: WireReader, m: document.LineAnnotationRomanToken): void => {
-  while (r.more()) {
-    switch (r.tag()) {
-      case 10: {
-        m.time ??= createCommonTimeRange()
-        const end = r.enter()
-        decodeCommonTimeRange(r, m.time)
-        r.leave(end)
-        break
-      }
-      case 18:
-        m.text = r.string()
-        break
-      default:
-        r.skip()
-    }
-  }
-}
-
 export const encodeDocumentLineAnnotationRomanContent = (w: WireWriter, v: document.LineAnnotationRomanContent): void => {
   for (const item of v.tokens) {
-    w.message(10, encodeDocumentLineAnnotationRomanToken, item)
+    w.message(10, encodeCommonTextToken, item)
   }
   if (v.text !== undefined) {
     w.tag(18)
@@ -708,9 +680,9 @@ export const decodeDocumentLineAnnotationRomanContent = (r: WireReader, m: docum
   while (r.more()) {
     switch (r.tag()) {
       case 10: {
-        const item = createDocumentLineAnnotationRomanToken()
+        const item = createCommonTextToken()
         const end = r.enter()
-        decodeDocumentLineAnnotationRomanToken(r, item)
+        decodeCommonTextToken(r, item)
         r.leave(end)
         m.tokens.push(item)
         break
@@ -1116,35 +1088,6 @@ export const decodeEnrichedLanguageUsage = (r: WireReader, m: enriched.LanguageU
   }
 }
 
-export const encodeEnrichedWordAnnotationToken = (w: WireWriter, v: enriched.WordAnnotationToken): void => {
-  if (v.time !== undefined) {
-    w.message(10, encodeCommonTimeRange, v.time)
-  }
-  if (v.text !== '') {
-    w.tag(18)
-    w.string(v.text)
-  }
-}
-
-export const decodeEnrichedWordAnnotationToken = (r: WireReader, m: enriched.WordAnnotationToken): void => {
-  while (r.more()) {
-    switch (r.tag()) {
-      case 10: {
-        m.time ??= createCommonTimeRange()
-        const end = r.enter()
-        decodeCommonTimeRange(r, m.time)
-        r.leave(end)
-        break
-      }
-      case 18:
-        m.text = r.string()
-        break
-      default:
-        r.skip()
-    }
-  }
-}
-
 export const encodeEnrichedWordAnnotationTranslation = (w: WireWriter, v: enriched.WordAnnotationTranslation): void => {
   if (v.language !== undefined) {
     w.tag(10)
@@ -1184,7 +1127,7 @@ export const encodeEnrichedWordAnnotationRoman = (w: WireWriter, v: enriched.Wor
     w.string(v.scheme)
   }
   for (const item of v.tokens) {
-    w.message(34, encodeEnrichedWordAnnotationToken, item)
+    w.message(34, encodeCommonTextToken, item)
   }
 }
 
@@ -1205,9 +1148,9 @@ export const decodeEnrichedWordAnnotationRoman = (r: WireReader, m: enriched.Wor
         m.scheme = r.string()
         break
       case 34: {
-        const item = createEnrichedWordAnnotationToken()
+        const item = createCommonTextToken()
         const end = r.enter()
-        decodeEnrichedWordAnnotationToken(r, item)
+        decodeCommonTextToken(r, item)
         r.leave(end)
         m.tokens.push(item)
         break
@@ -1231,7 +1174,7 @@ export const encodeEnrichedWordAnnotationRuby = (w: WireWriter, v: enriched.Word
     w.string(v.scheme)
   }
   for (const item of v.tokens) {
-    w.message(34, encodeEnrichedWordAnnotationToken, item)
+    w.message(34, encodeCommonTextToken, item)
   }
 }
 
@@ -1252,9 +1195,9 @@ export const decodeEnrichedWordAnnotationRuby = (r: WireReader, m: enriched.Word
         m.scheme = r.string()
         break
       case 34: {
-        const item = createEnrichedWordAnnotationToken()
+        const item = createCommonTextToken()
         const end = r.enter()
-        decodeEnrichedWordAnnotationToken(r, item)
+        decodeCommonTextToken(r, item)
         r.leave(end)
         m.tokens.push(item)
         break
@@ -1399,38 +1342,9 @@ export const decodeEnrichedWord = (r: WireReader, m: enriched.Word): void => {
   }
 }
 
-export const encodeEnrichedLineAnnotationRomanToken = (w: WireWriter, v: enriched.LineAnnotationRomanToken): void => {
-  if (v.time !== undefined) {
-    w.message(10, encodeCommonTimeRange, v.time)
-  }
-  if (v.text !== '') {
-    w.tag(18)
-    w.string(v.text)
-  }
-}
-
-export const decodeEnrichedLineAnnotationRomanToken = (r: WireReader, m: enriched.LineAnnotationRomanToken): void => {
-  while (r.more()) {
-    switch (r.tag()) {
-      case 10: {
-        m.time ??= createCommonTimeRange()
-        const end = r.enter()
-        decodeCommonTimeRange(r, m.time)
-        r.leave(end)
-        break
-      }
-      case 18:
-        m.text = r.string()
-        break
-      default:
-        r.skip()
-    }
-  }
-}
-
 export const encodeEnrichedLineAnnotationRomanContent = (w: WireWriter, v: enriched.LineAnnotationRomanContent): void => {
   for (const item of v.tokens) {
-    w.message(10, encodeEnrichedLineAnnotationRomanToken, item)
+    w.message(10, encodeCommonTextToken, item)
   }
   if (v.text !== undefined) {
     w.tag(18)
@@ -1442,9 +1356,9 @@ export const decodeEnrichedLineAnnotationRomanContent = (r: WireReader, m: enric
   while (r.more()) {
     switch (r.tag()) {
       case 10: {
-        const item = createEnrichedLineAnnotationRomanToken()
+        const item = createCommonTextToken()
         const end = r.enter()
-        decodeEnrichedLineAnnotationRomanToken(r, item)
+        decodeCommonTextToken(r, item)
         r.leave(end)
         m.tokens.push(item)
         break

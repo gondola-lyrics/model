@@ -9,6 +9,7 @@ import gondola.lyrics.model.utils.readField
  */
 enum class DiagnosticCode(val value: String) {
     TextTextEmpty("text.text.empty"),
+    TextTokenExtraKeyEmpty("text.token.extra.key.empty"),
     TimeRangeEndBeforeStart("time.range.end.before_start"),
     TimeRangeStartInvalid("time.range.start.invalid"),
     TimeRangeEndInvalid("time.range.end.invalid"),

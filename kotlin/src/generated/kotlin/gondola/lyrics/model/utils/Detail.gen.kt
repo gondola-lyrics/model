@@ -13,6 +13,7 @@ import gondola.lyrics.model.common.MetaReference as CommonMetaReference
 import gondola.lyrics.model.common.Part as CommonPart
 import gondola.lyrics.model.common.PartType as CommonPartType
 import gondola.lyrics.model.common.Text as CommonText
+import gondola.lyrics.model.common.TextToken as CommonTextToken
 import gondola.lyrics.model.common.TimeRange as CommonTimeRange
 import gondola.lyrics.model.common.TimingLevel as CommonTimingLevel
 import gondola.lyrics.model.common.UnknownEntry as CommonUnknownEntry
@@ -20,7 +21,6 @@ import gondola.lyrics.model.document.Line as DocumentLine
 import gondola.lyrics.model.document.LineAnnotation as DocumentLineAnnotation
 import gondola.lyrics.model.document.LineAnnotationRoman as DocumentLineAnnotationRoman
 import gondola.lyrics.model.document.LineAnnotationRomanContent as DocumentLineAnnotationRomanContent
-import gondola.lyrics.model.document.LineAnnotationRomanToken as DocumentLineAnnotationRomanToken
 import gondola.lyrics.model.document.LineAnnotationTranslation as DocumentLineAnnotationTranslation
 import gondola.lyrics.model.document.LineBackground as DocumentLineBackground
 import gondola.lyrics.model.document.LineContent as DocumentLineContent
@@ -30,7 +30,6 @@ import gondola.lyrics.model.document.Word as DocumentWord
 import gondola.lyrics.model.document.WordAnnotation as DocumentWordAnnotation
 import gondola.lyrics.model.document.WordAnnotationRoman as DocumentWordAnnotationRoman
 import gondola.lyrics.model.document.WordAnnotationRuby as DocumentWordAnnotationRuby
-import gondola.lyrics.model.document.WordAnnotationToken as DocumentWordAnnotationToken
 import gondola.lyrics.model.document.WordAnnotationTranslation as DocumentWordAnnotationTranslation
 import gondola.lyrics.model.document.WordType as DocumentWordType
 import gondola.lyrics.model.enriched.LanguageUsage as EnrichedLanguageUsage
@@ -38,7 +37,6 @@ import gondola.lyrics.model.enriched.Line as EnrichedLine
 import gondola.lyrics.model.enriched.LineAnnotation as EnrichedLineAnnotation
 import gondola.lyrics.model.enriched.LineAnnotationRoman as EnrichedLineAnnotationRoman
 import gondola.lyrics.model.enriched.LineAnnotationRomanContent as EnrichedLineAnnotationRomanContent
-import gondola.lyrics.model.enriched.LineAnnotationRomanToken as EnrichedLineAnnotationRomanToken
 import gondola.lyrics.model.enriched.LineAnnotationTranslation as EnrichedLineAnnotationTranslation
 import gondola.lyrics.model.enriched.LineBackground as EnrichedLineBackground
 import gondola.lyrics.model.enriched.LineContent as EnrichedLineContent
@@ -49,7 +47,6 @@ import gondola.lyrics.model.enriched.Word as EnrichedWord
 import gondola.lyrics.model.enriched.WordAnnotation as EnrichedWordAnnotation
 import gondola.lyrics.model.enriched.WordAnnotationRoman as EnrichedWordAnnotationRoman
 import gondola.lyrics.model.enriched.WordAnnotationRuby as EnrichedWordAnnotationRuby
-import gondola.lyrics.model.enriched.WordAnnotationToken as EnrichedWordAnnotationToken
 import gondola.lyrics.model.enriched.WordAnnotationTranslation as EnrichedWordAnnotationTranslation
 import gondola.lyrics.model.enriched.WordEmphasis as EnrichedWordEmphasis
 import gondola.lyrics.model.enriched.WordType as EnrichedWordType
@@ -62,9 +59,18 @@ internal enum class FieldShape { SCALAR, ENUM, OPTIONAL, MESSAGE, LIST_SCALAR, L
 @JvmSynthetic
 internal fun isDefault(message: Any): Boolean {
     return when (message) {
+        is CommonTimeRange ->
+            message.start == 0L &&
+                message.end == null
+
         is CommonText ->
             message.language == null &&
                 message.text == ""
+
+        is CommonTextToken ->
+            message.time == null &&
+                message.text == "" &&
+                message.extra.isEmpty()
 
         is CommonAgent ->
             message.id == "" &&
@@ -102,14 +108,6 @@ internal fun isDefault(message: Any): Boolean {
                 message.id == null &&
                 message.raw == null
 
-        is CommonTimeRange ->
-            message.start == 0L &&
-                message.end == null
-
-        is DocumentWordAnnotationToken ->
-            message.time == null &&
-                message.text == ""
-
         is DocumentWordAnnotationTranslation ->
             message.language == null &&
                 message.text == ""
@@ -137,10 +135,6 @@ internal fun isDefault(message: Any): Boolean {
                 message.text == "" &&
                 message.annotation == null &&
                 message.emphasis == null
-
-        is DocumentLineAnnotationRomanToken ->
-            message.time == null &&
-                message.text == ""
 
         is DocumentLineAnnotationRomanContent -> message.tokens.isEmpty() &&
             message.text == null
@@ -194,10 +188,6 @@ internal fun isDefault(message: Any): Boolean {
             message.tag == "" &&
                 message.count == 0L
 
-        is EnrichedWordAnnotationToken ->
-            message.time == null &&
-                message.text == ""
-
         is EnrichedWordAnnotationTranslation ->
             message.language == null &&
                 message.text == ""
@@ -229,10 +219,6 @@ internal fun isDefault(message: Any): Boolean {
                 message.text == "" &&
                 message.annotation == null &&
                 message.emphasis == null
-
-        is EnrichedLineAnnotationRomanToken ->
-            message.time == null &&
-                message.text == ""
 
         is EnrichedLineAnnotationRomanContent -> message.tokens.isEmpty() &&
             message.text == null
@@ -294,9 +280,20 @@ internal fun isDefault(message: Any): Boolean {
 @JvmSynthetic
 internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit) {
     when (message) {
+        is CommonTimeRange -> {
+            visit("start", FieldShape.SCALAR, message.start)
+            visit("end", FieldShape.OPTIONAL, message.end)
+        }
+
         is CommonText -> {
             visit("language", FieldShape.OPTIONAL, message.language)
             visit("text", FieldShape.SCALAR, message.text)
+        }
+
+        is CommonTextToken -> {
+            visit("time", FieldShape.MESSAGE, message.time)
+            visit("text", FieldShape.SCALAR, message.text)
+            visit("extra", FieldShape.MAP, message.extra)
         }
 
         is CommonAgent -> {
@@ -342,16 +339,6 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("raw", FieldShape.OPTIONAL, message.raw)
         }
 
-        is CommonTimeRange -> {
-            visit("start", FieldShape.SCALAR, message.start)
-            visit("end", FieldShape.OPTIONAL, message.end)
-        }
-
-        is DocumentWordAnnotationToken -> {
-            visit("time", FieldShape.MESSAGE, message.time)
-            visit("text", FieldShape.SCALAR, message.text)
-        }
-
         is DocumentWordAnnotationTranslation -> {
             visit("language", FieldShape.OPTIONAL, message.language)
             visit("text", FieldShape.SCALAR, message.text)
@@ -384,11 +371,6 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("text", FieldShape.SCALAR, message.text)
             visit("annotation", FieldShape.MESSAGE, message.annotation)
             visit("emphasis", FieldShape.OPTIONAL, message.emphasis)
-        }
-
-        is DocumentLineAnnotationRomanToken -> {
-            visit("time", FieldShape.MESSAGE, message.time)
-            visit("text", FieldShape.SCALAR, message.text)
         }
 
         is DocumentLineAnnotationRomanContent -> {
@@ -455,11 +437,6 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("count", FieldShape.SCALAR, message.count)
         }
 
-        is EnrichedWordAnnotationToken -> {
-            visit("time", FieldShape.MESSAGE, message.time)
-            visit("text", FieldShape.SCALAR, message.text)
-        }
-
         is EnrichedWordAnnotationTranslation -> {
             visit("language", FieldShape.OPTIONAL, message.language)
             visit("text", FieldShape.SCALAR, message.text)
@@ -497,11 +474,6 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("text", FieldShape.SCALAR, message.text)
             visit("annotation", FieldShape.MESSAGE, message.annotation)
             visit("emphasis", FieldShape.MESSAGE, message.emphasis)
-        }
-
-        is EnrichedLineAnnotationRomanToken -> {
-            visit("time", FieldShape.MESSAGE, message.time)
-            visit("text", FieldShape.SCALAR, message.text)
         }
 
         is EnrichedLineAnnotationRomanContent -> {
@@ -573,9 +545,22 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
 @JvmSynthetic
 internal fun readField(message: Any, name: String): Any? {
     return when (message) {
+        is CommonTimeRange -> when (name) {
+            "start" -> message.start
+            "end" -> message.end
+            else -> null
+        }
+
         is CommonText -> when (name) {
             "language" -> message.language
             "text" -> message.text
+            else -> null
+        }
+
+        is CommonTextToken -> when (name) {
+            "time" -> message.time
+            "text" -> message.text
+            "extra" -> message.extra
             else -> null
         }
 
@@ -628,18 +613,6 @@ internal fun readField(message: Any, name: String): Any? {
             else -> null
         }
 
-        is CommonTimeRange -> when (name) {
-            "start" -> message.start
-            "end" -> message.end
-            else -> null
-        }
-
-        is DocumentWordAnnotationToken -> when (name) {
-            "time" -> message.time
-            "text" -> message.text
-            else -> null
-        }
-
         is DocumentWordAnnotationTranslation -> when (name) {
             "language" -> message.language
             "text" -> message.text
@@ -676,12 +649,6 @@ internal fun readField(message: Any, name: String): Any? {
             "text" -> message.text
             "annotation" -> message.annotation
             "emphasis" -> message.emphasis
-            else -> null
-        }
-
-        is DocumentLineAnnotationRomanToken -> when (name) {
-            "time" -> message.time
-            "text" -> message.text
             else -> null
         }
 
@@ -758,12 +725,6 @@ internal fun readField(message: Any, name: String): Any? {
             else -> null
         }
 
-        is EnrichedWordAnnotationToken -> when (name) {
-            "time" -> message.time
-            "text" -> message.text
-            else -> null
-        }
-
         is EnrichedWordAnnotationTranslation -> when (name) {
             "language" -> message.language
             "text" -> message.text
@@ -806,12 +767,6 @@ internal fun readField(message: Any, name: String): Any? {
             "text" -> message.text
             "annotation" -> message.annotation
             "emphasis" -> message.emphasis
-            else -> null
-        }
-
-        is EnrichedLineAnnotationRomanToken -> when (name) {
-            "time" -> message.time
-            "text" -> message.text
             else -> null
         }
 
@@ -894,6 +849,8 @@ internal fun readField(message: Any, name: String): Any? {
 @JvmSynthetic
 internal fun isUnresolved(value: Any): Boolean {
     return when (value) {
+        is CommonTimingLevel -> value.value != 1 && value.value != 2 && value.value != 3
+
         is CommonAgentType -> value.value != 1 && value.value != 2 && value.value != 3
 
         is CommonCreditRole ->
@@ -907,8 +864,6 @@ internal fun isUnresolved(value: Any): Boolean {
                 value.value != 8 &&
                 value.value != 9 &&
                 value.value != 10
-
-        is CommonTimingLevel -> value.value != 1 && value.value != 2 && value.value != 3
 
         is DocumentWordType -> value.value != 1 && value.value != 2
 

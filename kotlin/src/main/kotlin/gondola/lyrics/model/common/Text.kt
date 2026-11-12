@@ -2,6 +2,7 @@
 
 package gondola.lyrics.model.common
 
+import gondola.lyrics.model.utils.childPath
 import gondola.lyrics.model.utils.lowerTag
 
 /**
@@ -25,4 +26,29 @@ fun validateText(text: Text, path: String = ""): List<Diagnostic> {
  */
 fun canonicalizeText(text: Text): Text {
     return text.copy(language = lowerTag(text.language))
+}
+
+/**
+ * Creates a source fragment without normalizing its text or extension attributes.
+ */
+fun makeTextToken(time: TimeRange? = null, text: String = "", extra: Map<String, String> = emptyMap()): TextToken {
+    return TextToken(time = time, text = text, extra = extra)
+}
+
+/**
+ * Checks explicit timing and extension keys; text constraints belong to the containing annotation.
+ */
+fun validateTextToken(token: TextToken, path: String = ""): List<Diagnostic> {
+    val diagnostics = token.time?.let { validateTimeRange(it, childPath(path, "time")) }?.toMutableList() ?: mutableListOf()
+    if (token.extra.containsKey("")) {
+        diagnostics.add(Diagnostic(childPath(path, "extra"), DiagnosticCode.TextTokenExtraKeyEmpty))
+    }
+    return diagnostics
+}
+
+/**
+ * Copies timing and extensions without changing text, keys, or values.
+ */
+fun canonicalizeTextToken(token: TextToken): TextToken {
+    return token.copy(time = token.time?.copy(), extra = token.extra.toMap())
 }

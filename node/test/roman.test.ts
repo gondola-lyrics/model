@@ -11,7 +11,6 @@ import {
   makeDocumentLineAnnotationRoman,
   makeDocumentLineAnnotationRomanContentText,
   makeDocumentLineAnnotationRomanContentTokens,
-  makeDocumentLineAnnotationRomanToken,
   makeDocumentLineBackground,
   makeDocumentLineContentText,
   makeDocumentLineContentWords,
@@ -19,21 +18,19 @@ import {
   makeDocumentLyric,
   makeDocumentWordAnnotation,
   makeDocumentWordAnnotationRoman,
-  makeDocumentWordAnnotationToken,
   makeDocumentWordNormal,
   makeDocumentWordSpace,
   makeEnrichedLineAnnotation,
   makeEnrichedLineAnnotationRoman,
   makeEnrichedLineAnnotationRomanContentText,
   makeEnrichedLineAnnotationRomanContentTokens,
-  makeEnrichedLineAnnotationRomanToken,
   makeEnrichedLineBackground,
   makeEnrichedLineContentText,
   makeEnrichedLineContentWords,
   makeEnrichedLineNormal,
   makeEnrichedWordAnnotation,
   makeEnrichedWordAnnotationRoman,
-  makeEnrichedWordAnnotationToken,
+  makeTextToken,
   makeEnrichedWordNormal,
   makeEnrichedWordSpace,
   makeTimeRange,
@@ -53,7 +50,6 @@ const models = [
     makeRoman: makeDocumentLineAnnotationRoman,
     makeText: makeDocumentLineAnnotationRomanContentText,
     makeTokens: makeDocumentLineAnnotationRomanContentTokens,
-    makeToken: makeDocumentLineAnnotationRomanToken,
     canonicalize: canonicalizeDocumentLineAnnotationRoman,
     text: getDocumentLineAnnotationRomanText,
     time: resolveDocumentLineAnnotationRomanTime,
@@ -64,7 +60,6 @@ const models = [
     makeRoman: makeEnrichedLineAnnotationRoman,
     makeText: makeEnrichedLineAnnotationRomanContentText,
     makeTokens: makeEnrichedLineAnnotationRomanContentTokens,
-    makeToken: makeEnrichedLineAnnotationRomanToken,
     canonicalize: canonicalizeEnrichedLineAnnotationRoman,
     text: getEnrichedLineAnnotationRomanText,
     time: resolveEnrichedLineAnnotationRomanTime,
@@ -76,7 +71,7 @@ const models = [
 describe('line roman content', () => {
   it('requires exactly one non-empty form and at least one explicit token time', () => {
     for (const model of models) {
-      const timed = model.makeToken({ text: 'ni', time: makeTimeRange({ start: 0 }) })
+      const timed = makeTextToken({ text: 'ni', time: makeTimeRange({ start: 0 }) })
       const examples = [
         {
           roman: model.makeRoman(),
@@ -98,11 +93,11 @@ describe('line roman content', () => {
           ],
         },
         {
-          roman: model.makeRoman({ content: model.makeTokens([model.makeToken({ text: 'ni' })]) }),
+          roman: model.makeRoman({ content: model.makeTokens([makeTextToken({ text: 'ni' })]) }),
           expected: [['content.tokens', 'line.annotation.roman.content.tokens.time.missing']],
         },
         {
-          roman: model.makeRoman({ content: model.makeTokens([model.makeToken({ text: '', time: timed.time })]) }),
+          roman: model.makeRoman({ content: model.makeTokens([makeTextToken({ text: '', time: timed.time })]) }),
           expected: [['content.tokens[0].text', 'line.annotation.roman.token.text.empty']],
         },
       ]
@@ -113,7 +108,7 @@ describe('line roman content', () => {
         )
       }
       deepStrictEqual(model.validateRoman(model.makeRoman({ content: model.makeText('ni hao') })), [])
-      deepStrictEqual(model.validateRoman(model.makeRoman({ content: model.makeTokens([timed, model.makeToken({ text: ' ' })]) })), [])
+      deepStrictEqual(model.validateRoman(model.makeRoman({ content: model.makeTokens([timed, makeTextToken({ text: ' ' })]) })), [])
     }
   })
 
@@ -122,9 +117,9 @@ describe('line roman content', () => {
       const line = { time: makeTimeRange({ start: 1000, end: 3000 }) }
       const romanTime = makeTimeRange({ start: 900, end: 3500 })
       const tokens = [
-        model.makeToken({ time: makeTimeRange({ start: 900, end: 1800 }), text: 'ni' }),
-        model.makeToken({ text: '  ' }),
-        model.makeToken({ time: makeTimeRange({ start: 2300 }), text: 'hao' }),
+        makeTextToken({ time: makeTimeRange({ start: 900, end: 1800 }), text: 'ni' }),
+        makeTextToken({ text: '  ' }),
+        makeTextToken({ time: makeTimeRange({ start: 2300 }), text: 'hao' }),
       ]
       const roman = model.makeRoman({ content: model.makeTokens(tokens) })
       deepStrictEqual(model.text(roman), 'ni  hao')
@@ -144,9 +139,9 @@ describe('line roman content', () => {
   it('copies timed content without merging, sorting, or trimming source fragments', () => {
     for (const model of models) {
       const tokens = [
-        model.makeToken({ time: makeTimeRange({ start: 2000 }), text: ' ni' }),
-        model.makeToken({ text: '  ' }),
-        model.makeToken({ time: makeTimeRange({ start: 1000, end: 1800 }), text: 'hao ' }),
+        makeTextToken({ time: makeTimeRange({ start: 2000 }), text: ' ni' }),
+        makeTextToken({ text: '  ' }),
+        makeTextToken({ time: makeTimeRange({ start: 1000, end: 1800 }), text: 'hao ' }),
       ]
       const roman = model.makeRoman({ language: 'ZH-Latn', scheme: 'PINYIN', time: makeTimeRange({ start: 0 }), content: model.makeTokens(tokens) })
       const canonical = model.canonicalize(roman)
@@ -160,7 +155,7 @@ describe('line roman content', () => {
       canonical.time!.start = 500
       canonical.content!.tokens[0]!.time!.start = 2200
       canonical.content!.tokens[1]!.text = 'changed'
-      canonical.content!.tokens.push(model.makeToken({ text: 'another' }))
+      canonical.content!.tokens.push(makeTextToken({ text: 'another' }))
       deepStrictEqual(roman.time, { start: 0 })
       deepStrictEqual(tokens[0]!.time, { start: 2000 })
       deepStrictEqual(tokens[1]!.text, '  ')
@@ -181,9 +176,7 @@ describe('line roman content', () => {
         text: 'x',
         time,
         annotation: makeDocumentWordAnnotation({
-          romans: [
-            makeDocumentWordAnnotationRoman({ language: 'zh-latn', scheme: 'pinyin', tokens: [makeDocumentWordAnnotationToken({ text: 'ni' })] }),
-          ],
+          romans: [makeDocumentWordAnnotationRoman({ language: 'zh-latn', scheme: 'pinyin', tokens: [makeTextToken({ text: 'ni' })] })],
         }),
       }),
       makeDocumentWordSpace({ text: ' ' }),
@@ -202,9 +195,7 @@ describe('line roman content', () => {
         text: 'x',
         time,
         annotation: makeEnrichedWordAnnotation({
-          romans: [
-            makeEnrichedWordAnnotationRoman({ language: 'zh-latn', scheme: 'pinyin', tokens: [makeEnrichedWordAnnotationToken({ text: 'ni' })] }),
-          ],
+          romans: [makeEnrichedWordAnnotationRoman({ language: 'zh-latn', scheme: 'pinyin', tokens: [makeTextToken({ text: 'ni' })] })],
         }),
       }),
       makeEnrichedWordSpace({ text: ' ' }),
@@ -278,8 +269,8 @@ describe('line roman content', () => {
   it('allows annotation timing without promoting the original lyric timing', () => {
     const roman = makeDocumentLineAnnotationRoman({
       content: makeDocumentLineAnnotationRomanContentTokens([
-        makeDocumentLineAnnotationRomanToken({ text: 'ni ', time: makeTimeRange({ start: 1000, end: 1800 }) }),
-        makeDocumentLineAnnotationRomanToken({ text: 'hao', time: makeTimeRange({ start: 2000 }) }),
+        makeTextToken({ text: 'ni ', time: makeTimeRange({ start: 1000, end: 1800 }) }),
+        makeTextToken({ text: 'hao', time: makeTimeRange({ start: 2000 }) }),
       ]),
     })
     const lyric = makeDocumentLyric({
@@ -296,8 +287,8 @@ describe('line roman content', () => {
         romans: [
           makeEnrichedLineAnnotationRoman({
             content: makeEnrichedLineAnnotationRomanContentTokens([
-              makeEnrichedLineAnnotationRomanToken({ text: 'ni ', time: makeTimeRange({ start: 1000, end: 1800 }) }),
-              makeEnrichedLineAnnotationRomanToken({ text: 'hao', time: makeTimeRange({ start: 2000 }) }),
+              makeTextToken({ text: 'ni ', time: makeTimeRange({ start: 1000, end: 1800 }) }),
+              makeTextToken({ text: 'hao', time: makeTimeRange({ start: 2000 }) }),
             ]),
           }),
         ],
