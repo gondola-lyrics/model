@@ -380,9 +380,9 @@ public fun makeDocumentLineNormal(
     part: Part? = null,
     agentIds: List<String> = emptyList(),
     languages: List<String> = emptyList(),
+    backgrounds: List<LineBackground> = emptyList(),
     content: LineContent? = null,
     annotation: LineAnnotation? = null,
-    backgrounds: List<LineBackground> = emptyList(),
 ): Line {
     return Line(
         type = LineType.LINE_TYPE_NORMAL,
@@ -391,9 +391,9 @@ public fun makeDocumentLineNormal(
         part = part,
         agentIds = agentIds,
         languages = languages,
+        backgrounds = backgrounds,
         content = content,
         annotation = annotation,
-        backgrounds = backgrounds,
     )
 }
 
@@ -545,9 +545,9 @@ public fun canonicalizeDocumentLine(line: Line): Line {
         part = dropDefault(line.part),
         agentIds = line.agentIds.filter { it.isNotEmpty() },
         languages = line.languages.mapNotNull(::lowerTag).distinct(),
+        backgrounds = canonicalizeList(line.backgrounds, ::canonicalizeDocumentLineBackground).sortedWith(byTime { it.time }),
         content = canonicalizeField(line.content, ::canonicalizeDocumentLineContent),
         annotation = canonicalizeField(line.annotation, ::canonicalizeDocumentLineAnnotation),
-        backgrounds = canonicalizeList(line.backgrounds, ::canonicalizeDocumentLineBackground).sortedWith(byTime { it.time }),
     )
 }
 

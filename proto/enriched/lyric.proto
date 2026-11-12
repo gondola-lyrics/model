@@ -30,39 +30,39 @@ enum LyricStatus {
 // Non-empty line ids are unique across all lines and backgrounds.
 // Non-empty BCP 47 tags must be well formed; comparison is case-insensitive and canonical form is lowercase.
 message Lyric {
+  // Parse validity of the lyric.
+  // INVALID guarantees only version and status; remaining fields may be empty but still follow their normal rules.
+  LyricStatus status = 1;
+
   // Schema version of this data model, always set and formatted as a semantic version.
   // Consumers sharing the same major version can read each other's output.
-  string version = 1;
+  string version = 2;
 
   // Source format identifier assigned by the parser; empty means unknown.
   // Compared case-insensitively; canonical form is lowercase.
-  string format = 2;
+  string format = 3;
 
   // Source-format dialect, scoped by `format` and identified by the parser.
   // Compared case-insensitively; canonical form is lower case, and empty means unspecified.
-  string profile = 3;
-
-  // Parse validity of the lyric.
-  // INVALID guarantees only version and status; remaining fields may be empty but still follow their normal rules.
-  LyricStatus status = 4;
+  string profile = 4;
 
   // Declared timing level of the original lyric.
   lyric.common.TimingLevel timing = 5;
 
   lyric.common.Meta meta = 6;
 
-  // Format-specific values without typed fields; consumers may interpret them by key.
-  map<string, string> extra = 7;
+  // Performing agents referenced by lines.
+  repeated lyric.common.Agent agents = 7;
+
+  // Lyric lines, ordered by TimeRange.start ascending.
+  // Every line except the last requires a known end; instrumental lines always require one.
+  repeated Line lines = 8;
 
   // Language usage across normal lines, ordered by descending line_count and then by ascending tag.
   // Each line contributes each tag once, using both its own tags and its normal words' tags.
   // Space words, annotations and background lines never contribute.
-  repeated LanguageUsage language_usages = 8;
+  repeated LanguageUsage language_usages = 9;
 
-  // Performing agents referenced by lines.
-  repeated lyric.common.Agent agents = 9;
-
-  // Lyric lines, ordered by TimeRange.start ascending.
-  // Every line except the last requires a known end; instrumental lines always require one.
-  repeated Line lines = 10;
+  // Format-specific values without typed fields; consumers may interpret them by key.
+  map<string, string> extra = 10;
 }

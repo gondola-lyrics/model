@@ -36,9 +36,9 @@ public fun makeDocumentLyric(
     profile: String = "",
     timing: TimingLevel = TimingLevel.TIMING_LEVEL_UNSPECIFIED,
     meta: Meta? = null,
-    extra: Map<String, String> = emptyMap(),
     agents: List<Agent> = emptyList(),
     lines: List<Line> = emptyList(),
+    extra: Map<String, String> = emptyMap(),
 ): Lyric {
     return Lyric(
         version = SCHEMA_VERSION,
@@ -46,9 +46,9 @@ public fun makeDocumentLyric(
         profile = profile,
         timing = timing,
         meta = meta,
-        extra = extra,
         agents = agents,
         lines = lines,
+        extra = extra,
     )
 }
 
@@ -217,9 +217,9 @@ public fun canonicalizeDocumentLyric(lyric: Lyric): Lyric {
         format = lyric.format.lowercase(),
         profile = lyric.profile.lowercase(),
         meta = canonicalizeField(lyric.meta, ::canonicalizeMeta),
-        extra = lyric.extra.toMap(),
         agents = canonicalizeList(lyric.agents, ::canonicalizeAgent),
         lines = canonicalizeList(lyric.lines, ::canonicalizeDocumentLine).sortedWith(byTime { line -> line.time }),
+        extra = lyric.extra.toMap(),
     )
 }
 

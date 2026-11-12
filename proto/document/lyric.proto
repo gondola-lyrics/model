@@ -34,13 +34,13 @@ message Lyric {
 
   lyric.common.Meta meta = 5;
 
-  // Format-specific values without typed fields; consumers may interpret them by key.
-  map<string, string> extra = 6;
-
   // Performing agents referenced by lines.
-  repeated lyric.common.Agent agents = 7;
+  repeated lyric.common.Agent agents = 6;
 
   // Lyric lines, ordered by TimeRange.start ascending.
   // Every line except the last requires a known end; instrumental lines always require one.
-  repeated Line lines = 8;
+  repeated Line lines = 7;
+
+  // Format-specific values without typed fields; consumers may interpret them by key.
+  map<string, string> extra = 8;
 }

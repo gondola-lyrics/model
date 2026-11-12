@@ -34,10 +34,6 @@ export type Lyric = {
   timing: TimingLevel
   meta?: Meta | undefined
   /**
-   * Format-specific values without typed fields; consumers may interpret them by key.
-   */
-  extra: Record<string, string>
-  /**
    * Performing agents referenced by lines.
    */
   agents: Agent[]
@@ -46,4 +42,8 @@ export type Lyric = {
    * Every line except the last requires a known end; instrumental lines always require one.
    */
   lines: Line[]
+  /**
+   * Format-specific values without typed fields; consumers may interpret them by key.
+   */
+  extra: Record<string, string>
 }

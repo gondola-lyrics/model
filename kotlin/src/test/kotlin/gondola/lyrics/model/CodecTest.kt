@@ -474,10 +474,10 @@ class CodecTest {
             "tag beyond 32 bits" to "8880808010",
             "varint beyond 64 bits" to "08ffffffffffffffffff02",
             "unterminated varint" to "08ffffffffffffffffffff",
-            "invalid UTF-8" to "0a01ff",
-            "overlong UTF-8" to "0a02c080",
-            "UTF-8 surrogate" to "0a03eda080",
-            "UTF-8 beyond Unicode" to "0a04f4908080",
+            "invalid UTF-8" to "1201ff",
+            "overlong UTF-8" to "1202c080",
+            "UTF-8 surrogate" to "1203eda080",
+            "UTF-8 beyond Unicode" to "1204f4908080",
             "stray end group" to "0c",
             "mismatched end group" to "a306ac06",
             "unterminated group" to "a306",
@@ -491,20 +491,20 @@ class CodecTest {
     @Test
     fun followsWireMergeAndSkippingRules() {
         val accepted = mapOf(
-            "known field with wrong wire type" to ("0801" to ""),
+            "known field with wrong wire type" to ("1001" to ""),
             "unknown length-delimited field" to ("a2060161" to ""),
             "unknown group" to ("a3060801a406" to ""),
             "maximum group depth" to ("a306".repeat(10001) + "a406".repeat(10001) to ""),
-            "padded tag" to ("8a80808080000161" to "0a0161"),
-            "last scalar wins" to ("0a01610a0162" to "0a0162"),
+            "padded tag" to ("9280808080000161" to "120161"),
+            "last scalar wins" to ("120161120162" to "120162"),
             "merge singular message" to ("3202100232021807" to "320410021807"),
-            "missing map value" to ("3a030a0161" to "3a050a01611200"),
-            "missing map key" to ("3a03120161" to "3a050a00120161"),
-            "last map value wins" to ("3a060a01611201623a060a0161120163" to "3a060a0161120163"),
+            "missing map value" to ("52030a0161" to "52050a01611200"),
+            "missing map key" to ("5203120161" to "52050a00120161"),
+            "last map value wins" to ("52060a016112016252060a0161120163" to "52060a0161120163"),
             "negative enum" to ("28ffffffffffffffffff01" to "28ffffffffffffffffff01"),
             "padded zero" to ("2880808080808080808000" to ""),
             "uint32 low bits" to ("320618ffffffff7f" to "320618ffffffff0f"),
-            "leading BOM" to ("0a03efbbbf" to "0a03efbbbf"),
+            "leading BOM" to ("1203efbbbf" to "1203efbbbf"),
         )
         for ((reason, pair) in accepted) {
             assertContentEquals(fromHex(pair.second), encodeEnrichedLyric(decodeEnrichedLyric(fromHex(pair.first))), reason)

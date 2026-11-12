@@ -35,9 +35,9 @@ export const makeDocumentLyric = (init?: Omit<MakeInit<Lyric>, 'version'>): Lyri
     profile: init?.profile,
     timing: init?.timing,
     meta: init?.meta,
-    extra: init?.extra,
     agents: init?.agents,
     lines: init?.lines,
+    extra: init?.extra,
   })
 }
 
@@ -201,9 +201,9 @@ export const canonicalizeDocumentLyric = (lyric: Lyric): Lyric => {
     format: lyric.format.toLowerCase(),
     profile: lyric.profile.toLowerCase(),
     meta: canonicalizeField(fieldsCommonMeta, lyric.meta, canonicalizeMeta),
-    extra: { ...lyric.extra },
     agents: canonicalizeList(fieldsCommonAgent, lyric.agents, canonicalizeAgent),
     lines: canonicalizeList(fieldsDocumentLine, lyric.lines, canonicalizeDocumentLine).sort(byTime((line) => line.time)),
+    extra: { ...lyric.extra },
   }
 }
 

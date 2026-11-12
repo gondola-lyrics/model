@@ -407,11 +407,11 @@ internal fun encodeDocumentLine(w: WireWriter, src: DocumentLine) {
         w.tag(50)
         w.string(item)
     }
-    src.content?.let { w.message(58, ::encodeDocumentLineContent, it) }
-    src.annotation?.let { w.message(66, ::encodeDocumentLineAnnotation, it) }
     for (item in src.backgrounds) {
-        w.message(74, ::encodeDocumentLineBackground, item)
+        w.message(58, ::encodeDocumentLineBackground, item)
     }
+    src.content?.let { w.message(66, ::encodeDocumentLineContent, it) }
+    src.annotation?.let { w.message(74, ::encodeDocumentLineAnnotation, it) }
 }
 
 @JvmSynthetic
@@ -433,13 +433,13 @@ internal fun encodeDocumentLyric(w: WireWriter, src: DocumentLyric) {
         w.int32(src.timing.value)
     }
     src.meta?.let { w.message(42, ::encodeCommonMeta, it) }
-    w.stringMap(50, src.extra)
     for (item in src.agents) {
-        w.message(58, ::encodeCommonAgent, item)
+        w.message(50, ::encodeCommonAgent, item)
     }
     for (item in src.lines) {
-        w.message(66, ::encodeDocumentLine, item)
+        w.message(58, ::encodeDocumentLine, item)
     }
+    w.stringMap(66, src.extra)
 }
 
 @JvmSynthetic
@@ -639,46 +639,46 @@ internal fun encodeEnrichedLine(w: WireWriter, src: EnrichedLine) {
         w.tag(50)
         w.string(item)
     }
-    src.content?.let { w.message(58, ::encodeEnrichedLineContent, it) }
-    src.annotation?.let { w.message(66, ::encodeEnrichedLineAnnotation, it) }
     for (item in src.backgrounds) {
-        w.message(74, ::encodeEnrichedLineBackground, item)
+        w.message(58, ::encodeEnrichedLineBackground, item)
     }
+    src.content?.let { w.message(66, ::encodeEnrichedLineContent, it) }
+    src.annotation?.let { w.message(74, ::encodeEnrichedLineAnnotation, it) }
 }
 
 @JvmSynthetic
 internal fun encodeEnrichedLyric(w: WireWriter, src: EnrichedLyric) {
+    if (src.status.value != 0) {
+        w.tag(8)
+        w.int32(src.status.value)
+    }
     if (src.version.isNotEmpty()) {
-        w.tag(10)
+        w.tag(18)
         w.string(src.version)
     }
     if (src.format.isNotEmpty()) {
-        w.tag(18)
+        w.tag(26)
         w.string(src.format)
     }
     if (src.profile.isNotEmpty()) {
-        w.tag(26)
+        w.tag(34)
         w.string(src.profile)
-    }
-    if (src.status.value != 0) {
-        w.tag(32)
-        w.int32(src.status.value)
     }
     if (src.timing.value != 0) {
         w.tag(40)
         w.int32(src.timing.value)
     }
     src.meta?.let { w.message(50, ::encodeCommonMeta, it) }
-    w.stringMap(58, src.extra)
-    for (item in src.languageUsages) {
-        w.message(66, ::encodeEnrichedLanguageUsage, item)
-    }
     for (item in src.agents) {
-        w.message(74, ::encodeCommonAgent, item)
+        w.message(58, ::encodeCommonAgent, item)
     }
     for (item in src.lines) {
-        w.message(82, ::encodeEnrichedLine, item)
+        w.message(66, ::encodeEnrichedLine, item)
     }
+    for (item in src.languageUsages) {
+        w.message(74, ::encodeEnrichedLanguageUsage, item)
+    }
+    w.stringMap(82, src.extra)
 }
 
 /**
@@ -989,9 +989,9 @@ private class DocumentLineState {
     var part: CommonPartState? = null
     val agentIds = ArrayList<String>()
     val languages = ArrayList<String>()
+    val backgrounds = ArrayList<DocumentLineBackgroundState>()
     var content: DocumentLineContentState? = null
     var annotation: DocumentLineAnnotationState? = null
-    val backgrounds = ArrayList<DocumentLineBackgroundState>()
 
     fun finish(): DocumentLine {
         return DocumentLine(
@@ -1001,9 +1001,9 @@ private class DocumentLineState {
             part = part?.finish(),
             agentIds = agentIds,
             languages = languages,
+            backgrounds = backgrounds.map { it.finish() },
             content = content?.finish(),
             annotation = annotation?.finish(),
-            backgrounds = backgrounds.map { it.finish() },
         )
     }
 }
@@ -1014,9 +1014,9 @@ private class DocumentLyricState {
     var profile: String = ""
     var timing: CommonTimingLevel = CommonTimingLevel.TIMING_LEVEL_UNSPECIFIED
     var meta: CommonMetaState? = null
-    val extra = LinkedHashMap<String, String>()
     val agents = ArrayList<CommonAgentState>()
     val lines = ArrayList<DocumentLineState>()
+    val extra = LinkedHashMap<String, String>()
 
     fun finish(): DocumentLyric {
         return DocumentLyric(
@@ -1025,9 +1025,9 @@ private class DocumentLyricState {
             profile = profile,
             timing = timing,
             meta = meta?.finish(),
-            extra = extra,
             agents = agents.map { it.finish() },
             lines = lines.map { it.finish() },
+            extra = extra,
         )
     }
 }
@@ -1225,9 +1225,9 @@ private class EnrichedLineState {
     var part: CommonPartState? = null
     val agentIds = ArrayList<String>()
     val languages = ArrayList<String>()
+    val backgrounds = ArrayList<EnrichedLineBackgroundState>()
     var content: EnrichedLineContentState? = null
     var annotation: EnrichedLineAnnotationState? = null
-    val backgrounds = ArrayList<EnrichedLineBackgroundState>()
 
     fun finish(): EnrichedLine {
         return EnrichedLine(
@@ -1237,37 +1237,37 @@ private class EnrichedLineState {
             part = part?.finish(),
             agentIds = agentIds,
             languages = languages,
+            backgrounds = backgrounds.map { it.finish() },
             content = content?.finish(),
             annotation = annotation?.finish(),
-            backgrounds = backgrounds.map { it.finish() },
         )
     }
 }
 
 private class EnrichedLyricState {
+    var status: EnrichedLyricStatus = EnrichedLyricStatus.LYRIC_STATUS_UNSPECIFIED
     var version: String = ""
     var format: String = ""
     var profile: String = ""
-    var status: EnrichedLyricStatus = EnrichedLyricStatus.LYRIC_STATUS_UNSPECIFIED
     var timing: CommonTimingLevel = CommonTimingLevel.TIMING_LEVEL_UNSPECIFIED
     var meta: CommonMetaState? = null
-    val extra = LinkedHashMap<String, String>()
-    val languageUsages = ArrayList<EnrichedLanguageUsageState>()
     val agents = ArrayList<CommonAgentState>()
     val lines = ArrayList<EnrichedLineState>()
+    val languageUsages = ArrayList<EnrichedLanguageUsageState>()
+    val extra = LinkedHashMap<String, String>()
 
     fun finish(): EnrichedLyric {
         return EnrichedLyric(
+            status = status,
             version = version,
             format = format,
             profile = profile,
-            status = status,
             timing = timing,
             meta = meta?.finish(),
-            extra = extra,
-            languageUsages = languageUsages.map { it.finish() },
             agents = agents.map { it.finish() },
             lines = lines.map { it.finish() },
+            languageUsages = languageUsages.map { it.finish() },
+            extra = extra,
         )
     }
 }
@@ -1879,25 +1879,25 @@ private fun mergeDocumentLine(r: WireReader, state: DocumentLineState) {
             50 -> state.languages.add(r.string())
 
             58 -> {
+                val item = DocumentLineBackgroundState()
+                val end = r.enter()
+                mergeDocumentLineBackground(r, item)
+                r.leave(end)
+                state.backgrounds.add(item)
+            }
+
+            66 -> {
                 val item = state.content ?: DocumentLineContentState().also { state.content = it }
                 val end = r.enter()
                 mergeDocumentLineContent(r, item)
                 r.leave(end)
             }
 
-            66 -> {
+            74 -> {
                 val item = state.annotation ?: DocumentLineAnnotationState().also { state.annotation = it }
                 val end = r.enter()
                 mergeDocumentLineAnnotation(r, item)
                 r.leave(end)
-            }
-
-            74 -> {
-                val item = DocumentLineBackgroundState()
-                val end = r.enter()
-                mergeDocumentLineBackground(r, item)
-                r.leave(end)
-                state.backgrounds.add(item)
             }
 
             else -> r.skip()
@@ -1930,9 +1930,7 @@ private fun mergeDocumentLyric(r: WireReader, state: DocumentLyricState) {
                 r.leave(end)
             }
 
-            50 -> r.mapEntry(state.extra)
-
-            58 -> {
+            50 -> {
                 val item = CommonAgentState()
                 val end = r.enter()
                 mergeCommonAgent(r, item)
@@ -1940,13 +1938,15 @@ private fun mergeDocumentLyric(r: WireReader, state: DocumentLyricState) {
                 state.agents.add(item)
             }
 
-            66 -> {
+            58 -> {
                 val item = DocumentLineState()
                 val end = r.enter()
                 mergeDocumentLine(r, item)
                 r.leave(end)
                 state.lines.add(item)
             }
+
+            66 -> r.mapEntry(state.extra)
 
             else -> r.skip()
         }
@@ -2359,25 +2359,25 @@ private fun mergeEnrichedLine(r: WireReader, state: EnrichedLineState) {
             50 -> state.languages.add(r.string())
 
             58 -> {
+                val item = EnrichedLineBackgroundState()
+                val end = r.enter()
+                mergeEnrichedLineBackground(r, item)
+                r.leave(end)
+                state.backgrounds.add(item)
+            }
+
+            66 -> {
                 val item = state.content ?: EnrichedLineContentState().also { state.content = it }
                 val end = r.enter()
                 mergeEnrichedLineContent(r, item)
                 r.leave(end)
             }
 
-            66 -> {
+            74 -> {
                 val item = state.annotation ?: EnrichedLineAnnotationState().also { state.annotation = it }
                 val end = r.enter()
                 mergeEnrichedLineAnnotation(r, item)
                 r.leave(end)
-            }
-
-            74 -> {
-                val item = EnrichedLineBackgroundState()
-                val end = r.enter()
-                mergeEnrichedLineBackground(r, item)
-                r.leave(end)
-                state.backgrounds.add(item)
             }
 
             else -> r.skip()
@@ -2395,13 +2395,13 @@ internal fun decodeEnrichedLine(r: WireReader): EnrichedLine {
 private fun mergeEnrichedLyric(r: WireReader, state: EnrichedLyricState) {
     while (r.more()) {
         when (r.tag()) {
-            10 -> state.version = r.string()
+            8 -> state.status = EnrichedLyricStatus(r.int32())
 
-            18 -> state.format = r.string()
+            18 -> state.version = r.string()
 
-            26 -> state.profile = r.string()
+            26 -> state.format = r.string()
 
-            32 -> state.status = EnrichedLyricStatus(r.int32())
+            34 -> state.profile = r.string()
 
             40 -> state.timing = CommonTimingLevel(r.int32())
 
@@ -2412,17 +2412,7 @@ private fun mergeEnrichedLyric(r: WireReader, state: EnrichedLyricState) {
                 r.leave(end)
             }
 
-            58 -> r.mapEntry(state.extra)
-
-            66 -> {
-                val item = EnrichedLanguageUsageState()
-                val end = r.enter()
-                mergeEnrichedLanguageUsage(r, item)
-                r.leave(end)
-                state.languageUsages.add(item)
-            }
-
-            74 -> {
+            58 -> {
                 val item = CommonAgentState()
                 val end = r.enter()
                 mergeCommonAgent(r, item)
@@ -2430,13 +2420,23 @@ private fun mergeEnrichedLyric(r: WireReader, state: EnrichedLyricState) {
                 state.agents.add(item)
             }
 
-            82 -> {
+            66 -> {
                 val item = EnrichedLineState()
                 val end = r.enter()
                 mergeEnrichedLine(r, item)
                 r.leave(end)
                 state.lines.add(item)
             }
+
+            74 -> {
+                val item = EnrichedLanguageUsageState()
+                val end = r.enter()
+                mergeEnrichedLanguageUsage(r, item)
+                r.leave(end)
+                state.languageUsages.add(item)
+            }
+
+            82 -> r.mapEntry(state.extra)
 
             else -> r.skip()
         }

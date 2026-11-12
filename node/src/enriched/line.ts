@@ -376,9 +376,9 @@ export const makeEnrichedLineNormal = (init?: Omit<MakeInit<Line>, 'type'>): Lin
     part: init?.part,
     agentIds: init?.agentIds,
     languages: init?.languages,
+    backgrounds: init?.backgrounds,
     content: init?.content,
     annotation: init?.annotation,
-    backgrounds: init?.backgrounds,
   })
 }
 
@@ -526,10 +526,10 @@ export const canonicalizeEnrichedLine = (line: Line): Line => {
     part: dropDefault(fieldsCommonPart, copyMessage(line.part)),
     agentIds: line.agentIds.filter((id) => id !== ''),
     languages: [...new Set(line.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
-    content: canonicalizeField(fieldsEnrichedLineContent, line.content, canonicalizeEnrichedLineContent),
-    annotation: canonicalizeField(fieldsEnrichedLineAnnotation, line.annotation, canonicalizeEnrichedLineAnnotation),
     backgrounds: canonicalizeList(fieldsEnrichedLineBackground, line.backgrounds, canonicalizeEnrichedLineBackground).sort(
       byTime((background) => background.time),
     ),
+    content: canonicalizeField(fieldsEnrichedLineContent, line.content, canonicalizeEnrichedLineContent),
+    annotation: canonicalizeField(fieldsEnrichedLineAnnotation, line.annotation, canonicalizeEnrichedLineAnnotation),
   }
 }

@@ -292,7 +292,7 @@ describe('protobuf', () => {
       'wire type 7': '0f',
       'a tag past 32 bits': '8880808010',
       'a varint past 64 bits': '08ffffffffffffffffff02',
-      'malformed UTF-8': '0a01ff',
+      'malformed UTF-8': '1201ff',
       'a stray end group': '0c',
       'a mismatched end group': 'a306ac06',
       'an unterminated group': 'a306',
@@ -306,20 +306,20 @@ describe('protobuf', () => {
   // The second column is what the first re-encodes to, so what was kept and what was dropped both show.
   it('follows the wire rules on bytes no encoder here would write', () => {
     const accepted = {
-      'skips a known number with the wrong wire type': ['0801', ''],
+      'skips a known number with the wrong wire type': ['1001', ''],
       'skips a length-delimited field the schema does not define': ['a2060161', ''],
       'skips a group the schema does not define': ['a3060801a406', ''],
       'accepts groups nested up to the limit': ['a306'.repeat(10001) + 'a406'.repeat(10001), ''],
-      'reads a tag padded past five bytes': ['8a80808080000161', '0a0161'],
-      'lets a later scalar win': ['0a01610a0162', '0a0162'],
+      'reads a tag padded past five bytes': ['9280808080000161', '120161'],
+      'lets a later scalar win': ['120161120162', '120162'],
       'merges a repeated submessage': ['3202100232021807', '320410021807'],
-      'reads a missing map value as empty': ['3a030a0161', '3a050a01611200'],
-      'reads a missing map key as empty': ['3a03120161', '3a050a00120161'],
-      'lets a later map entry win': ['3a060a0161120162' + '3a060a0161120163', '3a060a0161120163'],
+      'reads a missing map value as empty': ['52030a0161', '52050a01611200'],
+      'reads a missing map key as empty': ['5203120161', '52050a00120161'],
+      'lets a later map entry win': ['52060a0161120162' + '52060a0161120163', '52060a0161120163'],
       'keeps a negative enum': ['28ffffffffffffffffff01', '28ffffffffffffffffff01'],
       'reads an overlong zero as the default': ['2880808080808080808000', ''],
       'keeps the low 32 bits of a uint32': ['320618ffffffff7f', '320618ffffffff0f'],
-      'keeps a leading BOM': ['0a03efbbbf', '0a03efbbbf'],
+      'keeps a leading BOM': ['1203efbbbf', '1203efbbbf'],
     }
     for (const [why, [input, output]] of Object.entries(accepted)) {
       deepStrictEqual(Buffer.from(encodeEnrichedLyric(decodeEnrichedLyric(fromHex(input!)))).toString('hex'), output, why)

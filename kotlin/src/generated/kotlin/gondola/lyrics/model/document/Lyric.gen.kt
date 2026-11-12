@@ -35,10 +35,6 @@ public data class Lyric(
     val timing: TimingLevel = TimingLevel.TIMING_LEVEL_UNSPECIFIED,
     val meta: Meta? = null,
     /**
-     * Format-specific values without typed fields; consumers may interpret them by key.
-     */
-    val extra: Map<String, String> = emptyMap(),
-    /**
      * Performing agents referenced by lines.
      */
     val agents: List<Agent> = emptyList(),
@@ -47,4 +43,8 @@ public data class Lyric(
      * Every line except the last requires a known end; instrumental lines always require one.
      */
     val lines: List<Line> = emptyList(),
+    /**
+     * Format-specific values without typed fields; consumers may interpret them by key.
+     */
+    val extra: Map<String, String> = emptyMap(),
 )

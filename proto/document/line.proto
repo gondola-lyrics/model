@@ -123,10 +123,10 @@ message Line {
   // BCP 47 language tags the source declares for this line, each at most once.
   repeated string languages = 6;
 
-  LineContent content = 7;
-
-  LineAnnotation annotation = 8;
-
   // Background lines attached to this line, ordered by TimeRange.start ascending.
-  repeated LineBackground backgrounds = 9;
+  repeated LineBackground backgrounds = 7;
+
+  LineContent content = 8;
+
+  LineAnnotation annotation = 9;
 }

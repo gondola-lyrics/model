@@ -54,6 +54,11 @@ public class LyricStatus(@JvmField public val value: Int) {
  */
 public data class Lyric(
     /**
+     * Parse validity of the lyric.
+     * INVALID guarantees only version and status; remaining fields may be empty but still follow their normal rules.
+     */
+    val status: LyricStatus = LyricStatus.LYRIC_STATUS_UNSPECIFIED,
+    /**
      * Schema version of this data model, always set and formatted as a semantic version.
      * Consumers sharing the same major version can read each other's output.
      */
@@ -69,25 +74,10 @@ public data class Lyric(
      */
     val profile: String = "",
     /**
-     * Parse validity of the lyric.
-     * INVALID guarantees only version and status; remaining fields may be empty but still follow their normal rules.
-     */
-    val status: LyricStatus = LyricStatus.LYRIC_STATUS_UNSPECIFIED,
-    /**
      * Declared timing level of the original lyric.
      */
     val timing: TimingLevel = TimingLevel.TIMING_LEVEL_UNSPECIFIED,
     val meta: Meta? = null,
-    /**
-     * Format-specific values without typed fields; consumers may interpret them by key.
-     */
-    val extra: Map<String, String> = emptyMap(),
-    /**
-     * Language usage across normal lines, ordered by descending line_count and then by ascending tag.
-     * Each line contributes each tag once, using both its own tags and its normal words' tags.
-     * Space words, annotations and background lines never contribute.
-     */
-    val languageUsages: List<LanguageUsage> = emptyList(),
     /**
      * Performing agents referenced by lines.
      */
@@ -97,4 +87,14 @@ public data class Lyric(
      * Every line except the last requires a known end; instrumental lines always require one.
      */
     val lines: List<Line> = emptyList(),
+    /**
+     * Language usage across normal lines, ordered by descending line_count and then by ascending tag.
+     * Each line contributes each tag once, using both its own tags and its normal words' tags.
+     * Space words, annotations and background lines never contribute.
+     */
+    val languageUsages: List<LanguageUsage> = emptyList(),
+    /**
+     * Format-specific values without typed fields; consumers may interpret them by key.
+     */
+    val extra: Map<String, String> = emptyMap(),
 )

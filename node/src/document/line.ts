@@ -376,9 +376,9 @@ export const makeDocumentLineNormal = (init?: Omit<MakeInit<Line>, 'type'>): Lin
     part: init?.part,
     agentIds: init?.agentIds,
     languages: init?.languages,
+    backgrounds: init?.backgrounds,
     content: init?.content,
     annotation: init?.annotation,
-    backgrounds: init?.backgrounds,
   })
 }
 
@@ -526,10 +526,10 @@ export const canonicalizeDocumentLine = (line: Line): Line => {
     part: dropDefault(fieldsCommonPart, copyMessage(line.part)),
     agentIds: line.agentIds.filter((id) => id !== ''),
     languages: [...new Set(line.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
-    content: canonicalizeField(fieldsDocumentLineContent, line.content, canonicalizeDocumentLineContent),
-    annotation: canonicalizeField(fieldsDocumentLineAnnotation, line.annotation, canonicalizeDocumentLineAnnotation),
     backgrounds: canonicalizeList(fieldsDocumentLineBackground, line.backgrounds, canonicalizeDocumentLineBackground).sort(
       byTime((background) => background.time),
     ),
+    content: canonicalizeField(fieldsDocumentLineContent, line.content, canonicalizeDocumentLineContent),
+    annotation: canonicalizeField(fieldsDocumentLineAnnotation, line.annotation, canonicalizeDocumentLineAnnotation),
   }
 }

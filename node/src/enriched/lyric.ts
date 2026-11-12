@@ -40,16 +40,16 @@ export const makeEnrichedLyric = (
   },
 ): Lyric => {
   return withInit(createEnrichedLyric(), {
+    status: init.status,
     version: SCHEMA_VERSION,
     format: init.format,
     profile: init.profile,
-    status: init.status,
     timing: init.timing,
     meta: init.meta,
-    extra: init.extra,
-    languageUsages: init.languageUsages,
     agents: init.agents,
     lines: init.lines,
+    languageUsages: init.languageUsages,
+    extra: init.extra,
   })
 }
 
@@ -222,8 +222,8 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
 export const orderEnrichedLyric = (lyric: Lyric): Lyric => {
   return {
     ...lyric,
-    languageUsages: orderEnrichedLanguageUsages(lyric.languageUsages),
     lines: [...lyric.lines].sort(byTime((line) => line.time)).map(orderEnrichedLine),
+    languageUsages: orderEnrichedLanguageUsages(lyric.languageUsages),
   }
 }
 
@@ -238,10 +238,10 @@ export const canonicalizeEnrichedLyric = (lyric: Lyric): Lyric => {
     format: lyric.format.toLowerCase(),
     profile: lyric.profile.toLowerCase(),
     meta: canonicalizeField(fieldsCommonMeta, lyric.meta, canonicalizeMeta),
-    extra: { ...lyric.extra },
-    languageUsages: canonicalizeEnrichedLanguageUsages(lyric.languageUsages),
     agents: canonicalizeList(fieldsCommonAgent, lyric.agents, canonicalizeAgent),
     lines: canonicalizeList(fieldsEnrichedLine, lyric.lines, canonicalizeEnrichedLine).sort(byTime((line) => line.time)),
+    languageUsages: canonicalizeEnrichedLanguageUsages(lyric.languageUsages),
+    extra: { ...lyric.extra },
   }
 }
 

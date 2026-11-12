@@ -918,14 +918,14 @@ export const encodeDocumentLine = (w: WireWriter, v: document.Line): void => {
     w.tag(50)
     w.string(item)
   }
+  for (const item of v.backgrounds) {
+    w.message(58, encodeDocumentLineBackground, item)
+  }
   if (v.content !== undefined) {
-    w.message(58, encodeDocumentLineContent, v.content)
+    w.message(66, encodeDocumentLineContent, v.content)
   }
   if (v.annotation !== undefined) {
-    w.message(66, encodeDocumentLineAnnotation, v.annotation)
-  }
-  for (const item of v.backgrounds) {
-    w.message(74, encodeDocumentLineBackground, item)
+    w.message(74, encodeDocumentLineAnnotation, v.annotation)
   }
 }
 
@@ -959,25 +959,25 @@ export const decodeDocumentLine = (r: WireReader, m: document.Line): void => {
         m.languages.push(r.string())
         break
       case 58: {
+        const item = createDocumentLineBackground()
+        const end = r.enter()
+        decodeDocumentLineBackground(r, item)
+        r.leave(end)
+        m.backgrounds.push(item)
+        break
+      }
+      case 66: {
         m.content ??= createDocumentLineContent()
         const end = r.enter()
         decodeDocumentLineContent(r, m.content)
         r.leave(end)
         break
       }
-      case 66: {
+      case 74: {
         m.annotation ??= createDocumentLineAnnotation()
         const end = r.enter()
         decodeDocumentLineAnnotation(r, m.annotation)
         r.leave(end)
-        break
-      }
-      case 74: {
-        const item = createDocumentLineBackground()
-        const end = r.enter()
-        decodeDocumentLineBackground(r, item)
-        r.leave(end)
-        m.backgrounds.push(item)
         break
       }
       default:
@@ -1006,13 +1006,13 @@ export const encodeDocumentLyric = (w: WireWriter, v: document.Lyric): void => {
   if (v.meta !== undefined) {
     w.message(42, encodeCommonMeta, v.meta)
   }
-  w.map(50, v.extra)
   for (const item of v.agents) {
-    w.message(58, encodeCommonAgent, item)
+    w.message(50, encodeCommonAgent, item)
   }
   for (const item of v.lines) {
-    w.message(66, encodeDocumentLine, item)
+    w.message(58, encodeDocumentLine, item)
   }
+  w.map(66, v.extra)
 }
 
 export const decodeDocumentLyric = (r: WireReader, m: document.Lyric): void => {
@@ -1037,10 +1037,7 @@ export const decodeDocumentLyric = (r: WireReader, m: document.Lyric): void => {
         r.leave(end)
         break
       }
-      case 50:
-        r.mapEntry(m.extra)
-        break
-      case 58: {
+      case 50: {
         const item = createCommonAgent()
         const end = r.enter()
         decodeCommonAgent(r, item)
@@ -1048,7 +1045,7 @@ export const decodeDocumentLyric = (r: WireReader, m: document.Lyric): void => {
         m.agents.push(item)
         break
       }
-      case 66: {
+      case 58: {
         const item = createDocumentLine()
         const end = r.enter()
         decodeDocumentLine(r, item)
@@ -1056,6 +1053,9 @@ export const decodeDocumentLyric = (r: WireReader, m: document.Lyric): void => {
         m.lines.push(item)
         break
       }
+      case 66:
+        r.mapEntry(m.extra)
+        break
       default:
         r.skip()
     }
@@ -1594,14 +1594,14 @@ export const encodeEnrichedLine = (w: WireWriter, v: enriched.Line): void => {
     w.tag(50)
     w.string(item)
   }
+  for (const item of v.backgrounds) {
+    w.message(58, encodeEnrichedLineBackground, item)
+  }
   if (v.content !== undefined) {
-    w.message(58, encodeEnrichedLineContent, v.content)
+    w.message(66, encodeEnrichedLineContent, v.content)
   }
   if (v.annotation !== undefined) {
-    w.message(66, encodeEnrichedLineAnnotation, v.annotation)
-  }
-  for (const item of v.backgrounds) {
-    w.message(74, encodeEnrichedLineBackground, item)
+    w.message(74, encodeEnrichedLineAnnotation, v.annotation)
   }
 }
 
@@ -1635,25 +1635,25 @@ export const decodeEnrichedLine = (r: WireReader, m: enriched.Line): void => {
         m.languages.push(r.string())
         break
       case 58: {
+        const item = createEnrichedLineBackground()
+        const end = r.enter()
+        decodeEnrichedLineBackground(r, item)
+        r.leave(end)
+        m.backgrounds.push(item)
+        break
+      }
+      case 66: {
         m.content ??= createEnrichedLineContent()
         const end = r.enter()
         decodeEnrichedLineContent(r, m.content)
         r.leave(end)
         break
       }
-      case 66: {
+      case 74: {
         m.annotation ??= createEnrichedLineAnnotation()
         const end = r.enter()
         decodeEnrichedLineAnnotation(r, m.annotation)
         r.leave(end)
-        break
-      }
-      case 74: {
-        const item = createEnrichedLineBackground()
-        const end = r.enter()
-        decodeEnrichedLineBackground(r, item)
-        r.leave(end)
-        m.backgrounds.push(item)
         break
       }
       default:
@@ -1663,21 +1663,21 @@ export const decodeEnrichedLine = (r: WireReader, m: enriched.Line): void => {
 }
 
 export const encodeEnrichedLyric = (w: WireWriter, v: enriched.Lyric): void => {
+  if (v.status !== 0) {
+    w.tag(8)
+    w.int32(v.status)
+  }
   if (v.version !== '') {
-    w.tag(10)
+    w.tag(18)
     w.string(v.version)
   }
   if (v.format !== '') {
-    w.tag(18)
+    w.tag(26)
     w.string(v.format)
   }
   if (v.profile !== '') {
-    w.tag(26)
+    w.tag(34)
     w.string(v.profile)
-  }
-  if (v.status !== 0) {
-    w.tag(32)
-    w.int32(v.status)
   }
   if (v.timing !== 0) {
     w.tag(40)
@@ -1686,32 +1686,32 @@ export const encodeEnrichedLyric = (w: WireWriter, v: enriched.Lyric): void => {
   if (v.meta !== undefined) {
     w.message(50, encodeCommonMeta, v.meta)
   }
-  w.map(58, v.extra)
-  for (const item of v.languageUsages) {
-    w.message(66, encodeEnrichedLanguageUsage, item)
-  }
   for (const item of v.agents) {
-    w.message(74, encodeCommonAgent, item)
+    w.message(58, encodeCommonAgent, item)
   }
   for (const item of v.lines) {
-    w.message(82, encodeEnrichedLine, item)
+    w.message(66, encodeEnrichedLine, item)
   }
+  for (const item of v.languageUsages) {
+    w.message(74, encodeEnrichedLanguageUsage, item)
+  }
+  w.map(82, v.extra)
 }
 
 export const decodeEnrichedLyric = (r: WireReader, m: enriched.Lyric): void => {
   while (r.more()) {
     switch (r.tag()) {
-      case 10:
-        m.version = r.string()
+      case 8:
+        m.status = r.int32()
         break
       case 18:
-        m.format = r.string()
+        m.version = r.string()
         break
       case 26:
-        m.profile = r.string()
+        m.format = r.string()
         break
-      case 32:
-        m.status = r.int32()
+      case 34:
+        m.profile = r.string()
         break
       case 40:
         m.timing = r.int32()
@@ -1723,18 +1723,7 @@ export const decodeEnrichedLyric = (r: WireReader, m: enriched.Lyric): void => {
         r.leave(end)
         break
       }
-      case 58:
-        r.mapEntry(m.extra)
-        break
-      case 66: {
-        const item = createEnrichedLanguageUsage()
-        const end = r.enter()
-        decodeEnrichedLanguageUsage(r, item)
-        r.leave(end)
-        m.languageUsages.push(item)
-        break
-      }
-      case 74: {
+      case 58: {
         const item = createCommonAgent()
         const end = r.enter()
         decodeCommonAgent(r, item)
@@ -1742,7 +1731,7 @@ export const decodeEnrichedLyric = (r: WireReader, m: enriched.Lyric): void => {
         m.agents.push(item)
         break
       }
-      case 82: {
+      case 66: {
         const item = createEnrichedLine()
         const end = r.enter()
         decodeEnrichedLine(r, item)
@@ -1750,6 +1739,17 @@ export const decodeEnrichedLyric = (r: WireReader, m: enriched.Lyric): void => {
         m.lines.push(item)
         break
       }
+      case 74: {
+        const item = createEnrichedLanguageUsage()
+        const end = r.enter()
+        decodeEnrichedLanguageUsage(r, item)
+        r.leave(end)
+        m.languageUsages.push(item)
+        break
+      }
+      case 82:
+        r.mapEntry(m.extra)
+        break
       default:
         r.skip()
     }

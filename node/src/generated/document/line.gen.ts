@@ -151,10 +151,10 @@ export type Line = {
    * BCP 47 language tags the source declares for this line, each at most once.
    */
   languages: string[]
-  content?: LineContent | undefined
-  annotation?: LineAnnotation | undefined
   /**
    * Background lines attached to this line, ordered by TimeRange.start ascending.
    */
   backgrounds: LineBackground[]
+  content?: LineContent | undefined
+  annotation?: LineAnnotation | undefined
 }

@@ -33,6 +33,11 @@ export enum LyricStatus {
  */
 export type Lyric = {
   /**
+   * Parse validity of the lyric.
+   * INVALID guarantees only version and status; remaining fields may be empty but still follow their normal rules.
+   */
+  status: LyricStatus
+  /**
    * Schema version of this data model, always set and formatted as a semantic version.
    * Consumers sharing the same major version can read each other's output.
    */
@@ -48,25 +53,10 @@ export type Lyric = {
    */
   profile: string
   /**
-   * Parse validity of the lyric.
-   * INVALID guarantees only version and status; remaining fields may be empty but still follow their normal rules.
-   */
-  status: LyricStatus
-  /**
    * Declared timing level of the original lyric.
    */
   timing: TimingLevel
   meta?: Meta | undefined
-  /**
-   * Format-specific values without typed fields; consumers may interpret them by key.
-   */
-  extra: Record<string, string>
-  /**
-   * Language usage across normal lines, ordered by descending line_count and then by ascending tag.
-   * Each line contributes each tag once, using both its own tags and its normal words' tags.
-   * Space words, annotations and background lines never contribute.
-   */
-  languageUsages: LanguageUsage[]
   /**
    * Performing agents referenced by lines.
    */
@@ -76,4 +66,14 @@ export type Lyric = {
    * Every line except the last requires a known end; instrumental lines always require one.
    */
   lines: Line[]
+  /**
+   * Language usage across normal lines, ordered by descending line_count and then by ascending tag.
+   * Each line contributes each tag once, using both its own tags and its normal words' tags.
+   * Space words, annotations and background lines never contribute.
+   */
+  languageUsages: LanguageUsage[]
+  /**
+   * Format-specific values without typed fields; consumers may interpret them by key.
+   */
+  extra: Record<string, string>
 }

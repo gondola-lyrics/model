@@ -276,9 +276,9 @@ export const fieldsDocumentLine: MessageFields<document.Line> = {
     { name: 'part', shape: 'message', message: fieldsCommonPart },
     { name: 'agentIds', shape: 'list-scalar' },
     { name: 'languages', shape: 'list-scalar' },
+    { name: 'backgrounds', shape: 'list-message', message: fieldsDocumentLineBackground },
     { name: 'content', shape: 'message', message: fieldsDocumentLineContent },
     { name: 'annotation', shape: 'message', message: fieldsDocumentLineAnnotation },
-    { name: 'backgrounds', shape: 'list-message', message: fieldsDocumentLineBackground },
   ],
 }
 
@@ -293,14 +293,14 @@ export const fieldsDocumentLyric: MessageFields<document.Lyric> = {
     { name: 'profile', shape: 'scalar' },
     { name: 'timing', shape: 'enum' },
     { name: 'meta', shape: 'message', message: fieldsCommonMeta },
-    { name: 'extra', shape: 'map' },
     { name: 'agents', shape: 'list-message', message: fieldsCommonAgent },
     { name: 'lines', shape: 'list-message', message: fieldsDocumentLine },
+    { name: 'extra', shape: 'map' },
   ],
 }
 
 export const createDocumentLyric = (): document.Lyric => {
-  return { version: '', format: '', profile: '', timing: 0, extra: {}, agents: [], lines: [] }
+  return { version: '', format: '', profile: '', timing: 0, agents: [], lines: [], extra: {} }
 }
 
 export const fieldsEnrichedLanguageUsage: MessageFields<enriched.LanguageUsage> = {
@@ -469,9 +469,9 @@ export const fieldsEnrichedLine: MessageFields<enriched.Line> = {
     { name: 'part', shape: 'message', message: fieldsCommonPart },
     { name: 'agentIds', shape: 'list-scalar' },
     { name: 'languages', shape: 'list-scalar' },
+    { name: 'backgrounds', shape: 'list-message', message: fieldsEnrichedLineBackground },
     { name: 'content', shape: 'message', message: fieldsEnrichedLineContent },
     { name: 'annotation', shape: 'message', message: fieldsEnrichedLineAnnotation },
-    { name: 'backgrounds', shape: 'list-message', message: fieldsEnrichedLineBackground },
   ],
 }
 
@@ -481,19 +481,19 @@ export const createEnrichedLine = (): enriched.Line => {
 
 export const fieldsEnrichedLyric: MessageFields<enriched.Lyric> = {
   fields: [
+    { name: 'status', shape: 'enum' },
     { name: 'version', shape: 'scalar' },
     { name: 'format', shape: 'scalar' },
     { name: 'profile', shape: 'scalar' },
-    { name: 'status', shape: 'enum' },
     { name: 'timing', shape: 'enum' },
     { name: 'meta', shape: 'message', message: fieldsCommonMeta },
-    { name: 'extra', shape: 'map' },
-    { name: 'languageUsages', shape: 'list-message', message: fieldsEnrichedLanguageUsage },
     { name: 'agents', shape: 'list-message', message: fieldsCommonAgent },
     { name: 'lines', shape: 'list-message', message: fieldsEnrichedLine },
+    { name: 'languageUsages', shape: 'list-message', message: fieldsEnrichedLanguageUsage },
+    { name: 'extra', shape: 'map' },
   ],
 }
 
 export const createEnrichedLyric = (): enriched.Lyric => {
-  return { version: '', format: '', profile: '', status: 0, timing: 0, extra: {}, languageUsages: [], agents: [], lines: [] }
+  return { status: 0, version: '', format: '', profile: '', timing: 0, agents: [], lines: [], languageUsages: [], extra: {} }
 }

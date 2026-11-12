@@ -173,10 +173,10 @@ public data class Line(
      * BCP 47 language tags the source declares for this line, each at most once.
      */
     val languages: List<String> = emptyList(),
-    val content: LineContent? = null,
-    val annotation: LineAnnotation? = null,
     /**
      * Background lines attached to this line, ordered by TimeRange.start ascending.
      */
     val backgrounds: List<LineBackground> = emptyList(),
+    val content: LineContent? = null,
+    val annotation: LineAnnotation? = null,
 )

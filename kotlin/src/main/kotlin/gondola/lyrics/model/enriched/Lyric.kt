@@ -37,25 +37,25 @@ public fun makeEnrichedLyric(
     profile: String = "",
     timing: TimingLevel = TimingLevel.TIMING_LEVEL_UNSPECIFIED,
     meta: Meta? = null,
-    extra: Map<String, String> = emptyMap(),
-    languageUsages: List<LanguageUsage> = emptyList(),
     agents: List<Agent> = emptyList(),
     lines: List<Line> = emptyList(),
+    languageUsages: List<LanguageUsage> = emptyList(),
+    extra: Map<String, String> = emptyMap(),
 ): Lyric {
     require(status == LyricStatus.LYRIC_STATUS_VALID || status == LyricStatus.LYRIC_STATUS_INVALID) {
         "status must be LYRIC_STATUS_VALID or LYRIC_STATUS_INVALID"
     }
     return Lyric(
+        status = status,
         version = SCHEMA_VERSION,
         format = format,
         profile = profile,
-        status = status,
         timing = timing,
         meta = meta,
-        extra = extra,
-        languageUsages = languageUsages,
         agents = agents,
         lines = lines,
+        languageUsages = languageUsages,
+        extra = extra,
     )
 }
 
@@ -242,10 +242,10 @@ public fun canonicalizeEnrichedLyric(lyric: Lyric): Lyric {
         format = lyric.format.lowercase(),
         profile = lyric.profile.lowercase(),
         meta = canonicalizeField(lyric.meta, ::canonicalizeMeta),
-        extra = lyric.extra.toMap(),
         agents = canonicalizeList(lyric.agents, ::canonicalizeAgent),
         lines = canonicalizeList(lyric.lines, ::canonicalizeEnrichedLine).sortedWith(byTime { line -> line.time }),
         languageUsages = canonicalizeEnrichedLanguageUsages(lyric.languageUsages),
+        extra = lyric.extra.toMap(),
     )
 }
 

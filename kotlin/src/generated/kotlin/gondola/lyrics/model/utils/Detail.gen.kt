@@ -170,9 +170,9 @@ internal fun isDefault(message: Any): Boolean {
                 message.part == null &&
                 message.agentIds.isEmpty() &&
                 message.languages.isEmpty() &&
+                message.backgrounds.isEmpty() &&
                 message.content == null &&
-                message.annotation == null &&
-                message.backgrounds.isEmpty()
+                message.annotation == null
 
         is DocumentLyric ->
             message.version == "" &&
@@ -180,9 +180,9 @@ internal fun isDefault(message: Any): Boolean {
                 message.profile == "" &&
                 message.timing.value == 0 &&
                 message.meta == null &&
-                message.extra.isEmpty() &&
                 message.agents.isEmpty() &&
-                message.lines.isEmpty()
+                message.lines.isEmpty() &&
+                message.extra.isEmpty()
 
         is EnrichedLanguageUsage ->
             message.tag == "" &&
@@ -254,21 +254,21 @@ internal fun isDefault(message: Any): Boolean {
                 message.part == null &&
                 message.agentIds.isEmpty() &&
                 message.languages.isEmpty() &&
+                message.backgrounds.isEmpty() &&
                 message.content == null &&
-                message.annotation == null &&
-                message.backgrounds.isEmpty()
+                message.annotation == null
 
         is EnrichedLyric ->
-            message.version == "" &&
+            message.status.value == 0 &&
+                message.version == "" &&
                 message.format == "" &&
                 message.profile == "" &&
-                message.status.value == 0 &&
                 message.timing.value == 0 &&
                 message.meta == null &&
-                message.extra.isEmpty() &&
-                message.languageUsages.isEmpty() &&
                 message.agents.isEmpty() &&
-                message.lines.isEmpty()
+                message.lines.isEmpty() &&
+                message.languageUsages.isEmpty() &&
+                message.extra.isEmpty()
 
         else -> false
     }
@@ -416,9 +416,9 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("part", FieldShape.MESSAGE, message.part)
             visit("agentIds", FieldShape.LIST_SCALAR, message.agentIds)
             visit("languages", FieldShape.LIST_SCALAR, message.languages)
+            visit("backgrounds", FieldShape.LIST_MESSAGE, message.backgrounds)
             visit("content", FieldShape.MESSAGE, message.content)
             visit("annotation", FieldShape.MESSAGE, message.annotation)
-            visit("backgrounds", FieldShape.LIST_MESSAGE, message.backgrounds)
         }
 
         is DocumentLyric -> {
@@ -427,9 +427,9 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("profile", FieldShape.SCALAR, message.profile)
             visit("timing", FieldShape.ENUM, message.timing)
             visit("meta", FieldShape.MESSAGE, message.meta)
-            visit("extra", FieldShape.MAP, message.extra)
             visit("agents", FieldShape.LIST_MESSAGE, message.agents)
             visit("lines", FieldShape.LIST_MESSAGE, message.lines)
+            visit("extra", FieldShape.MAP, message.extra)
         }
 
         is EnrichedLanguageUsage -> {
@@ -519,22 +519,22 @@ internal fun visitFields(message: Any, visit: (String, FieldShape, Any?) -> Unit
             visit("part", FieldShape.MESSAGE, message.part)
             visit("agentIds", FieldShape.LIST_SCALAR, message.agentIds)
             visit("languages", FieldShape.LIST_SCALAR, message.languages)
+            visit("backgrounds", FieldShape.LIST_MESSAGE, message.backgrounds)
             visit("content", FieldShape.MESSAGE, message.content)
             visit("annotation", FieldShape.MESSAGE, message.annotation)
-            visit("backgrounds", FieldShape.LIST_MESSAGE, message.backgrounds)
         }
 
         is EnrichedLyric -> {
+            visit("status", FieldShape.ENUM, message.status)
             visit("version", FieldShape.SCALAR, message.version)
             visit("format", FieldShape.SCALAR, message.format)
             visit("profile", FieldShape.SCALAR, message.profile)
-            visit("status", FieldShape.ENUM, message.status)
             visit("timing", FieldShape.ENUM, message.timing)
             visit("meta", FieldShape.MESSAGE, message.meta)
-            visit("extra", FieldShape.MAP, message.extra)
-            visit("languageUsages", FieldShape.LIST_MESSAGE, message.languageUsages)
             visit("agents", FieldShape.LIST_MESSAGE, message.agents)
             visit("lines", FieldShape.LIST_MESSAGE, message.lines)
+            visit("languageUsages", FieldShape.LIST_MESSAGE, message.languageUsages)
+            visit("extra", FieldShape.MAP, message.extra)
         }
     }
 }
@@ -701,9 +701,9 @@ internal fun readField(message: Any, name: String): Any? {
             "part" -> message.part
             "agentIds" -> message.agentIds
             "languages" -> message.languages
+            "backgrounds" -> message.backgrounds
             "content" -> message.content
             "annotation" -> message.annotation
-            "backgrounds" -> message.backgrounds
             else -> null
         }
 
@@ -713,9 +713,9 @@ internal fun readField(message: Any, name: String): Any? {
             "profile" -> message.profile
             "timing" -> message.timing.value
             "meta" -> message.meta
-            "extra" -> message.extra
             "agents" -> message.agents
             "lines" -> message.lines
+            "extra" -> message.extra
             else -> null
         }
 
@@ -819,23 +819,23 @@ internal fun readField(message: Any, name: String): Any? {
             "part" -> message.part
             "agentIds" -> message.agentIds
             "languages" -> message.languages
+            "backgrounds" -> message.backgrounds
             "content" -> message.content
             "annotation" -> message.annotation
-            "backgrounds" -> message.backgrounds
             else -> null
         }
 
         is EnrichedLyric -> when (name) {
+            "status" -> message.status.value
             "version" -> message.version
             "format" -> message.format
             "profile" -> message.profile
-            "status" -> message.status.value
             "timing" -> message.timing.value
             "meta" -> message.meta
-            "extra" -> message.extra
-            "languageUsages" -> message.languageUsages
             "agents" -> message.agents
             "lines" -> message.lines
+            "languageUsages" -> message.languageUsages
+            "extra" -> message.extra
             else -> null
         }
 
