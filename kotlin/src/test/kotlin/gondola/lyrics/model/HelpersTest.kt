@@ -17,18 +17,18 @@ import gondola.lyrics.model.enriched.LineContent
 import gondola.lyrics.model.enriched.Lyric
 import gondola.lyrics.model.enriched.Word
 import gondola.lyrics.model.enriched.WordType
-import gondola.lyrics.model.enriched.deriveLineLanguages
-import gondola.lyrics.model.enriched.deriveLineRomans
-import gondola.lyrics.model.enriched.makeLineAnnotationRoman
-import gondola.lyrics.model.enriched.makeLineContentWords
-import gondola.lyrics.model.enriched.makeLineNormal
-import gondola.lyrics.model.enriched.makeWordAnnotation
-import gondola.lyrics.model.enriched.makeWordAnnotationRoman
-import gondola.lyrics.model.enriched.makeWordAnnotationToken
-import gondola.lyrics.model.enriched.makeWordNormal
-import gondola.lyrics.model.enriched.makeWordSpace
-import gondola.lyrics.model.enriched.resolveLineAgents
-import gondola.lyrics.model.enriched.validateWord
+import gondola.lyrics.model.enriched.deriveEnrichedLineLanguages
+import gondola.lyrics.model.enriched.deriveEnrichedLineRomans
+import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRoman
+import gondola.lyrics.model.enriched.makeEnrichedLineContentWords
+import gondola.lyrics.model.enriched.makeEnrichedLineNormal
+import gondola.lyrics.model.enriched.makeEnrichedWordAnnotation
+import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRoman
+import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationToken
+import gondola.lyrics.model.enriched.makeEnrichedWordNormal
+import gondola.lyrics.model.enriched.makeEnrichedWordSpace
+import gondola.lyrics.model.enriched.resolveEnrichedLineAgents
+import gondola.lyrics.model.enriched.validateEnrichedWord
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -37,53 +37,69 @@ import kotlin.test.assertNull
 class HelpersTest {
     @Test
     fun derivesRomansSeparatelyBySchemeInFirstAppearanceOrder() {
-        val first = makeWordAnnotation(
+        val first = makeEnrichedWordAnnotation(
             romans = listOf(
-                makeWordAnnotationRoman(language = "JA-Latn", scheme = "HEPBURN", tokens = listOf(makeWordAnnotationToken(text = "shi"))),
-                makeWordAnnotationRoman(language = "ja-latn", scheme = "kunrei", tokens = listOf(makeWordAnnotationToken(text = "si"))),
-                makeWordAnnotationRoman(language = "ja-latn", tokens = listOf(makeWordAnnotationToken(text = "default"))),
+                makeEnrichedWordAnnotationRoman(
+                    language = "JA-Latn",
+                    scheme = "HEPBURN",
+                    tokens = listOf(makeEnrichedWordAnnotationToken(text = "shi")),
+                ),
+                makeEnrichedWordAnnotationRoman(
+                    language = "ja-latn",
+                    scheme = "kunrei",
+                    tokens = listOf(makeEnrichedWordAnnotationToken(text = "si")),
+                ),
+                makeEnrichedWordAnnotationRoman(language = "ja-latn", tokens = listOf(makeEnrichedWordAnnotationToken(text = "default"))),
             ),
         )
-        val last = makeWordAnnotation(
+        val last = makeEnrichedWordAnnotation(
             romans = listOf(
-                makeWordAnnotationRoman(language = "ja-latn", scheme = "KUNREI", tokens = listOf(makeWordAnnotationToken(text = "ti"))),
-                makeWordAnnotationRoman(language = "JA-LATN", scheme = "hepburn", tokens = listOf(makeWordAnnotationToken(text = "chi"))),
-                makeWordAnnotationRoman(language = "ja-latn", scheme = "", tokens = listOf(makeWordAnnotationToken(text = "text"))),
+                makeEnrichedWordAnnotationRoman(
+                    language = "ja-latn",
+                    scheme = "KUNREI",
+                    tokens = listOf(makeEnrichedWordAnnotationToken(text = "ti")),
+                ),
+                makeEnrichedWordAnnotationRoman(
+                    language = "JA-LATN",
+                    scheme = "hepburn",
+                    tokens = listOf(makeEnrichedWordAnnotationToken(text = "chi")),
+                ),
+                makeEnrichedWordAnnotationRoman(language = "ja-latn", scheme = "", tokens = listOf(makeEnrichedWordAnnotationToken(text = "text"))),
             ),
         )
         val words = listOf(
-            makeWordSpace(text = " "),
-            makeWordNormal(text = "x", annotation = first),
-            makeWordSpace(text = "  "),
-            makeWordNormal(text = "omitted"),
-            makeWordNormal(text = "y", annotation = last),
-            makeWordSpace(text = " "),
+            makeEnrichedWordSpace(text = " "),
+            makeEnrichedWordNormal(text = "x", annotation = first),
+            makeEnrichedWordSpace(text = "  "),
+            makeEnrichedWordNormal(text = "omitted"),
+            makeEnrichedWordNormal(text = "y", annotation = last),
+            makeEnrichedWordSpace(text = " "),
         )
         val expected = listOf(
-            makeLineAnnotationRoman(language = "ja-latn", scheme = "hepburn", text = "shi chi"),
-            makeLineAnnotationRoman(language = "ja-latn", scheme = "kunrei", text = "si ti"),
-            makeLineAnnotationRoman(language = "ja-latn", text = "default text"),
+            makeEnrichedLineAnnotationRoman(language = "ja-latn", scheme = "hepburn", text = "shi chi"),
+            makeEnrichedLineAnnotationRoman(language = "ja-latn", scheme = "kunrei", text = "si ti"),
+            makeEnrichedLineAnnotationRoman(language = "ja-latn", text = "default text"),
         )
-        assertEquals(expected, deriveLineRomans(makeLineContentWords(words)))
-        val stored = gondola.lyrics.model.document.makeLineContentWords(
+        assertEquals(expected, deriveEnrichedLineRomans(makeEnrichedLineContentWords(words)))
+        val stored = gondola.lyrics.model.document.makeDocumentLineContentWords(
             words.map { word ->
                 val annotation = word.annotation?.let { source ->
-                    gondola.lyrics.model.document.makeWordAnnotation(
+                    gondola.lyrics.model.document.makeDocumentWordAnnotation(
                         romans = source.romans.map { roman ->
-                            gondola.lyrics.model.document.makeWordAnnotationRoman(
+                            gondola.lyrics.model.document.makeDocumentWordAnnotationRoman(
                                 language = roman.language,
                                 scheme = roman.scheme,
                                 tokens = roman.tokens.map { token ->
-                                    gondola.lyrics.model.document.makeWordAnnotationToken(time = token.time, text = token.text)
+                                    gondola.lyrics.model.document.makeDocumentWordAnnotationToken(time = token.time, text = token.text)
                                 },
                             )
                         },
                     )
                 }
                 if (word.type == WordType.WORD_TYPE_SPACE) {
-                    gondola.lyrics.model.document.makeWordSpace(text = word.text)
+                    gondola.lyrics.model.document.makeDocumentWordSpace(text = word.text)
                 } else {
-                    gondola.lyrics.model.document.makeWordNormal(text = word.text, annotation = annotation)
+                    gondola.lyrics.model.document.makeDocumentWordNormal(text = word.text, annotation = annotation)
                 }
             },
         )
@@ -93,15 +109,15 @@ class HelpersTest {
                 Triple("ja-latn", "kunrei", "si ti"),
                 Triple("ja-latn", null, "default text"),
             ),
-            gondola.lyrics.model.document.deriveLineRomans(stored).map { Triple(it.language, it.scheme, it.text) },
+            gondola.lyrics.model.document.deriveDocumentLineRomans(stored).map { Triple(it.language, it.scheme, it.text) },
         )
         assertEquals("HEPBURN", first.romans[0].scheme)
     }
 
     @Test
     fun derivesLowercasedLineLanguagesWithoutRepeats() {
-        val line = makeLineNormal(languages = listOf("JA-JP", "ja-jp", "EN"))
-        val languages = deriveLineLanguages(line)
+        val line = makeEnrichedLineNormal(languages = listOf("JA-JP", "ja-jp", "EN"))
+        val languages = deriveEnrichedLineLanguages(line)
 
         assertEquals(listOf("ja-jp", "en"), languages)
         assertEquals(listOf("JA-JP", "ja-jp", "EN"), line.languages)
@@ -109,16 +125,16 @@ class HelpersTest {
 
     @Test
     fun fallsBackToWordLanguages() {
-        val line = makeLineNormal(
-            content = makeLineContentWords(
+        val line = makeEnrichedLineNormal(
+            content = makeEnrichedLineContentWords(
                 listOf(
-                    makeWordNormal(text = "hi", language = "EN"),
-                    makeWordSpace(text = " "),
-                    makeWordNormal(text = "there", language = "en"),
+                    makeEnrichedWordNormal(text = "hi", language = "EN"),
+                    makeEnrichedWordSpace(text = " "),
+                    makeEnrichedWordNormal(text = "there", language = "en"),
                 ),
             ),
         )
-        assertEquals(listOf("en"), deriveLineLanguages(line))
+        assertEquals(listOf("en"), deriveEnrichedLineLanguages(line))
     }
 
     // Resolving has to agree with what validate reports about a duplicate and an empty id, or the two tell different stories.
@@ -128,14 +144,14 @@ class HelpersTest {
             makeAgent(id = "a", type = AgentType.AGENT_TYPE_PERSON, names = listOf(makeText(text = "first"))),
             makeAgent(id = "a", type = AgentType.AGENT_TYPE_PERSON, names = listOf(makeText(text = "second"))),
         )
-        val resolved = resolveLineAgents(makeLineNormal(agents = listOf("a")), agents)
+        val resolved = resolveEnrichedLineAgents(makeEnrichedLineNormal(agents = listOf("a")), agents)
         assertEquals(listOf("first"), resolved.map { it.names[0].text })
     }
 
     @Test
     fun resolvesNeitherEmptyNorUnknownAgentId() {
         val agents = listOf(makeAgent(id = "", type = AgentType.AGENT_TYPE_PERSON), makeAgent(id = "a", type = AgentType.AGENT_TYPE_PERSON))
-        assertEquals(emptyList(), resolveLineAgents(makeLineNormal(agents = listOf("", "ghost")), agents))
+        assertEquals(emptyList(), resolveEnrichedLineAgents(makeEnrichedLineNormal(agents = listOf("", "ghost")), agents))
     }
 
     // The wire range is wider than the schema's time range, so construction and validation enforce different bounds.
@@ -174,10 +190,13 @@ class HelpersTest {
     @Test
     fun wordSeparatorsUseUnicodeWhiteSpace() {
         for (separator in listOf("\u0085", "\u00a0", "\u2007", "\u202f")) {
-            assertEquals(emptyList(), validateWord(makeWordSpace(text = separator)))
-            assertEquals(listOf(Diagnostic("text", DiagnosticCode.WordTextSeparator)), validateWord(makeWordNormal(text = "a${separator}b")))
+            assertEquals(emptyList(), validateEnrichedWord(makeEnrichedWordSpace(text = separator)))
+            assertEquals(
+                listOf(Diagnostic("text", DiagnosticCode.WordTextSeparator)),
+                validateEnrichedWord(makeEnrichedWordNormal(text = "a${separator}b")),
+            )
         }
-        assertEquals(emptyList(), validateWord(makeWordNormal(text = "a\u200bb")))
-        assertEquals(listOf(Diagnostic("text", DiagnosticCode.WordTextNotSeparator)), validateWord(makeWordSpace(text = "\u200b")))
+        assertEquals(emptyList(), validateEnrichedWord(makeEnrichedWordNormal(text = "a\u200bb")))
+        assertEquals(listOf(Diagnostic("text", DiagnosticCode.WordTextNotSeparator)), validateEnrichedWord(makeEnrichedWordSpace(text = "\u200b")))
     }
 }

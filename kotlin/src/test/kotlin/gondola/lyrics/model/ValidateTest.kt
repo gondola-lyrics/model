@@ -10,47 +10,47 @@ import gondola.lyrics.model.common.makePart
 import gondola.lyrics.model.common.makeTimeRange
 import gondola.lyrics.model.common.validateMeta
 import gondola.lyrics.model.common.validateTimeRange
+import gondola.lyrics.model.document.makeDocumentLineContentText
+import gondola.lyrics.model.document.makeDocumentLineNormal
+import gondola.lyrics.model.document.makeDocumentLyric
+import gondola.lyrics.model.document.validateDocumentLyric
 import gondola.lyrics.model.enriched.LanguageUsage
 import gondola.lyrics.model.enriched.Line
 import gondola.lyrics.model.enriched.Lyric
 import gondola.lyrics.model.enriched.LyricStatus
-import gondola.lyrics.model.enriched.canonicalizeLyric
-import gondola.lyrics.model.enriched.deriveLanguageUsages
-import gondola.lyrics.model.enriched.makeLineAnnotation
-import gondola.lyrics.model.enriched.makeLineAnnotationRoman
-import gondola.lyrics.model.enriched.makeLineAnnotationTranslation
-import gondola.lyrics.model.enriched.makeLineContentText
-import gondola.lyrics.model.enriched.makeLineContentWords
-import gondola.lyrics.model.enriched.makeLineInstrumental
-import gondola.lyrics.model.enriched.makeLineNormal
-import gondola.lyrics.model.enriched.makeLyric
-import gondola.lyrics.model.enriched.makeWordAnnotation
-import gondola.lyrics.model.enriched.makeWordAnnotationRoman
-import gondola.lyrics.model.enriched.makeWordAnnotationRuby
-import gondola.lyrics.model.enriched.makeWordAnnotationToken
-import gondola.lyrics.model.enriched.makeWordAnnotationTranslation
-import gondola.lyrics.model.enriched.makeWordEmphasis
-import gondola.lyrics.model.enriched.makeWordNormal
-import gondola.lyrics.model.enriched.makeWordSpace
-import gondola.lyrics.model.enriched.validateLanguageUsage
-import gondola.lyrics.model.enriched.validateLine
-import gondola.lyrics.model.enriched.validateLineAnnotation
-import gondola.lyrics.model.enriched.validateLyric
-import gondola.lyrics.model.enriched.validateWord
-import gondola.lyrics.model.enriched.validateWordAnnotation
+import gondola.lyrics.model.enriched.canonicalizeEnrichedLyric
+import gondola.lyrics.model.enriched.deriveEnrichedLanguageUsages
+import gondola.lyrics.model.enriched.makeEnrichedLineAnnotation
+import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRoman
+import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationTranslation
+import gondola.lyrics.model.enriched.makeEnrichedLineContentText
+import gondola.lyrics.model.enriched.makeEnrichedLineContentWords
+import gondola.lyrics.model.enriched.makeEnrichedLineInstrumental
+import gondola.lyrics.model.enriched.makeEnrichedLineNormal
+import gondola.lyrics.model.enriched.makeEnrichedLyric
+import gondola.lyrics.model.enriched.makeEnrichedWordAnnotation
+import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRoman
+import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRuby
+import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationToken
+import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationTranslation
+import gondola.lyrics.model.enriched.makeEnrichedWordEmphasis
+import gondola.lyrics.model.enriched.makeEnrichedWordNormal
+import gondola.lyrics.model.enriched.makeEnrichedWordSpace
+import gondola.lyrics.model.enriched.validateEnrichedLanguageUsage
+import gondola.lyrics.model.enriched.validateEnrichedLine
+import gondola.lyrics.model.enriched.validateEnrichedLineAnnotation
+import gondola.lyrics.model.enriched.validateEnrichedLyric
+import gondola.lyrics.model.enriched.validateEnrichedWord
+import gondola.lyrics.model.enriched.validateEnrichedWordAnnotation
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import gondola.lyrics.model.document.makeLineContentText as makeDocumentLineContentText
-import gondola.lyrics.model.document.makeLineNormal as makeDocumentLineNormal
-import gondola.lyrics.model.document.makeLyric as makeDocumentLyric
-import gondola.lyrics.model.document.validateLyric as validateDocumentLyric
 
 private fun textLine(start: Long, end: Long? = null): Line {
-    return makeLineNormal(time = makeTimeRange(start = start, end = end), content = makeLineContentText("x"))
+    return makeEnrichedLineNormal(time = makeTimeRange(start = start, end = end), content = makeEnrichedLineContentText("x"))
 }
 
 private fun lineTimed(vararg lines: Line): Lyric {
-    return makeLyric(format = "lrc", timing = Timing.TIMING_LINE, status = LyricStatus.LYRIC_STATUS_VALID, lines = lines.toList())
+    return makeEnrichedLyric(format = "lrc", timing = Timing.TIMING_LINE, status = LyricStatus.LYRIC_STATUS_VALID, lines = lines.toList())
 }
 
 private fun List<Diagnostic>.asPairs(): List<Pair<String, String>> {
@@ -58,47 +58,50 @@ private fun List<Diagnostic>.asPairs(): List<Pair<String, String>> {
 }
 
 private fun validatePartsInBothLayers(parts: List<Part?>): List<List<Diagnostic>> {
-    val played = makeLyric(
+    val played = makeEnrichedLyric(
         timing = Timing.TIMING_NONE,
         status = LyricStatus.LYRIC_STATUS_VALID,
-        lines = parts.map { makeLineNormal(part = it, content = makeLineContentText("line")) },
+        lines = parts.map { makeEnrichedLineNormal(part = it, content = makeEnrichedLineContentText("line")) },
     )
     val stored = makeDocumentLyric(
         timing = Timing.TIMING_NONE,
         lines = parts.map { makeDocumentLineNormal(part = it, content = makeDocumentLineContentText("line")) },
     )
-    return listOf(validateLyric(played), validateDocumentLyric(stored))
+    return listOf(validateEnrichedLyric(played), validateDocumentLyric(stored))
 }
 
 class ValidateTest {
     @Test
     fun requiresEmphasisDecisionWhenOriginIsSet() {
         for (derived in listOf(false, true)) {
-            val line = makeLineNormal(
+            val line = makeEnrichedLineNormal(
                 time = makeTimeRange(start = 1000, end = 5000),
-                content = makeLineContentWords(
+                content = makeEnrichedLineContentWords(
                     listOf(
-                        makeWordNormal(
+                        makeEnrichedWordNormal(
                             text = "ah",
                             time = makeTimeRange(start = 1000, end = 5000),
-                            emphasis = makeWordEmphasis(derived = derived),
+                            emphasis = makeEnrichedWordEmphasis(derived = derived),
                         ),
                     ),
                 ),
             )
-            val lyric = canonicalizeLyric(
-                makeLyric(timing = Timing.TIMING_WORD, status = LyricStatus.LYRIC_STATUS_VALID, lines = listOf(line)),
+            val lyric = canonicalizeEnrichedLyric(
+                makeEnrichedLyric(timing = Timing.TIMING_WORD, status = LyricStatus.LYRIC_STATUS_VALID, lines = listOf(line)),
             )
             assertEquals(
                 listOf("lines[0].content.words[0].emphasis.value" to "line.word.emphasis.value.missing"),
-                validateLyric(lyric).asPairs(),
+                validateEnrichedLyric(lyric).asPairs(),
             )
             for (value in listOf(false, true)) {
-                assertEquals(emptyList(), validateWord(makeWordNormal(text = "ah", emphasis = makeWordEmphasis(value = value, derived = derived))))
+                assertEquals(
+                    emptyList(),
+                    validateEnrichedWord(makeEnrichedWordNormal(text = "ah", emphasis = makeEnrichedWordEmphasis(value = value, derived = derived))),
+                )
             }
         }
-        assertEquals(emptyList(), validateWord(makeWordNormal(text = "ah", emphasis = makeWordEmphasis())))
-        assertEquals(emptyList(), validateWord(makeWordNormal(text = "ah", emphasis = makeWordEmphasis(value = false))))
+        assertEquals(emptyList(), validateEnrichedWord(makeEnrichedWordNormal(text = "ah", emphasis = makeEnrichedWordEmphasis())))
+        assertEquals(emptyList(), validateEnrichedWord(makeEnrichedWordNormal(text = "ah", emphasis = makeEnrichedWordEmphasis(value = false))))
     }
 
     @Test
@@ -162,14 +165,14 @@ class ValidateTest {
             "ja-latn" to null,
             "JA-LATN" to "",
         )
-        val word = makeWordAnnotation(
-            rubies = identities.map { (language, scheme) -> makeWordAnnotationRuby(language = language, scheme = scheme) },
-            romans = identities.map { (language, scheme) -> makeWordAnnotationRoman(language = language, scheme = scheme) },
-            translations = listOf("zh-Hans", "ZH-HANS").map { makeWordAnnotationTranslation(language = it, text = "translation") },
+        val word = makeEnrichedWordAnnotation(
+            rubies = identities.map { (language, scheme) -> makeEnrichedWordAnnotationRuby(language = language, scheme = scheme) },
+            romans = identities.map { (language, scheme) -> makeEnrichedWordAnnotationRoman(language = language, scheme = scheme) },
+            translations = listOf("zh-Hans", "ZH-HANS").map { makeEnrichedWordAnnotationTranslation(language = it, text = "translation") },
         )
-        val line = makeLineAnnotation(
-            romans = identities.map { (language, scheme) -> makeLineAnnotationRoman(language = language, scheme = scheme, text = "roman") },
-            translations = listOf("zh-Hans", "ZH-HANS").map { makeLineAnnotationTranslation(language = it, text = "translation") },
+        val line = makeEnrichedLineAnnotation(
+            romans = identities.map { (language, scheme) -> makeEnrichedLineAnnotationRoman(language = language, scheme = scheme, text = "roman") },
+            translations = listOf("zh-Hans", "ZH-HANS").map { makeEnrichedLineAnnotationTranslation(language = it, text = "translation") },
         )
         val expectedWord = listOf(
             "rubies[3]" to "line.word.annotation.rubies.duplicate",
@@ -183,63 +186,65 @@ class ValidateTest {
             "romans[5]" to "line.annotation.romans.duplicate",
             "translations[1]" to "line.annotation.translations.language.duplicate",
         )
-        assertEquals(expectedWord, validateWordAnnotation(word).asPairs())
-        assertEquals(expectedLine, validateLineAnnotation(line).asPairs())
+        assertEquals(expectedWord, validateEnrichedWordAnnotation(word).asPairs())
+        assertEquals(expectedLine, validateEnrichedLineAnnotation(line).asPairs())
 
-        val documentWord = gondola.lyrics.model.document.makeWordAnnotation(
+        val documentWord = gondola.lyrics.model.document.makeDocumentWordAnnotation(
             rubies = identities.map { (language, scheme) ->
-                gondola.lyrics.model.document.makeWordAnnotationRuby(language = language, scheme = scheme)
+                gondola.lyrics.model.document.makeDocumentWordAnnotationRuby(language = language, scheme = scheme)
             },
             romans = identities.map { (language, scheme) ->
-                gondola.lyrics.model.document.makeWordAnnotationRoman(language = language, scheme = scheme)
+                gondola.lyrics.model.document.makeDocumentWordAnnotationRoman(language = language, scheme = scheme)
             },
             translations = listOf("zh-Hans", "ZH-HANS").map {
-                gondola.lyrics.model.document.makeWordAnnotationTranslation(language = it, text = "translation")
+                gondola.lyrics.model.document.makeDocumentWordAnnotationTranslation(language = it, text = "translation")
             },
         )
-        val documentLine = gondola.lyrics.model.document.makeLineAnnotation(
+        val documentLine = gondola.lyrics.model.document.makeDocumentLineAnnotation(
             romans = identities.map { (language, scheme) ->
-                gondola.lyrics.model.document.makeLineAnnotationRoman(language = language, scheme = scheme, text = "roman")
+                gondola.lyrics.model.document.makeDocumentLineAnnotationRoman(language = language, scheme = scheme, text = "roman")
             },
             translations = listOf("zh-Hans", "ZH-HANS").map {
-                gondola.lyrics.model.document.makeLineAnnotationTranslation(language = it, text = "translation")
+                gondola.lyrics.model.document.makeDocumentLineAnnotationTranslation(language = it, text = "translation")
             },
         )
-        assertEquals(expectedWord, gondola.lyrics.model.document.validateWordAnnotation(documentWord).asPairs())
-        assertEquals(expectedLine, gondola.lyrics.model.document.validateLineAnnotation(documentLine).asPairs())
+        assertEquals(expectedWord, gondola.lyrics.model.document.validateDocumentWordAnnotation(documentWord).asPairs())
+        assertEquals(expectedLine, gondola.lyrics.model.document.validateDocumentLineAnnotation(documentLine).asPairs())
     }
 
     @Test
     fun validatesAnnotationLanguagesIndependentlyOfSchemes() {
         for (language in listOf("ja-latn", "ja_Latn")) {
             val scheme = "custom_romanization"
-            val line = makeLineNormal(
+            val line = makeEnrichedLineNormal(
                 time = makeTimeRange(start = 0, end = 1000),
-                content = makeLineContentWords(
+                content = makeEnrichedLineContentWords(
                     listOf(
-                        makeWordNormal(
+                        makeEnrichedWordNormal(
                             text = "x",
                             time = makeTimeRange(start = 0, end = 1000),
-                            annotation = makeWordAnnotation(
+                            annotation = makeEnrichedWordAnnotation(
                                 rubies = listOf(
-                                    makeWordAnnotationRuby(
+                                    makeEnrichedWordAnnotationRuby(
                                         language = language,
                                         scheme = scheme,
-                                        tokens = listOf(makeWordAnnotationToken(text = "shi")),
+                                        tokens = listOf(makeEnrichedWordAnnotationToken(text = "shi")),
                                     ),
                                 ),
                                 romans = listOf(
-                                    makeWordAnnotationRoman(
+                                    makeEnrichedWordAnnotationRoman(
                                         language = language,
                                         scheme = scheme,
-                                        tokens = listOf(makeWordAnnotationToken(text = "shi")),
+                                        tokens = listOf(makeEnrichedWordAnnotationToken(text = "shi")),
                                     ),
                                 ),
                             ),
                         ),
                     ),
                 ),
-                annotation = makeLineAnnotation(romans = listOf(makeLineAnnotationRoman(language = language, scheme = scheme, text = "shi"))),
+                annotation = makeEnrichedLineAnnotation(
+                    romans = listOf(makeEnrichedLineAnnotationRoman(language = language, scheme = scheme, text = "shi")),
+                ),
             )
             val expected = if (language == "ja-latn") {
                 emptyList()
@@ -250,7 +255,7 @@ class ValidateTest {
                     "content.words[0].annotation.rubies[0].language" to "language.tag.malformed",
                 )
             }
-            assertEquals(expected, validateLine(line, timing = Timing.TIMING_WORD).asPairs().sortedBy { it.first })
+            assertEquals(expected, validateEnrichedLine(line, timing = Timing.TIMING_WORD).asPairs().sortedBy { it.first })
         }
     }
 
@@ -270,11 +275,11 @@ class ValidateTest {
     fun reportsNativeCountsAlongsideTagErrors() {
         assertEquals(
             listOf("languages[0].tag" to "language.usage.tag.empty", "languages[0].count" to "language.usage.count.invalid"),
-            validateLanguageUsage(LanguageUsage(count = -1), "languages[0]").asPairs(),
+            validateEnrichedLanguageUsage(LanguageUsage(count = -1), "languages[0]").asPairs(),
         )
         assertEquals(
             listOf("count" to "language.usage.count.overflow"),
-            validateLanguageUsage(LanguageUsage(tag = "en", count = 4294967296L)).asPairs(),
+            validateEnrichedLanguageUsage(LanguageUsage(tag = "en", count = 4294967296L)).asPairs(),
         )
     }
 
@@ -287,26 +292,26 @@ class ValidateTest {
     @Test
     fun acceptsWordLevelLyric() {
         val lines = listOf(
-            makeLineNormal(
+            makeEnrichedLineNormal(
                 time = makeTimeRange(start = 1000, end = 2000),
                 languages = listOf("en"),
-                content = makeLineContentWords(
+                content = makeEnrichedLineContentWords(
                     listOf(
-                        makeWordNormal(text = "hi", language = "en", time = makeTimeRange(start = 1000, end = 1500)),
-                        makeWordSpace(text = " "),
-                        makeWordNormal(text = "there", language = "en", time = makeTimeRange(start = 1500, end = 2000)),
+                        makeEnrichedWordNormal(text = "hi", language = "en", time = makeTimeRange(start = 1000, end = 1500)),
+                        makeEnrichedWordSpace(text = " "),
+                        makeEnrichedWordNormal(text = "there", language = "en", time = makeTimeRange(start = 1500, end = 2000)),
                     ),
                 ),
             ),
         )
-        val lyric = makeLyric(
+        val lyric = makeEnrichedLyric(
             format = "lrc",
             timing = Timing.TIMING_WORD,
             status = LyricStatus.LYRIC_STATUS_VALID,
-            languages = deriveLanguageUsages(lines),
+            languages = deriveEnrichedLanguageUsages(lines),
             lines = lines,
         )
-        assertEquals(emptyList(), validateLyric(lyric))
+        assertEquals(emptyList(), validateEnrichedLyric(lyric))
     }
 
     // The codes are a contract the other bindings copy verbatim, so they are asserted as the strings they are.
@@ -327,16 +332,16 @@ class ValidateTest {
 
     @Test
     fun reportsUndeclaredLanguagesAndUnsplitWord() {
-        val lyric = makeLyric(
+        val lyric = makeEnrichedLyric(
             format = "lrc",
             timing = Timing.TIMING_WORD,
             status = LyricStatus.LYRIC_STATUS_VALID,
             lines = listOf(
-                makeLineNormal(
+                makeEnrichedLineNormal(
                     time = makeTimeRange(start = 1000, end = 2000),
                     languages = listOf("en"),
-                    content = makeLineContentWords(
-                        listOf(makeWordNormal(text = "hi there", language = "en", time = makeTimeRange(start = 1000, end = 2000))),
+                    content = makeEnrichedLineContentWords(
+                        listOf(makeEnrichedWordNormal(text = "hi there", language = "en", time = makeTimeRange(start = 1000, end = 2000))),
                     ),
                 ),
             ),
@@ -346,41 +351,41 @@ class ValidateTest {
                 "languages" to "lyric.languages.mismatch",
                 "lines[0].content.words[0].text" to "word.text.separator",
             ),
-            validateLyric(lyric).asPairs(),
+            validateEnrichedLyric(lyric).asPairs(),
         )
     }
 
     // An untimed lyric marks out no stretches, so it reports the line itself instead of asking it for a range it may not have.
     @Test
     fun reportsInstrumentalLineInUntimedLyric() {
-        val lyric = makeLyric(
+        val lyric = makeEnrichedLyric(
             format = "lrc",
             timing = Timing.TIMING_NONE,
             status = LyricStatus.LYRIC_STATUS_VALID,
-            lines = listOf(makeLineInstrumental()),
+            lines = listOf(makeEnrichedLineInstrumental()),
         )
-        assertEquals(listOf("lines[0].type" to "lyric.timing.none.instrumental"), validateLyric(lyric).asPairs())
+        assertEquals(listOf("lines[0].type" to "lyric.timing.none.instrumental"), validateEnrichedLyric(lyric).asPairs())
     }
 
     // A line other than the last ends where the timeline moves on, so one left open would be shown for the rest of the song.
     @Test
     fun reportsLineLeftOpenAbove() {
         val lyric = lineTimed(textLine(0, 1000), textLine(1000), textLine(2000, 3000))
-        assertEquals(listOf("lines[1].time.end" to "lyric.line.time.end.missing"), validateLyric(lyric).asPairs())
+        assertEquals(listOf("lines[1].time.end" to "lyric.line.time.end.missing"), validateEnrichedLyric(lyric).asPairs())
     }
 
     // Nothing in a lyric states where it stops, so the last line is the one line whose end the data cannot carry.
     @Test
     fun acceptsLastLineLeftOpenAbove() {
         val lyric = lineTimed(textLine(0, 1000), textLine(1000, 2000), textLine(2000))
-        assertEquals(emptyList(), validateLyric(lyric))
+        assertEquals(emptyList(), validateEnrichedLyric(lyric))
     }
 
     // A line carrying no range at all is already reported for that, so it is not asked for an end on top.
     @Test
     fun reportsLineWithNoRangeOnce() {
-        val lyric = lineTimed(makeLineNormal(content = makeLineContentText("x")), textLine(1000, 2000))
-        assertEquals(listOf("lines[0].time" to "lyric.timing.line.time_missing"), validateLyric(lyric).asPairs())
+        val lyric = lineTimed(makeEnrichedLineNormal(content = makeEnrichedLineContentText("x")), textLine(1000, 2000))
+        assertEquals(listOf("lines[0].time" to "lyric.timing.line.time_missing"), validateEnrichedLyric(lyric).asPairs())
     }
 
     @Test
@@ -400,11 +405,11 @@ class ValidateTest {
     @Test
     fun reportsWordLevelLineWithNoRange() {
         val lines = listOf(
-            makeLineNormal(
-                content = makeLineContentWords(listOf(makeWordNormal(text = "x", time = makeTimeRange(start = 1000, end = 2000)))),
+            makeEnrichedLineNormal(
+                content = makeEnrichedLineContentWords(listOf(makeEnrichedWordNormal(text = "x", time = makeTimeRange(start = 1000, end = 2000)))),
             ),
         )
-        val lyric = makeLyric(format = "lrc", timing = Timing.TIMING_WORD, status = LyricStatus.LYRIC_STATUS_VALID, lines = lines)
-        assertEquals(listOf("lines[0].time" to "lyric.timing.line.time_missing"), validateLyric(lyric).asPairs())
+        val lyric = makeEnrichedLyric(format = "lrc", timing = Timing.TIMING_WORD, status = LyricStatus.LYRIC_STATUS_VALID, lines = lines)
+        assertEquals(listOf("lines[0].time" to "lyric.timing.line.time_missing"), validateEnrichedLyric(lyric).asPairs())
     }
 }

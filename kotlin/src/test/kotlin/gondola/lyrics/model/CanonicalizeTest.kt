@@ -9,28 +9,33 @@ import gondola.lyrics.model.common.makeTimeRange
 import gondola.lyrics.model.common.makeUnknownEntry
 import gondola.lyrics.model.document.LineType
 import gondola.lyrics.model.document.WordType
+import gondola.lyrics.model.document.canonicalizeDocumentLyric
+import gondola.lyrics.model.document.encodeDocumentLyric
+import gondola.lyrics.model.document.makeDocumentLineContentText
+import gondola.lyrics.model.document.makeDocumentLineNormal
+import gondola.lyrics.model.document.makeDocumentLyric
 import gondola.lyrics.model.enriched.LineContent
 import gondola.lyrics.model.enriched.Lyric
 import gondola.lyrics.model.enriched.LyricStatus
 import gondola.lyrics.model.enriched.WordEmphasis
-import gondola.lyrics.model.enriched.canonicalizeLineAnnotation
-import gondola.lyrics.model.enriched.canonicalizeLyric
-import gondola.lyrics.model.enriched.canonicalizeWord
-import gondola.lyrics.model.enriched.canonicalizeWordAnnotation
-import gondola.lyrics.model.enriched.deriveLanguageUsages
-import gondola.lyrics.model.enriched.encode
-import gondola.lyrics.model.enriched.makeLineAnnotation
-import gondola.lyrics.model.enriched.makeLineAnnotationRoman
-import gondola.lyrics.model.enriched.makeLineContentWords
-import gondola.lyrics.model.enriched.makeLineNormal
-import gondola.lyrics.model.enriched.makeLyric
-import gondola.lyrics.model.enriched.makeWordAnnotation
-import gondola.lyrics.model.enriched.makeWordAnnotationRoman
-import gondola.lyrics.model.enriched.makeWordAnnotationRuby
-import gondola.lyrics.model.enriched.makeWordAnnotationToken
-import gondola.lyrics.model.enriched.makeWordEmphasis
-import gondola.lyrics.model.enriched.makeWordNormal
-import gondola.lyrics.model.enriched.validateLyric
+import gondola.lyrics.model.enriched.canonicalizeEnrichedLineAnnotation
+import gondola.lyrics.model.enriched.canonicalizeEnrichedLyric
+import gondola.lyrics.model.enriched.canonicalizeEnrichedWord
+import gondola.lyrics.model.enriched.canonicalizeEnrichedWordAnnotation
+import gondola.lyrics.model.enriched.deriveEnrichedLanguageUsages
+import gondola.lyrics.model.enriched.encodeEnrichedLyric
+import gondola.lyrics.model.enriched.makeEnrichedLineAnnotation
+import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRoman
+import gondola.lyrics.model.enriched.makeEnrichedLineContentWords
+import gondola.lyrics.model.enriched.makeEnrichedLineNormal
+import gondola.lyrics.model.enriched.makeEnrichedLyric
+import gondola.lyrics.model.enriched.makeEnrichedWordAnnotation
+import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRoman
+import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRuby
+import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationToken
+import gondola.lyrics.model.enriched.makeEnrichedWordEmphasis
+import gondola.lyrics.model.enriched.makeEnrichedWordNormal
+import gondola.lyrics.model.enriched.validateEnrichedLyric
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -39,37 +44,32 @@ import gondola.lyrics.model.document.Line as DocumentLine
 import gondola.lyrics.model.document.LineContent as DocumentLineContent
 import gondola.lyrics.model.document.Lyric as DocumentLyric
 import gondola.lyrics.model.document.Word as DocumentWord
-import gondola.lyrics.model.document.canonicalizeLyric as canonicalizeDocumentLyric
-import gondola.lyrics.model.document.encode as encodeDocument
-import gondola.lyrics.model.document.makeLineContentText as makeDocumentLineContentText
-import gondola.lyrics.model.document.makeLineNormal as makeDocumentLineNormal
-import gondola.lyrics.model.document.makeLyric as makeDocumentLyric
 
 class CanonicalizeTest {
     private fun buildLyric(): Lyric {
         val lines = listOf(
-            makeLineNormal(
+            makeEnrichedLineNormal(
                 time = makeTimeRange(start = 1000, end = 2000),
                 languages = listOf("EN"),
                 part = makePart(type = PartType.PART_TYPE_VERSE, id = "Verse-A", raw = "Verse 1"),
-                content = makeLineContentWords(
+                content = makeEnrichedLineContentWords(
                     listOf(
-                        makeWordNormal(
+                        makeEnrichedWordNormal(
                             text = "hi",
                             language = "EN",
                             time = makeTimeRange(start = 1000, end = 2000),
-                            emphasis = makeWordEmphasis(value = true),
+                            emphasis = makeEnrichedWordEmphasis(value = true),
                         ),
                     ),
                 ),
             ),
         )
-        return makeLyric(
+        return makeEnrichedLyric(
             format = "TTML",
             profile = "AMLL",
             timing = Timing.TIMING_WORD,
             status = LyricStatus.LYRIC_STATUS_VALID,
-            languages = deriveLanguageUsages(lines),
+            languages = deriveEnrichedLanguageUsages(lines),
             lines = lines,
         )
     }
@@ -77,7 +77,7 @@ class CanonicalizeTest {
     @Test
     fun lowercasesFormatProfileAndTags() {
         val lyric = buildLyric()
-        val canonical = canonicalizeLyric(lyric)
+        val canonical = canonicalizeEnrichedLyric(lyric)
         assertEquals("ttml", canonical.format)
         assertEquals("amll", canonical.profile)
         assertEquals(listOf("en"), canonical.lines[0].languages)
@@ -98,22 +98,22 @@ class CanonicalizeTest {
 
     @Test
     fun isIdempotent() {
-        val once = canonicalizeLyric(buildLyric())
-        assertEquals(once, canonicalizeLyric(once))
+        val once = canonicalizeEnrichedLyric(buildLyric())
+        assertEquals(once, canonicalizeEnrichedLyric(once))
     }
 
     @Test
     fun preservesExplicitEmphasisDecisionsAndOriginWhileDroppingEmptyEmphasis() {
         val emphases = listOf(
-            makeWordEmphasis(),
-            makeWordEmphasis(value = false),
-            makeWordEmphasis(value = true),
-            makeWordEmphasis(value = false, derived = false),
-            makeWordEmphasis(value = false, derived = true),
-            makeWordEmphasis(value = true, derived = false),
-            makeWordEmphasis(value = true, derived = true),
+            makeEnrichedWordEmphasis(),
+            makeEnrichedWordEmphasis(value = false),
+            makeEnrichedWordEmphasis(value = true),
+            makeEnrichedWordEmphasis(value = false, derived = false),
+            makeEnrichedWordEmphasis(value = false, derived = true),
+            makeEnrichedWordEmphasis(value = true, derived = false),
+            makeEnrichedWordEmphasis(value = true, derived = true),
         )
-        val canonical = emphases.map { canonicalizeWord(makeWordNormal(text = "ah", emphasis = it)).emphasis }
+        val canonical = emphases.map { canonicalizeEnrichedWord(makeEnrichedWordNormal(text = "ah", emphasis = it)).emphasis }
         assertEquals(
             listOf(
                 null,
@@ -131,17 +131,26 @@ class CanonicalizeTest {
     @Test
     fun canonicalizesAnnotationSchemesWhilePreservingConstructorInput() {
         for (scheme in listOf("HEPBURN", "")) {
-            val word = makeWordAnnotation(
+            val word = makeEnrichedWordAnnotation(
                 romans = listOf(
-                    makeWordAnnotationRoman(language = "JA-Latn", scheme = scheme, tokens = listOf(makeWordAnnotationToken(text = "shi"))),
+                    makeEnrichedWordAnnotationRoman(
+                        language = "JA-Latn",
+                        scheme = scheme,
+                        tokens = listOf(makeEnrichedWordAnnotationToken(text = "shi")),
+                    ),
                 ),
                 rubies = listOf(
-                    makeWordAnnotationRuby(language = "JA-Latn", scheme = scheme, tokens = listOf(makeWordAnnotationToken(text = "shi"))),
+                    makeEnrichedWordAnnotationRuby(
+                        language = "JA-Latn",
+                        scheme = scheme,
+                        tokens = listOf(makeEnrichedWordAnnotationToken(text = "shi")),
+                    ),
                 ),
             )
-            val line = makeLineAnnotation(romans = listOf(makeLineAnnotationRoman(language = "JA-Latn", scheme = scheme, text = "shi")))
-            val canonicalWord = canonicalizeWordAnnotation(word)
-            val canonicalLine = canonicalizeLineAnnotation(line)
+            val line =
+                makeEnrichedLineAnnotation(romans = listOf(makeEnrichedLineAnnotationRoman(language = "JA-Latn", scheme = scheme, text = "shi")))
+            val canonicalWord = canonicalizeEnrichedWordAnnotation(word)
+            val canonicalLine = canonicalizeEnrichedLineAnnotation(line)
             val expectedScheme = if (scheme.isEmpty()) null else "hepburn"
             assertEquals(
                 List(3) { "ja-latn" to expectedScheme },
@@ -165,33 +174,33 @@ class CanonicalizeTest {
     @Test
     fun canonicalizesDocumentAnnotationsWithoutLosingTimingOrExplicitFalse() {
         val wordTime = makeTimeRange(start = 1000, end = 2000)
-        val token = gondola.lyrics.model.document.makeWordAnnotationToken(time = wordTime, text = "shi")
-        val word = gondola.lyrics.model.document.makeWordNormal(
+        val token = gondola.lyrics.model.document.makeDocumentWordAnnotationToken(time = wordTime, text = "shi")
+        val word = gondola.lyrics.model.document.makeDocumentWordNormal(
             text = "x",
             time = wordTime,
             emphasis = false,
-            annotation = gondola.lyrics.model.document.makeWordAnnotation(
+            annotation = gondola.lyrics.model.document.makeDocumentWordAnnotation(
                 romans = listOf(
-                    gondola.lyrics.model.document.makeWordAnnotationRoman(
+                    gondola.lyrics.model.document.makeDocumentWordAnnotationRoman(
                         language = "JA-Latn",
                         scheme = "HEPBURN",
                         tokens = listOf(token),
                     ),
-                    gondola.lyrics.model.document.makeWordAnnotationRoman(),
+                    gondola.lyrics.model.document.makeDocumentWordAnnotationRoman(),
                 ),
             ),
         )
-        val canonical = gondola.lyrics.model.document.canonicalizeWord(word)
+        val canonical = gondola.lyrics.model.document.canonicalizeDocumentWord(word)
         val roman = assertNotNull(canonical.annotation).romans.single()
 
         assertEquals("ja-latn", roman.language)
         assertEquals("hepburn", roman.scheme)
         assertEquals(listOf(token), roman.tokens)
         assertEquals(false, canonical.emphasis)
-        assertEquals(wordTime, gondola.lyrics.model.document.resolveAnnotationTokenTime(token, roman, canonical))
+        assertEquals(wordTime, gondola.lyrics.model.document.resolveDocumentAnnotationTokenTime(token, roman, canonical))
         assertEquals("JA-Latn", assertNotNull(word.annotation).romans[0].language)
         assertEquals(2, word.annotation.romans.size)
-        assertEquals(emptyList(), gondola.lyrics.model.document.validateWord(canonical, timing = Timing.TIMING_WORD))
+        assertEquals(emptyList(), gondola.lyrics.model.document.validateDocumentWord(canonical, timing = Timing.TIMING_WORD))
     }
 
     @Test
@@ -211,15 +220,15 @@ class CanonicalizeTest {
             DocumentLine(type = LineType.LINE_TYPE_NORMAL, languages = tags, agents = agents, content = DocumentLineContent(words = documentWords)),
         )
         val stored = DocumentLyric(extra = extra, meta = meta, lines = documentLines)
-        val original = encode(lyric)
-        val originalDocument = encodeDocument(stored)
+        val original = encodeEnrichedLyric(lyric)
+        val originalDocument = encodeDocumentLyric(stored)
 
-        val canonical = canonicalizeLyric(lyric)
+        val canonical = canonicalizeEnrichedLyric(lyric)
         val canonicalDocument = canonicalizeDocumentLyric(stored)
-        assertContentEquals(original, encode(lyric))
-        assertContentEquals(originalDocument, encodeDocument(stored))
-        val snapshot = encode(canonical)
-        val documentSnapshot = encodeDocument(canonicalDocument)
+        assertContentEquals(original, encodeEnrichedLyric(lyric))
+        assertContentEquals(originalDocument, encodeDocumentLyric(stored))
+        val snapshot = encodeEnrichedLyric(canonical)
+        val documentSnapshot = encodeDocumentLyric(canonicalDocument)
 
         words.clear()
         documentWords.clear()
@@ -231,12 +240,12 @@ class CanonicalizeTest {
         lines.clear()
         documentLines.clear()
 
-        assertContentEquals(snapshot, encode(canonical))
-        assertContentEquals(documentSnapshot, encodeDocument(canonicalDocument))
+        assertContentEquals(snapshot, encodeEnrichedLyric(canonical))
+        assertContentEquals(documentSnapshot, encodeDocumentLyric(canonicalDocument))
     }
 
     @Test
     fun leavesCanonicalLyricValid() {
-        assertEquals(emptyList(), validateLyric(canonicalizeLyric(buildLyric())))
+        assertEquals(emptyList(), validateEnrichedLyric(canonicalizeEnrichedLyric(buildLyric())))
     }
 }

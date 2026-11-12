@@ -15,14 +15,14 @@ import gondola.lyrics.model.common.pickItemByLanguage as pickByLanguage
 /**
  * Creates a language count within the uint32 domain.
  */
-public fun makeLanguageUsage(tag: String = "", count: Long = 0): LanguageUsage {
+public fun makeEnrichedLanguageUsage(tag: String = "", count: Long = 0): LanguageUsage {
     return LanguageUsage(tag = tag, count = uint32(count))
 }
 
 /**
  * Checks that the language tag is well formed and the count fits uint32.
  */
-public fun validateLanguageUsage(usage: LanguageUsage, path: String = ""): List<Diagnostic> {
+public fun validateEnrichedLanguageUsage(usage: LanguageUsage, path: String = ""): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
     if (usage.tag.isEmpty()) {
         diagnostics += Diagnostic(childPath(path, "tag"), DiagnosticCode.LanguageUsageTagEmpty)
@@ -40,7 +40,7 @@ public fun validateLanguageUsage(usage: LanguageUsage, path: String = ""): List<
 /**
  * Orders language counts descending, then tags case-insensitively ascending.
  */
-public fun orderLanguageUsages(languages: List<LanguageUsage>): List<LanguageUsage> {
+public fun orderEnrichedLanguageUsages(languages: List<LanguageUsage>): List<LanguageUsage> {
     return languages.sortedWith { a, b ->
         val count = b.count.compareTo(a.count)
         if (count != 0) {
@@ -56,7 +56,7 @@ public fun orderLanguageUsages(languages: List<LanguageUsage>): List<LanguageUsa
  *
  * Spaces, annotations, backgrounds, and absent tags are excluded; explicit und tags are counted.
  */
-public fun deriveLanguageUsages(lines: List<Line>): List<LanguageUsage> {
+public fun deriveEnrichedLanguageUsages(lines: List<Line>): List<LanguageUsage> {
     val counts = linkedMapOf<String, Long>()
     for (line in lines) {
         if (line.type != LineType.LINE_TYPE_NORMAL) {
@@ -72,7 +72,7 @@ public fun deriveLanguageUsages(lines: List<Line>): List<LanguageUsage> {
             counts[tag] = (counts[tag] ?: 0) + 1
         }
     }
-    return orderLanguageUsages(counts.map { (tag, count) -> makeLanguageUsage(tag, count) })
+    return orderEnrichedLanguageUsages(counts.map { (tag, count) -> makeEnrichedLanguageUsage(tag, count) })
 }
 
 /**
@@ -80,8 +80,8 @@ public fun deriveLanguageUsages(lines: List<Line>): List<LanguageUsage> {
  *
  * Spaces, annotations, backgrounds, and absent tags are excluded; explicit und tags are counted.
  */
-@JvmName("deriveDocumentLanguageUsages")
-public fun deriveLanguageUsages(lines: List<gondola.lyrics.model.document.Line>): List<LanguageUsage> {
+@JvmName("deriveEnrichedLanguageUsagesFromDocument")
+public fun deriveEnrichedLanguageUsages(lines: List<gondola.lyrics.model.document.Line>): List<LanguageUsage> {
     val counts = linkedMapOf<String, Long>()
     for (line in lines) {
         if (line.type != gondola.lyrics.model.document.LineType.LINE_TYPE_NORMAL) {
@@ -97,7 +97,7 @@ public fun deriveLanguageUsages(lines: List<gondola.lyrics.model.document.Line>)
             counts[tag] = (counts[tag] ?: 0) + 1
         }
     }
-    return orderLanguageUsages(counts.map { (tag, count) -> makeLanguageUsage(tag, count) })
+    return orderEnrichedLanguageUsages(counts.map { (tag, count) -> makeEnrichedLanguageUsage(tag, count) })
 }
 
 /**
@@ -105,7 +105,7 @@ public fun deriveLanguageUsages(lines: List<gondola.lyrics.model.document.Line>)
  *
  * Totals above uint32 are capped; negative counts remain available for validation.
  */
-public fun canonicalizeLanguageUsages(languages: List<LanguageUsage>): List<LanguageUsage> {
+public fun canonicalizeEnrichedLanguageUsages(languages: List<LanguageUsage>): List<LanguageUsage> {
     val counts = linkedMapOf<String, Long>()
     for (usage in languages) {
         val tag = lowerTag(usage.tag) ?: continue
@@ -118,7 +118,7 @@ public fun canonicalizeLanguageUsages(languages: List<LanguageUsage>): List<Lang
             else -> minOf(previous + count, MAX_COUNT)
         }
     }
-    return orderLanguageUsages(counts.map { (tag, count) -> LanguageUsage(tag = tag, count = count) })
+    return orderEnrichedLanguageUsages(counts.map { (tag, count) -> LanguageUsage(tag = tag, count = count) })
 }
 
 /**
@@ -126,8 +126,8 @@ public fun canonicalizeLanguageUsages(languages: List<LanguageUsage>): List<Lang
  *
  * Without a match, uses an untagged entry, then the first entry only when fallback is enabled.
  */
-@JvmName("pickLineAnnotationRomanByLanguage")
-fun pickItemByLanguage(items: List<LineAnnotationRoman>, wanted: String? = null, fallback: Boolean = false): LineAnnotationRoman? {
+@JvmName("pickEnrichedLineAnnotationRomanByLanguage")
+fun pickEnrichedItemByLanguage(items: List<LineAnnotationRoman>, wanted: String? = null, fallback: Boolean = false): LineAnnotationRoman? {
     return pickByLanguage(items, wanted, fallback) { it.language }
 }
 
@@ -136,8 +136,12 @@ fun pickItemByLanguage(items: List<LineAnnotationRoman>, wanted: String? = null,
  *
  * Without a match, uses an untagged entry, then the first entry only when fallback is enabled.
  */
-@JvmName("pickLineAnnotationTranslationByLanguage")
-fun pickItemByLanguage(items: List<LineAnnotationTranslation>, wanted: String? = null, fallback: Boolean = false): LineAnnotationTranslation? {
+@JvmName("pickEnrichedLineAnnotationTranslationByLanguage")
+fun pickEnrichedItemByLanguage(
+    items: List<LineAnnotationTranslation>,
+    wanted: String? = null,
+    fallback: Boolean = false,
+): LineAnnotationTranslation? {
     return pickByLanguage(items, wanted, fallback) { it.language }
 }
 
@@ -146,8 +150,8 @@ fun pickItemByLanguage(items: List<LineAnnotationTranslation>, wanted: String? =
  *
  * Without a match, uses an untagged entry, then the first entry only when fallback is enabled.
  */
-@JvmName("pickWordAnnotationRomanByLanguage")
-fun pickItemByLanguage(items: List<WordAnnotationRoman>, wanted: String? = null, fallback: Boolean = false): WordAnnotationRoman? {
+@JvmName("pickEnrichedWordAnnotationRomanByLanguage")
+fun pickEnrichedItemByLanguage(items: List<WordAnnotationRoman>, wanted: String? = null, fallback: Boolean = false): WordAnnotationRoman? {
     return pickByLanguage(items, wanted, fallback) { it.language }
 }
 
@@ -156,8 +160,8 @@ fun pickItemByLanguage(items: List<WordAnnotationRoman>, wanted: String? = null,
  *
  * Without a match, uses an untagged entry, then the first entry only when fallback is enabled.
  */
-@JvmName("pickWordAnnotationRubyByLanguage")
-fun pickItemByLanguage(items: List<WordAnnotationRuby>, wanted: String? = null, fallback: Boolean = false): WordAnnotationRuby? {
+@JvmName("pickEnrichedWordAnnotationRubyByLanguage")
+fun pickEnrichedItemByLanguage(items: List<WordAnnotationRuby>, wanted: String? = null, fallback: Boolean = false): WordAnnotationRuby? {
     return pickByLanguage(items, wanted, fallback) { it.language }
 }
 
@@ -166,8 +170,12 @@ fun pickItemByLanguage(items: List<WordAnnotationRuby>, wanted: String? = null, 
  *
  * Without a match, uses an untagged entry, then the first entry only when fallback is enabled.
  */
-@JvmName("pickWordAnnotationTranslationByLanguage")
-fun pickItemByLanguage(items: List<WordAnnotationTranslation>, wanted: String? = null, fallback: Boolean = false): WordAnnotationTranslation? {
+@JvmName("pickEnrichedWordAnnotationTranslationByLanguage")
+fun pickEnrichedItemByLanguage(
+    items: List<WordAnnotationTranslation>,
+    wanted: String? = null,
+    fallback: Boolean = false,
+): WordAnnotationTranslation? {
     return pickByLanguage(items, wanted, fallback) { it.language }
 }
 
@@ -176,7 +184,7 @@ fun pickItemByLanguage(items: List<WordAnnotationTranslation>, wanted: String? =
  *
  * Without a match, uses an untagged entry, then the first entry only when fallback is enabled.
  */
-@JvmName("pickWordByLanguage")
-fun pickItemByLanguage(items: List<Word>, wanted: String? = null, fallback: Boolean = false): Word? {
+@JvmName("pickEnrichedWordByLanguage")
+fun pickEnrichedItemByLanguage(items: List<Word>, wanted: String? = null, fallback: Boolean = false): Word? {
     return pickByLanguage(items, wanted, fallback) { it.language }
 }

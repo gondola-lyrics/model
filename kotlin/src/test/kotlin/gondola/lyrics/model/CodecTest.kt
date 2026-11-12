@@ -12,6 +12,11 @@ import gondola.lyrics.model.common.Timing
 import gondola.lyrics.model.common.UnknownEntry
 import gondola.lyrics.model.common.makeMeta
 import gondola.lyrics.model.common.makeTimeRange
+import gondola.lyrics.model.document.decodeDocumentLyric
+import gondola.lyrics.model.document.encodeDocumentLyric
+import gondola.lyrics.model.document.makeDocumentLineContentText
+import gondola.lyrics.model.document.makeDocumentLineNormal
+import gondola.lyrics.model.document.makeDocumentLyric
 import gondola.lyrics.model.enriched.Line
 import gondola.lyrics.model.enriched.LineAnnotation
 import gondola.lyrics.model.enriched.LineAnnotationRoman
@@ -25,17 +30,17 @@ import gondola.lyrics.model.enriched.WordAnnotationRuby
 import gondola.lyrics.model.enriched.WordAnnotationToken
 import gondola.lyrics.model.enriched.WordEmphasis
 import gondola.lyrics.model.enriched.WordType
-import gondola.lyrics.model.enriched.canonicalizeLyric
-import gondola.lyrics.model.enriched.decode
-import gondola.lyrics.model.enriched.deriveLanguageUsages
-import gondola.lyrics.model.enriched.encode
-import gondola.lyrics.model.enriched.makeLineContentWords
-import gondola.lyrics.model.enriched.makeLineInstrumental
-import gondola.lyrics.model.enriched.makeLineNormal
-import gondola.lyrics.model.enriched.makeLyric
-import gondola.lyrics.model.enriched.makeWordEmphasis
-import gondola.lyrics.model.enriched.makeWordNormal
-import gondola.lyrics.model.enriched.makeWordSpace
+import gondola.lyrics.model.enriched.canonicalizeEnrichedLyric
+import gondola.lyrics.model.enriched.decodeEnrichedLyric
+import gondola.lyrics.model.enriched.deriveEnrichedLanguageUsages
+import gondola.lyrics.model.enriched.encodeEnrichedLyric
+import gondola.lyrics.model.enriched.makeEnrichedLineContentWords
+import gondola.lyrics.model.enriched.makeEnrichedLineInstrumental
+import gondola.lyrics.model.enriched.makeEnrichedLineNormal
+import gondola.lyrics.model.enriched.makeEnrichedLyric
+import gondola.lyrics.model.enriched.makeEnrichedWordEmphasis
+import gondola.lyrics.model.enriched.makeEnrichedWordNormal
+import gondola.lyrics.model.enriched.makeEnrichedWordSpace
 import gondola.lyrics.model.utils.decodeDocumentLineContent
 import gondola.lyrics.model.utils.decodeEnrichedWordEmphasis
 import gondola.lyrics.model.utils.encodeDocumentLineContent
@@ -56,11 +61,6 @@ import gondola.lyrics.model.document.Line as DocumentLine
 import gondola.lyrics.model.document.LineContent as DocumentLineContent
 import gondola.lyrics.model.document.Lyric as DocumentLyric
 import gondola.lyrics.model.document.Word as DocumentWord
-import gondola.lyrics.model.document.decode as decodeDocument
-import gondola.lyrics.model.document.encode as encodeDocument
-import gondola.lyrics.model.document.makeLineContentText as makeDocumentLineContentText
-import gondola.lyrics.model.document.makeLineNormal as makeDocumentLineNormal
-import gondola.lyrics.model.document.makeLyric as makeDocumentLyric
 
 class CodecTest {
     private val schemas by lazy {
@@ -114,24 +114,24 @@ class CodecTest {
 
     private fun buildLyric(): Lyric {
         val lines = listOf(
-            makeLineInstrumental(time = makeTimeRange(start = 0, end = 1000)),
-            makeLineNormal(
+            makeEnrichedLineInstrumental(time = makeTimeRange(start = 0, end = 1000)),
+            makeEnrichedLineNormal(
                 time = makeTimeRange(start = 1000, end = 2000),
                 languages = listOf("en"),
-                content = makeLineContentWords(
+                content = makeEnrichedLineContentWords(
                     listOf(
-                        makeWordNormal(text = "hi", language = "en", time = makeTimeRange(start = 1000, end = 1500)),
-                        makeWordSpace(text = " "),
-                        makeWordNormal(text = "there", language = "en", time = makeTimeRange(start = 1500, end = 2000)),
+                        makeEnrichedWordNormal(text = "hi", language = "en", time = makeTimeRange(start = 1000, end = 1500)),
+                        makeEnrichedWordSpace(text = " "),
+                        makeEnrichedWordNormal(text = "there", language = "en", time = makeTimeRange(start = 1500, end = 2000)),
                     ),
                 ),
             ),
         )
-        return makeLyric(
+        return makeEnrichedLyric(
             format = "lrc",
             timing = Timing.TIMING_WORD,
             status = LyricStatus.LYRIC_STATUS_VALID,
-            languages = deriveLanguageUsages(lines),
+            languages = deriveEnrichedLanguageUsages(lines),
             lines = lines,
         )
     }
@@ -153,7 +153,7 @@ class CodecTest {
     @Test
     fun roundTripsEnrichedLyric() {
         val lyric = buildLyric()
-        assertEquals(lyric, decode(encode(lyric)))
+        assertEquals(lyric, decodeEnrichedLyric(encodeEnrichedLyric(lyric)))
     }
 
     @Test
@@ -161,7 +161,7 @@ class CodecTest {
         val values = listOf(null, false, true)
         for (value in values) {
             for (derived in values) {
-                val emphasis = makeWordEmphasis(value = value, derived = derived)
+                val emphasis = makeEnrichedWordEmphasis(value = value, derived = derived)
                 val fields = listOfNotNull(value?.let { "value" to it }, derived?.let { "derived" to it })
                 val bytes = official("lyric.enriched.WordEmphasis", *fields.toTypedArray()).toByteArray()
                 assertContentEquals(bytes, write(::encodeEnrichedWordEmphasis, emphasis))
@@ -173,7 +173,7 @@ class CodecTest {
     @Test
     fun roundTripsDocumentLyric() {
         val lyric = buildDocumentLyric()
-        assertEquals(lyric, decodeDocument(encodeDocument(lyric)))
+        assertEquals(lyric, decodeDocumentLyric(encodeDocumentLyric(lyric)))
     }
 
     @Test
@@ -318,11 +318,11 @@ class CodecTest {
             ) + if (layer == "enriched") listOf("status" to 2) else emptyList()
             val bytes = official("lyric.$layer.Lyric", *values.toTypedArray()).toByteArray()
             if (layer == "enriched") {
-                assertContentEquals(bytes, encode(native))
-                assertEquals(native, decode(bytes))
+                assertContentEquals(bytes, encodeEnrichedLyric(native))
+                assertEquals(native, decodeEnrichedLyric(bytes))
             } else {
-                assertContentEquals(bytes, encodeDocument(stored))
-                assertEquals(stored, decodeDocument(bytes))
+                assertContentEquals(bytes, encodeDocumentLyric(stored))
+                assertEquals(stored, decodeDocumentLyric(bytes))
             }
         }
     }
@@ -353,18 +353,18 @@ class CodecTest {
         val lyric = buildLyric().copy(
             meta = Meta(unknowns = listOf(UnknownEntry(key = "k", value = "first"), UnknownEntry(key = "k", value = "second"))),
         )
-        val bytes = encode(lyric)
-        val decoded = decode(bytes + fromHex("a00601"))
+        val bytes = encodeEnrichedLyric(lyric)
+        val decoded = decodeEnrichedLyric(bytes + fromHex("a00601"))
         assertEquals(lyric, decoded)
-        assertContentEquals(bytes, encode(decoded))
-        val emptyMeta = decode(fromHex("3203a00601"))
+        assertContentEquals(bytes, encodeEnrichedLyric(decoded))
+        val emptyMeta = decodeEnrichedLyric(fromHex("3203a00601"))
         assertEquals(Meta(), emptyMeta.meta)
-        assertNull(canonicalizeLyric(emptyMeta).meta)
+        assertNull(canonicalizeEnrichedLyric(emptyMeta).meta)
     }
 
     @Test
     fun dropsSubmessageThatIsEmptyForReal() {
-        val canonical = canonicalizeLyric(buildLyric().copy(meta = makeMeta()))
+        val canonical = canonicalizeEnrichedLyric(buildLyric().copy(meta = makeMeta()))
         assertNull(canonical.meta)
     }
 
@@ -390,7 +390,7 @@ class CodecTest {
             "excessive group depth" to "a306".repeat(10002) + "a406".repeat(10002),
         )
         for ((reason, hex) in malformed) {
-            assertFailsWith<IllegalArgumentException>(reason) { decode(fromHex(hex)) }
+            assertFailsWith<IllegalArgumentException>(reason) { decodeEnrichedLyric(fromHex(hex)) }
         }
     }
 
@@ -413,7 +413,7 @@ class CodecTest {
             "leading BOM" to ("0a03efbbbf" to "0a03efbbbf"),
         )
         for ((reason, pair) in accepted) {
-            assertContentEquals(fromHex(pair.second), encode(decode(fromHex(pair.first))), reason)
+            assertContentEquals(fromHex(pair.second), encodeEnrichedLyric(decodeEnrichedLyric(fromHex(pair.first))), reason)
         }
         assertEquals(true, read(::decodeDocumentLineContent, fromHex("0a03308001")).words[0].emphasis)
     }
@@ -422,23 +422,23 @@ class CodecTest {
     fun mergesRepeatedMessageChunksAndAppendsTheirLists() {
         val count = 2048
         val bytes = fromHex("32021002" + "32050a030a016b".repeat(count) + "32021807")
-        val lyric = decode(bytes)
+        val lyric = decodeEnrichedLyric(bytes)
         val meta = assertNotNull(lyric.meta)
         assertEquals(1, meta.offset)
         assertEquals(7L, meta.duration)
         assertEquals(List(count) { UnknownEntry(key = "k") }, meta.unknowns)
-        assertEquals(lyric, decode(encode(lyric)))
+        assertEquals(lyric, decodeEnrichedLyric(encodeEnrichedLyric(lyric)))
     }
 
     @Test
     fun rejectsUnencodableStringsAndNumbers() {
         for (text in listOf("\uD800", "\uDC00", "x\uD800y")) {
-            assertFailsWith<IllegalArgumentException> { encode(Lyric(format = text)) }
-            assertFailsWith<IllegalArgumentException> { encodeDocument(DocumentLyric(format = text)) }
+            assertFailsWith<IllegalArgumentException> { encodeEnrichedLyric(Lyric(format = text)) }
+            assertFailsWith<IllegalArgumentException> { encodeDocumentLyric(DocumentLyric(format = text)) }
         }
         for (duration in listOf(-1L, 4294967296L, Long.MAX_VALUE)) {
-            assertFailsWith<IllegalArgumentException> { encode(Lyric(meta = Meta(duration = duration))) }
-            assertFailsWith<IllegalArgumentException> { encodeDocument(DocumentLyric(meta = Meta(duration = duration))) }
+            assertFailsWith<IllegalArgumentException> { encodeEnrichedLyric(Lyric(meta = Meta(duration = duration))) }
+            assertFailsWith<IllegalArgumentException> { encodeDocumentLyric(DocumentLyric(meta = Meta(duration = duration))) }
         }
     }
 
@@ -447,15 +447,15 @@ class CodecTest {
         val executor = Executors.newFixedThreadPool(4)
         val barrier = CyclicBarrier(4)
         val lyrics = List(4) { index -> buildLyric().copy(format = ('a' + index).toString().repeat(8192)) }
-        val expected = lyrics.map(::encode)
+        val expected = lyrics.map(::encodeEnrichedLyric)
         try {
             val futures = lyrics.mapIndexed { index, lyric ->
                 executor.submit {
                     repeat(20) {
                         barrier.await(10, TimeUnit.SECONDS)
-                        val bytes = encode(lyric)
+                        val bytes = encodeEnrichedLyric(lyric)
                         assertContentEquals(expected[index], bytes)
-                        assertEquals(lyric, decode(bytes))
+                        assertEquals(lyric, decodeEnrichedLyric(bytes))
                     }
                 }
             }
@@ -482,7 +482,7 @@ class CodecTest {
 
     @Test
     fun roundTripsEveryAcceptedMutation() {
-        checkMutations(buildLyric(), ::encode, ::decode)
-        checkMutations(buildDocumentLyric(), ::encodeDocument, ::decodeDocument)
+        checkMutations(buildLyric(), ::encodeEnrichedLyric, ::decodeEnrichedLyric)
+        checkMutations(buildDocumentLyric(), ::encodeDocumentLyric, ::decodeDocumentLyric)
     }
 }

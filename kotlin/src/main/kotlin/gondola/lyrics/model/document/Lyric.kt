@@ -20,18 +20,18 @@ import gondola.lyrics.model.utils.byTime
 import gondola.lyrics.model.utils.canonicalizeField
 import gondola.lyrics.model.utils.canonicalizeList
 import gondola.lyrics.model.utils.childPath
-import gondola.lyrics.model.utils.decodeDocumentLyric
-import gondola.lyrics.model.utils.encodeDocumentLyric
 import gondola.lyrics.model.utils.findDefaultEntries
 import gondola.lyrics.model.utils.findUnordered
 import gondola.lyrics.model.utils.isUnresolved
 import gondola.lyrics.model.utils.read
 import gondola.lyrics.model.utils.write
+import gondola.lyrics.model.utils.decodeDocumentLyric as decodeDocumentLyricMessage
+import gondola.lyrics.model.utils.encodeDocumentLyric as encodeDocumentLyricMessage
 
 /**
  * Creates a lyric using the current schema version.
  */
-public fun makeLyric(
+public fun makeDocumentLyric(
     format: String = "",
     profile: String = "",
     timing: Timing = Timing.TIMING_UNSPECIFIED,
@@ -55,7 +55,7 @@ public fun makeLyric(
 /**
  * Checks lyric-wide constraints and validates nested metadata, agents, and lines.
  */
-public fun validateLyric(lyric: Lyric): List<Diagnostic> {
+public fun validateDocumentLyric(lyric: Lyric): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
     if (!SEMVER_PATTERN.matches(lyric.version)) {
         diagnostics += Diagnostic("version", DiagnosticCode.LyricVersionMalformed)
@@ -79,7 +79,7 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
     if (lyric.meta != null) {
         diagnostics += validateMeta(lyric.meta, "meta")
     }
-    // Every tag outside the lines is read here, since a line's own are read by validateLine, which knows the fields its kind forbids.
+    // Every tag outside the lines is read here, since a line's own are read by validateDocumentLine, which knows the fields its kind forbids.
     diagnostics += validateLyricTags(lyric)
 
     val untimed = lyric.timing == Timing.TIMING_NONE
@@ -103,7 +103,7 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
 
     /**
      * Reports the whole-tree rules for one line or background line: agent references resolving to no agent, and whatever the declared timing asks of it.
-     * It walks every node whatever the line's kind, since a whole-tree invariant holds regardless; an instrumental line's agents and own range validateLine already rules on, and a background line is read as the sung line it always is.
+     * It walks every node whatever the line's kind, since a whole-tree invariant holds regardless; an instrumental line's agents and own range validateDocumentLine already rules on, and a background line is read as the sung line it always is.
      * `forbidden` marks a node its parent's kind does not allow at all: what it carries is still held to the rules it breaks by carrying it, but nothing further is asked of it, since the node as a whole is already reported.
      * `open` marks a node whose range may stay open above: the last line, which nothing in the lyric bounds, and every background line, which the line it attaches to already bounds.
      */
@@ -182,7 +182,7 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
                 open = true,
             )
         }
-        diagnostics += validateLine(line, path, lyric.timing)
+        diagnostics += validateDocumentLine(line, path, lyric.timing)
     }
     // Word-level timing needs only one line split into words, since a word-level source may leave the rest whole; a lyric with no content at all declares nothing to check.
     if (lyric.timing == Timing.TIMING_WORD && anyContent && !anyWords) {
@@ -203,36 +203,36 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
 /**
  * Orders lines by start time and orders their backgrounds.
  */
-public fun orderLyric(lyric: Lyric): Lyric {
+public fun orderDocumentLyric(lyric: Lyric): Lyric {
     return lyric.copy(
-        lines = lyric.lines.sortedWith(byTime { line -> line.time }).map(::orderLine),
+        lines = lyric.lines.sortedWith(byTime { line -> line.time }).map(::orderDocumentLine),
     )
 }
 
 /**
  * Normalizes tags and nested data, removes empty entries, and orders lines.
  */
-public fun canonicalizeLyric(lyric: Lyric): Lyric {
+public fun canonicalizeDocumentLyric(lyric: Lyric): Lyric {
     return lyric.copy(
         format = lyric.format.lowercase(),
         profile = lyric.profile.lowercase(),
         meta = canonicalizeField(lyric.meta, ::canonicalizeMeta),
         extra = lyric.extra.toMap(),
         agents = canonicalizeList(lyric.agents, ::canonicalizeAgent),
-        lines = canonicalizeList(lyric.lines, ::canonicalizeLine).sortedWith(byTime { line -> line.time }),
+        lines = canonicalizeList(lyric.lines, ::canonicalizeDocumentLine).sortedWith(byTime { line -> line.time }),
     )
 }
 
 /**
  * Encodes a lyric using the Protobuf wire format.
  */
-public fun encode(lyric: Lyric): ByteArray {
-    return write(::encodeDocumentLyric, lyric)
+public fun encodeDocumentLyric(lyric: Lyric): ByteArray {
+    return write(::encodeDocumentLyricMessage, lyric)
 }
 
 /**
  * Decodes a lyric and discards fields outside the schema.
  */
-public fun decode(bytes: ByteArray): Lyric {
-    return read(::decodeDocumentLyric, bytes)
+public fun decodeDocumentLyric(bytes: ByteArray): Lyric {
+    return read(::decodeDocumentLyricMessage, bytes)
 }

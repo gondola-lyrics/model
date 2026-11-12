@@ -20,18 +20,18 @@ import gondola.lyrics.model.utils.byTime
 import gondola.lyrics.model.utils.canonicalizeField
 import gondola.lyrics.model.utils.canonicalizeList
 import gondola.lyrics.model.utils.childPath
-import gondola.lyrics.model.utils.decodeEnrichedLyric
-import gondola.lyrics.model.utils.encodeEnrichedLyric
 import gondola.lyrics.model.utils.findDefaultEntries
 import gondola.lyrics.model.utils.findUnordered
 import gondola.lyrics.model.utils.isUnresolved
 import gondola.lyrics.model.utils.read
 import gondola.lyrics.model.utils.write
+import gondola.lyrics.model.utils.decodeEnrichedLyric as decodeEnrichedLyricMessage
+import gondola.lyrics.model.utils.encodeEnrichedLyric as encodeEnrichedLyricMessage
 
 /**
  * Creates a lyric using the current schema version.
  */
-public fun makeLyric(
+public fun makeEnrichedLyric(
     status: LyricStatus,
     format: String = "",
     profile: String = "",
@@ -62,7 +62,7 @@ public fun makeLyric(
 /**
  * Checks lyric-wide constraints and validates nested metadata, agents, and lines.
  */
-public fun validateLyric(lyric: Lyric): List<Diagnostic> {
+public fun validateEnrichedLyric(lyric: Lyric): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
     if (!SEMVER_PATTERN.matches(lyric.version)) {
         diagnostics += Diagnostic("version", DiagnosticCode.LyricVersionMalformed)
@@ -88,7 +88,7 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
     if (lyric.meta != null) {
         diagnostics += validateMeta(lyric.meta, "meta")
     }
-    // Every tag outside the lines is read here, since a line's own are read by validateLine, which knows the fields its kind forbids.
+    // Every tag outside the lines is read here, since a line's own are read by validateEnrichedLine, which knows the fields its kind forbids.
     diagnostics += validateLyricTags(lyric)
     val languageTags = mutableSetOf<String>()
     lyric.languages.forEachIndexed { index, usage ->
@@ -96,10 +96,10 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
         if (!languageTags.add(usage.tag.lowercase())) {
             diagnostics += Diagnostic(path, DiagnosticCode.LyricLanguageTagDuplicate)
         }
-        diagnostics += validateLanguageUsage(usage, path)
+        diagnostics += validateEnrichedLanguageUsage(usage, path)
     }
     // The usages are derived from the lines, so the stored list must be exactly what deriving them yields, order included.
-    val derived = deriveLanguageUsages(lyric.lines)
+    val derived = deriveEnrichedLanguageUsages(lyric.lines)
     val sameLanguages = lyric.languages.size == derived.size && lyric.languages.zip(derived).all { (usage, expected) ->
         usage.tag == expected.tag && usage.count == expected.count
     }
@@ -127,7 +127,7 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
 
     /**
      * Reports the whole-tree rules for one line or background line: agent references resolving to no agent, and whatever the declared timing asks of it.
-     * It walks every node whatever the line's kind, since a whole-tree invariant holds regardless; an instrumental line's agents and own range validateLine already rules on, and a background line is read as the sung line it always is.
+     * It walks every node whatever the line's kind, since a whole-tree invariant holds regardless; an instrumental line's agents and own range validateEnrichedLine already rules on, and a background line is read as the sung line it always is.
      * `forbidden` marks a node its parent's kind does not allow at all: what it carries is still held to the rules it breaks by carrying it, but nothing further is asked of it, since the node as a whole is already reported.
      * `open` marks a node whose range may stay open above: the last line, which nothing in the lyric bounds, and every background line, which the line it attaches to already bounds.
      */
@@ -206,7 +206,7 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
                 open = true,
             )
         }
-        diagnostics += validateLine(line, path, lyric.timing)
+        diagnostics += validateEnrichedLine(line, path, lyric.timing)
     }
     // Word-level timing needs only one line split into words, since a word-level source may leave the rest whole; a lyric with no content at all declares nothing to check.
     if (lyric.timing == Timing.TIMING_WORD && anyContent && !anyWords) {
@@ -227,38 +227,38 @@ public fun validateLyric(lyric: Lyric): List<Diagnostic> {
 /**
  * Orders lines by start time and orders their backgrounds.
  */
-public fun orderLyric(lyric: Lyric): Lyric {
+public fun orderEnrichedLyric(lyric: Lyric): Lyric {
     return lyric.copy(
-        lines = lyric.lines.sortedWith(byTime { line -> line.time }).map(::orderLine),
-        languages = orderLanguageUsages(lyric.languages),
+        lines = lyric.lines.sortedWith(byTime { line -> line.time }).map(::orderEnrichedLine),
+        languages = orderEnrichedLanguageUsages(lyric.languages),
     )
 }
 
 /**
  * Normalizes tags and nested data, removes empty entries, and orders lines.
  */
-public fun canonicalizeLyric(lyric: Lyric): Lyric {
+public fun canonicalizeEnrichedLyric(lyric: Lyric): Lyric {
     return lyric.copy(
         format = lyric.format.lowercase(),
         profile = lyric.profile.lowercase(),
         meta = canonicalizeField(lyric.meta, ::canonicalizeMeta),
         extra = lyric.extra.toMap(),
         agents = canonicalizeList(lyric.agents, ::canonicalizeAgent),
-        lines = canonicalizeList(lyric.lines, ::canonicalizeLine).sortedWith(byTime { line -> line.time }),
-        languages = canonicalizeLanguageUsages(lyric.languages),
+        lines = canonicalizeList(lyric.lines, ::canonicalizeEnrichedLine).sortedWith(byTime { line -> line.time }),
+        languages = canonicalizeEnrichedLanguageUsages(lyric.languages),
     )
 }
 
 /**
  * Encodes a lyric using the Protobuf wire format.
  */
-public fun encode(lyric: Lyric): ByteArray {
-    return write(::encodeEnrichedLyric, lyric)
+public fun encodeEnrichedLyric(lyric: Lyric): ByteArray {
+    return write(::encodeEnrichedLyricMessage, lyric)
 }
 
 /**
  * Decodes a lyric and discards fields outside the schema.
  */
-public fun decode(bytes: ByteArray): Lyric {
-    return read(::decodeEnrichedLyric, bytes)
+public fun decodeEnrichedLyric(bytes: ByteArray): Lyric {
+    return read(::decodeEnrichedLyricMessage, bytes)
 }

@@ -4,8 +4,8 @@ import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.Timing
 import gondola.lyrics.model.document.Line
 import gondola.lyrics.model.document.Lyric
-import gondola.lyrics.model.document.decode
-import gondola.lyrics.model.document.encode
+import gondola.lyrics.model.document.decodeDocumentLyric
+import gondola.lyrics.model.document.encodeDocumentLyric
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -20,7 +20,7 @@ class GeneratedModelTest {
             lines = listOf(Line(time = TimeRange(start = 1000)), Line(time = TimeRange(end = 0))),
         )
 
-        val decoded = decode(encode(original))
+        val decoded = decodeDocumentLyric(encodeDocumentLyric(original))
 
         assertEquals(original, decoded)
         val open = assertNotNull(decoded.lines[0].time)

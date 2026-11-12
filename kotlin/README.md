@@ -31,33 +31,33 @@ Optional fields use nullable values: `null` means absent, while explicit `false`
 ```kotlin
 import gondola.lyrics.model.common.makeTimeRange
 import gondola.lyrics.model.common.Timing
-import gondola.lyrics.model.document.makeLineAnnotation
-import gondola.lyrics.model.document.makeLineAnnotationTranslation
-import gondola.lyrics.model.document.makeLineContentText
-import gondola.lyrics.model.document.makeLineNormal
-import gondola.lyrics.model.document.makeLyric
-import gondola.lyrics.model.document.validateLyric
+import gondola.lyrics.model.document.makeDocumentLineAnnotation
+import gondola.lyrics.model.document.makeDocumentLineAnnotationTranslation
+import gondola.lyrics.model.document.makeDocumentLineContentText
+import gondola.lyrics.model.document.makeDocumentLineNormal
+import gondola.lyrics.model.document.makeDocumentLyric
+import gondola.lyrics.model.document.validateDocumentLyric
 
-val persisted = makeLyric(
+val persisted = makeDocumentLyric(
     format = "lrc",
     timing = Timing.TIMING_LINE,
     lines = listOf(
-        makeLineNormal(
+        makeDocumentLineNormal(
             // If end is omitted, the endpoint is unknown.
             time = makeTimeRange(start = 170644),
             languages = listOf("en"),
-            content = makeLineContentText("Like the first time tangled by the fishing line"),
+            content = makeDocumentLineContentText("Like the first time tangled by the fishing line"),
             // Translations go under annotation.translations, one per language.
-            annotation = makeLineAnnotation(
+            annotation = makeDocumentLineAnnotation(
                 translations = listOf(
-                    makeLineAnnotationTranslation(language = "zh-Hans", text = "就像第一次被渔线缠住那样"),
+                    makeDocumentLineAnnotationTranslation(language = "zh-Hans", text = "就像第一次被渔线缠住那样"),
                 ),
             ),
         ),
     ),
 )
 
-validateLyric(persisted) // => []
+validateDocumentLyric(persisted) // => []
 ```
 
 ### Enriched Examples
@@ -65,102 +65,102 @@ validateLyric(persisted) // => []
 ```kotlin
 import gondola.lyrics.model.common.makeTimeRange
 import gondola.lyrics.model.common.Timing
-import gondola.lyrics.model.enriched.canonicalizeLyric
-import gondola.lyrics.model.enriched.decode
-import gondola.lyrics.model.enriched.deriveLanguageUsages
-import gondola.lyrics.model.enriched.encode
-import gondola.lyrics.model.enriched.getContentText
+import gondola.lyrics.model.enriched.canonicalizeEnrichedLyric
+import gondola.lyrics.model.enriched.decodeEnrichedLyric
+import gondola.lyrics.model.enriched.deriveEnrichedLanguageUsages
+import gondola.lyrics.model.enriched.encodeEnrichedLyric
+import gondola.lyrics.model.enriched.getEnrichedLineContentText
 import gondola.lyrics.model.enriched.LyricStatus
-import gondola.lyrics.model.enriched.makeLineAnnotation
-import gondola.lyrics.model.enriched.makeLineAnnotationTranslation
-import gondola.lyrics.model.enriched.makeLineContentWords
-import gondola.lyrics.model.enriched.makeLineInstrumental
-import gondola.lyrics.model.enriched.makeLineNormal
-import gondola.lyrics.model.enriched.makeLyric
-import gondola.lyrics.model.enriched.makeWordNormal
-import gondola.lyrics.model.enriched.makeWordSpace
-import gondola.lyrics.model.enriched.validateLyric
+import gondola.lyrics.model.enriched.makeEnrichedLineAnnotation
+import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationTranslation
+import gondola.lyrics.model.enriched.makeEnrichedLineContentWords
+import gondola.lyrics.model.enriched.makeEnrichedLineInstrumental
+import gondola.lyrics.model.enriched.makeEnrichedLineNormal
+import gondola.lyrics.model.enriched.makeEnrichedLyric
+import gondola.lyrics.model.enriched.makeEnrichedWordNormal
+import gondola.lyrics.model.enriched.makeEnrichedWordSpace
+import gondola.lyrics.model.enriched.validateEnrichedLyric
 
 // Instrumental lines require a complete, non-empty time range.
-val interlude = makeLineInstrumental(
+val interlude = makeEnrichedLineInstrumental(
     time = makeTimeRange(start = 176883, end = 178550),
 )
 
-val sung = makeLineNormal(
+val sung = makeEnrichedLineNormal(
     time = makeTimeRange(start = 178550, end = 188199),
     languages = listOf("en"),
-    content = makeLineContentWords(
+    content = makeEnrichedLineContentWords(
         listOf(
-            makeWordNormal(
+            makeEnrichedWordNormal(
                 text = "I",
                 language = "en",
                 time = makeTimeRange(start = 178550, end = 180198),
             ),
             // Separators are SPACE words of their own.
-            makeWordSpace(text = " "),
-            makeWordNormal(
+            makeEnrichedWordSpace(text = " "),
+            makeEnrichedWordNormal(
                 text = "wish",
                 language = "en",
                 time = makeTimeRange(start = 180198, end = 181686),
             ),
-            makeWordSpace(text = " "),
-            makeWordNormal(
+            makeEnrichedWordSpace(text = " "),
+            makeEnrichedWordNormal(
                 text = "you",
                 language = "en",
                 time = makeTimeRange(start = 181686, end = 184055),
             ),
-            makeWordSpace(text = " "),
-            makeWordNormal(
+            makeEnrichedWordSpace(text = " "),
+            makeEnrichedWordNormal(
                 text = "are",
                 language = "en",
                 time = makeTimeRange(start = 184055, end = 184278),
             ),
-            makeWordSpace(text = " "),
-            makeWordNormal(
+            makeEnrichedWordSpace(text = " "),
+            makeEnrichedWordNormal(
                 text = "still",
                 language = "en",
                 time = makeTimeRange(start = 184278, end = 184614),
             ),
-            makeWordSpace(text = " "),
-            makeWordNormal(
+            makeEnrichedWordSpace(text = " "),
+            makeEnrichedWordNormal(
                 text = "by",
                 language = "en",
                 time = makeTimeRange(start = 184614, end = 184966),
             ),
-            makeWordSpace(text = " "),
-            makeWordNormal(
+            makeEnrichedWordSpace(text = " "),
+            makeEnrichedWordNormal(
                 text = "my",
                 language = "en",
                 time = makeTimeRange(start = 184966, end = 185718),
             ),
-            makeWordSpace(text = " "),
-            makeWordNormal(
+            makeEnrichedWordSpace(text = " "),
+            makeEnrichedWordNormal(
                 text = "side",
                 language = "en",
                 time = makeTimeRange(start = 185718, end = 188199),
             ),
         ),
     ),
-    annotation = makeLineAnnotation(
+    annotation = makeEnrichedLineAnnotation(
         translations = listOf(
-            makeLineAnnotationTranslation(language = "zh-Hans", text = "多希望你就在我身旁"),
+            makeEnrichedLineAnnotationTranslation(language = "zh-Hans", text = "多希望你就在我身旁"),
         ),
     ),
 )
 
-val played = makeLyric(
+val played = makeEnrichedLyric(
     format = "lrc",
     timing = Timing.TIMING_WORD,
     // Include the parser's status.
     status = LyricStatus.LYRIC_STATUS_VALID,
     // Stored usages must match the declarations on normal lines and their normal words.
-    languages = deriveLanguageUsages(listOf(interlude, sung)),
+    languages = deriveEnrichedLanguageUsages(listOf(interlude, sung)),
     lines = listOf(interlude, sung),
 )
 
-validateLyric(played) // => []
-getContentText(sung.content) // => "I wish you are still by my side"
-decode(encode(canonicalizeLyric(played))).lines.size // => 2
+validateEnrichedLyric(played) // => []
+getEnrichedLineContentText(sung.content) // => "I wish you are still by my side"
+decodeEnrichedLyric(encodeEnrichedLyric(canonicalizeEnrichedLyric(played))).lines.size // => 2
 ```
 
 ### Error Examples
@@ -168,25 +168,25 @@ decode(encode(canonicalizeLyric(played))).lines.size // => 2
 ```kotlin
 import gondola.lyrics.model.common.makeTimeRange
 import gondola.lyrics.model.common.Timing
-import gondola.lyrics.model.document.makeLineContentText
-import gondola.lyrics.model.document.makeLineNormal as makeDocumentLine
-import gondola.lyrics.model.document.makeLyric as makeDocumentLyric
-import gondola.lyrics.model.document.validateLyric as validateDocumentLyric
+import gondola.lyrics.model.document.makeDocumentLineContentText
+import gondola.lyrics.model.document.makeDocumentLineNormal
+import gondola.lyrics.model.document.makeDocumentLyric
+import gondola.lyrics.model.document.validateDocumentLyric
 import gondola.lyrics.model.enriched.LyricStatus
-import gondola.lyrics.model.enriched.makeLineContentWords
-import gondola.lyrics.model.enriched.makeLineNormal as makeEnrichedLine
-import gondola.lyrics.model.enriched.makeLyric as makeEnrichedLyric
-import gondola.lyrics.model.enriched.makeWordNormal
-import gondola.lyrics.model.enriched.validateLyric as validateEnrichedLyric
+import gondola.lyrics.model.enriched.makeEnrichedLineContentWords
+import gondola.lyrics.model.enriched.makeEnrichedLineNormal
+import gondola.lyrics.model.enriched.makeEnrichedLyric
+import gondola.lyrics.model.enriched.makeEnrichedWordNormal
+import gondola.lyrics.model.enriched.validateEnrichedLyric
 
 val brokenPersisted = makeDocumentLyric(
     format = "lrc",
     // Timing is not declared.
     lines = listOf(
-        makeDocumentLine(
+        makeDocumentLineNormal(
             time = makeTimeRange(start = 163908),
             languages = listOf("en"),
-            content = makeLineContentText("I'm still figuring out my life"),
+            content = makeDocumentLineContentText("I'm still figuring out my life"),
         ),
     ),
 )
@@ -200,12 +200,12 @@ val brokenPlayed = makeEnrichedLyric(
     status = LyricStatus.LYRIC_STATUS_VALID,
     // Languages are not declared.
     lines = listOf(
-        makeEnrichedLine(
+        makeEnrichedLineNormal(
             time = makeTimeRange(start = 163908, end = 169347),
             languages = listOf("en"),
-            content = makeLineContentWords(
+            content = makeEnrichedLineContentWords(
                 listOf(
-                    makeWordNormal(
+                    makeEnrichedWordNormal(
                         // The sentence has not been split into normal words and SPACE separators.
                         text = "I'm still figuring out my life",
                         language = "en",
