@@ -15,10 +15,12 @@ import gondola.lyrics.model.document.encodeDocumentLyric
 import gondola.lyrics.model.document.makeDocumentLineContentText
 import gondola.lyrics.model.document.makeDocumentLineNormal
 import gondola.lyrics.model.document.makeDocumentLyric
+import gondola.lyrics.model.enriched.LanguageUsage
 import gondola.lyrics.model.enriched.LineContent
 import gondola.lyrics.model.enriched.Lyric
 import gondola.lyrics.model.enriched.LyricStatus
 import gondola.lyrics.model.enriched.WordEmphasis
+import gondola.lyrics.model.enriched.canonicalizeEnrichedLanguageUsages
 import gondola.lyrics.model.enriched.canonicalizeEnrichedLineAnnotation
 import gondola.lyrics.model.enriched.canonicalizeEnrichedLyric
 import gondola.lyrics.model.enriched.canonicalizeEnrichedWord
@@ -36,6 +38,7 @@ import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRoman
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRuby
 import gondola.lyrics.model.enriched.makeEnrichedWordEmphasis
 import gondola.lyrics.model.enriched.makeEnrichedWordNormal
+import gondola.lyrics.model.enriched.orderEnrichedLanguageUsages
 import gondola.lyrics.model.enriched.validateEnrichedLyric
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -101,6 +104,69 @@ class CanonicalizeTest {
     fun isIdempotent() {
         val once = canonicalizeEnrichedLyric(buildLyric())
         assertEquals(once, canonicalizeEnrichedLyric(once))
+    }
+
+    @Test
+    fun preservesInvalidLanguageCountsSeparatelyForValidation() {
+        val lyric = makeEnrichedLyric(
+            status = LyricStatus.LYRIC_STATUS_VALID,
+            timing = TimingLevel.TIMING_LEVEL_NONE,
+            languageUsages = listOf(
+                LanguageUsage(tag = "EN", lineCount = -1),
+                LanguageUsage(tag = "en", lineCount = 2),
+                LanguageUsage(tag = "EN", lineCount = -2),
+                LanguageUsage(tag = "en", lineCount = 1),
+                LanguageUsage(tag = "ZH", lineCount = Long.MIN_VALUE),
+                LanguageUsage(tag = "zh", lineCount = 4),
+                LanguageUsage(tag = "ZH", lineCount = Long.MIN_VALUE),
+            ),
+        )
+        val original = lyric.copy(languageUsages = lyric.languageUsages.toList())
+        val canonical = canonicalizeEnrichedLyric(lyric)
+        val expected = listOf(
+            LanguageUsage(tag = "zh", lineCount = 4),
+            LanguageUsage(tag = "en", lineCount = 3),
+            LanguageUsage(tag = "en", lineCount = -1),
+            LanguageUsage(tag = "en", lineCount = -2),
+            LanguageUsage(tag = "zh", lineCount = Long.MIN_VALUE),
+            LanguageUsage(tag = "zh", lineCount = Long.MIN_VALUE),
+        )
+        assertEquals(expected, canonical.languageUsages)
+        assertEquals(expected, canonicalizeEnrichedLanguageUsages(canonical.languageUsages))
+        assertEquals(expected, orderEnrichedLanguageUsages(canonical.languageUsages))
+        assertEquals(
+            expected.drop(2).mapIndexed { index, _ -> "languageUsages[${index + 2}].lineCount" },
+            validateEnrichedLyric(canonical).filter { it.code.value == "language.usage.line_count.invalid" }.map { it.path },
+        )
+        assertEquals(original, lyric)
+    }
+
+    @Test
+    fun mergesNonNegativeLanguageCountsAndCapsOverflow() {
+        val maximum = 4294967295L
+        val languageUsages = listOf(
+            LanguageUsage(tag = "EN", lineCount = 3_000_000_000),
+            LanguageUsage(tag = "en", lineCount = 2_000_000_000),
+            LanguageUsage(tag = "FR", lineCount = 1),
+            LanguageUsage(tag = "fr", lineCount = Long.MAX_VALUE),
+            LanguageUsage(tag = "DE", lineCount = maximum + 1),
+            LanguageUsage(tag = "ZH", lineCount = 2),
+            LanguageUsage(tag = "JA", lineCount = 1),
+            LanguageUsage(tag = "ja", lineCount = 1),
+            LanguageUsage(tag = "UND", lineCount = 0),
+            LanguageUsage(tag = "", lineCount = 4),
+        )
+        assertEquals(
+            listOf(
+                LanguageUsage(tag = "de", lineCount = maximum),
+                LanguageUsage(tag = "en", lineCount = maximum),
+                LanguageUsage(tag = "fr", lineCount = maximum),
+                LanguageUsage(tag = "ja", lineCount = 2),
+                LanguageUsage(tag = "zh", lineCount = 2),
+                LanguageUsage(tag = "und", lineCount = 0),
+            ),
+            canonicalizeEnrichedLanguageUsages(languageUsages),
+        )
     }
 
     @Test

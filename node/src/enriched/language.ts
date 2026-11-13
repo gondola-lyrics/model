@@ -48,10 +48,22 @@ export const validateEnrichedLanguageUsage = (usage: LanguageUsage, path = ''): 
 }
 
 /**
- * Orders line counts descending, then tags case-insensitively ascending.
+ * Orders non-negative integer counts descending, then tags case-insensitively ascending.
+ *
+ * Invalid counts follow in source order.
  */
 export const orderEnrichedLanguageUsages = (languageUsages: LanguageUsage[]): LanguageUsage[] => {
-  return [...languageUsages].sort((a, b) => b.lineCount - a.lineCount || compareTags(a.tag, b.tag))
+  return [...languageUsages].sort((a, b) => {
+    const aInvalid = checkNumberDomain(a.lineCount, 0, MAX_COUNT) === 'invalid'
+    const bInvalid = checkNumberDomain(b.lineCount, 0, MAX_COUNT) === 'invalid'
+    if (aInvalid) {
+      return bInvalid ? 0 : 1
+    }
+    if (bInvalid) {
+      return -1
+    }
+    return b.lineCount - a.lineCount || compareTags(a.tag, b.tag)
+  })
 }
 
 /**
@@ -90,19 +102,26 @@ export const deriveEnrichedLanguageUsages = (lines: LanguageLine[]): LanguageUsa
 }
 
 /**
- * Lowercases tags, merges duplicate line counts, drops untagged entries, and orders the result.
+ * Lowercases tags, merges non-negative integer counts, drops untagged entries, and orders the result.
  *
- * Totals above uint32 are capped; invalid line counts remain available for validation.
+ * Integer overflow is capped at uint32; invalid counts remain separate at the end in source order.
  */
 export const canonicalizeEnrichedLanguageUsages = (languageUsages: LanguageUsage[]): LanguageUsage[] => {
   const counts = new Map<string, number>()
+  const invalid: LanguageUsage[] = []
   for (const usage of languageUsages) {
     const tag = lowerTag(usage.tag)
     // Untagged entries cannot contribute to any language's line count.
     if (tag === undefined) {
       continue
     }
-    counts.set(tag, Math.min((counts.get(tag) ?? 0) + usage.lineCount, MAX_COUNT))
+    if (checkNumberDomain(usage.lineCount, 0, MAX_COUNT) === 'invalid') {
+      invalid.push({ ...usage, tag })
+      continue
+    }
+    const lineCount = Math.min(usage.lineCount, MAX_COUNT)
+    counts.set(tag, Math.min((counts.get(tag) ?? 0) + lineCount, MAX_COUNT))
   }
-  return orderEnrichedLanguageUsages([...counts].map(([tag, lineCount]) => makeEnrichedLanguageUsage({ tag, lineCount })))
+  const merged = [...counts].map(([tag, lineCount]) => makeEnrichedLanguageUsage({ tag, lineCount }))
+  return orderEnrichedLanguageUsages([...merged, ...invalid])
 }

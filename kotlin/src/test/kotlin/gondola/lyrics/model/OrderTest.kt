@@ -14,6 +14,7 @@ import gondola.lyrics.model.document.makeDocumentLyric
 import gondola.lyrics.model.document.orderDocumentLine
 import gondola.lyrics.model.document.orderDocumentLyric
 import gondola.lyrics.model.document.validateDocumentLyric
+import gondola.lyrics.model.enriched.LanguageUsage
 import gondola.lyrics.model.enriched.LyricStatus
 import gondola.lyrics.model.enriched.canonicalizeEnrichedLine
 import gondola.lyrics.model.enriched.canonicalizeEnrichedLyric
@@ -157,5 +158,23 @@ class OrderTest {
     fun ordersLanguageUsagesByDescendingLineCount() {
         val languages = listOf(makeEnrichedLanguageUsage(tag = "en", lineCount = 1), makeEnrichedLanguageUsage(tag = "ja", lineCount = 3))
         assertEquals(listOf("ja", "en"), orderEnrichedLanguageUsages(languages).map { it.tag })
+    }
+
+    @Test
+    fun keepsInvalidLanguageCountsLastInSourceOrder() {
+        val languageUsages = listOf(
+            LanguageUsage(tag = "zz", lineCount = Long.MIN_VALUE),
+            LanguageUsage(tag = "ZH", lineCount = 2),
+            LanguageUsage(tag = "aa", lineCount = -1),
+            LanguageUsage(tag = "JA", lineCount = 2),
+            LanguageUsage(tag = "fr", lineCount = -2),
+            LanguageUsage(tag = "und", lineCount = 0),
+            LanguageUsage(tag = "en", lineCount = 4294967296L),
+        )
+        val original = languageUsages.toList()
+        val ordered = orderEnrichedLanguageUsages(languageUsages)
+        assertEquals(listOf("en", "JA", "ZH", "und", "zz", "aa", "fr"), ordered.map { it.tag })
+        assertEquals(ordered, orderEnrichedLanguageUsages(ordered))
+        assertEquals(original, languageUsages)
     }
 }

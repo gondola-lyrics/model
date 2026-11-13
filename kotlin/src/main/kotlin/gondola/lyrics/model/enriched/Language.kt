@@ -38,10 +38,18 @@ public fun validateEnrichedLanguageUsage(usage: LanguageUsage, path: String = ""
 }
 
 /**
- * Orders line counts descending, then tags case-insensitively ascending.
+ * Orders non-negative counts descending, then tags case-insensitively ascending.
+ *
+ * Negative counts follow in source order.
  */
 public fun orderEnrichedLanguageUsages(languageUsages: List<LanguageUsage>): List<LanguageUsage> {
     return languageUsages.sortedWith { a, b ->
+        if (a.lineCount < 0) {
+            return@sortedWith if (b.lineCount < 0) 0 else 1
+        }
+        if (b.lineCount < 0) {
+            return@sortedWith -1
+        }
         val order = b.lineCount.compareTo(a.lineCount)
         if (order != 0) {
             order
@@ -103,24 +111,25 @@ public fun deriveEnrichedLanguageUsages(lines: List<gondola.lyrics.model.documen
 }
 
 /**
- * Lowercases tags, merges duplicate line counts, drops untagged entries, and orders the result.
+ * Lowercases tags, merges non-negative counts, drops untagged entries, and orders the result.
  *
- * Totals above uint32 are capped; negative line counts remain available for validation.
+ * Overflow is capped at uint32; negative counts remain separate at the end in source order.
  */
 public fun canonicalizeEnrichedLanguageUsages(languageUsages: List<LanguageUsage>): List<LanguageUsage> {
     val counts = linkedMapOf<String, Long>()
+    val invalid = mutableListOf<LanguageUsage>()
     for (usage in languageUsages) {
         val tag = lowerTag(usage.tag) ?: continue
-        val previous = counts[tag] ?: 0
-        val lineCount = usage.lineCount
-        // Compare before adding so a Long overflow cannot turn an invalid line count into a valid one.
-        counts[tag] = when {
-            lineCount > 0 && previous > MAX_COUNT - lineCount -> MAX_COUNT
-            lineCount < 0 && previous < Long.MIN_VALUE - lineCount -> Long.MIN_VALUE
-            else -> minOf(previous + lineCount, MAX_COUNT)
+        if (usage.lineCount < 0) {
+            invalid += usage.copy(tag = tag)
+            continue
         }
+        // Cap each operand so the sum fits Long even when the input is Long.MAX_VALUE.
+        val lineCount = minOf(usage.lineCount, MAX_COUNT)
+        counts[tag] = minOf((counts[tag] ?: 0) + lineCount, MAX_COUNT)
     }
-    return orderEnrichedLanguageUsages(counts.map { (tag, lineCount) -> LanguageUsage(tag = tag, lineCount = lineCount) })
+    val merged = counts.map { (tag, lineCount) -> LanguageUsage(tag = tag, lineCount = lineCount) }
+    return orderEnrichedLanguageUsages(merged + invalid)
 }
 
 /**

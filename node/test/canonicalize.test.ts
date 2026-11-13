@@ -11,6 +11,7 @@ import {
   canonicalizeDocumentLyric,
   canonicalizeDocumentWord,
   canonicalizeDocumentWordAnnotation,
+  canonicalizeEnrichedLanguageUsages,
   canonicalizeEnrichedLineAnnotation,
   canonicalizeEnrichedLyric,
   canonicalizeEnrichedWord,
@@ -40,6 +41,7 @@ import {
   makeEnrichedWordNormal,
   makePart,
   makeTimeRange,
+  orderEnrichedLanguageUsages,
   resolveDocumentAnnotationTokenTime,
   validateDocumentWord,
   validateEnrichedLyric,
@@ -107,6 +109,75 @@ describe('canonicalize', () => {
   it('is idempotent', () => {
     const once = canonicalizeEnrichedLyric(buildLyric())
     deepStrictEqual(canonicalizeEnrichedLyric(once), once)
+  })
+
+  it('preserves invalid language counts separately for validation', () => {
+    const lyric = makeEnrichedLyric({
+      status: EnrichedLyricStatus.VALID,
+      timing: TimingLevel.NONE,
+      languageUsages: [
+        { tag: 'EN', lineCount: 0.5 },
+        { tag: 'en', lineCount: 0.5 },
+        { tag: 'EN', lineCount: 2 },
+        { tag: 'en', lineCount: -1 },
+        { tag: 'EN', lineCount: 1 },
+        { tag: 'ZH', lineCount: Infinity },
+        { tag: 'zh', lineCount: 4 },
+        { tag: 'JA', lineCount: NaN },
+        { tag: 'FR', lineCount: -Infinity },
+      ],
+    })
+    const original = structuredClone(lyric)
+    const canonical = canonicalizeEnrichedLyric(lyric)
+    const expected = [
+      { tag: 'zh', lineCount: 4 },
+      { tag: 'en', lineCount: 3 },
+      { tag: 'en', lineCount: 0.5 },
+      { tag: 'en', lineCount: 0.5 },
+      { tag: 'en', lineCount: -1 },
+      { tag: 'zh', lineCount: Infinity },
+      { tag: 'ja', lineCount: NaN },
+      { tag: 'fr', lineCount: -Infinity },
+    ]
+    deepStrictEqual(canonical.languageUsages, expected)
+    deepStrictEqual(canonicalizeEnrichedLanguageUsages(canonical.languageUsages), expected)
+    deepStrictEqual(orderEnrichedLanguageUsages(canonical.languageUsages), expected)
+    deepStrictEqual(
+      validateEnrichedLyric(canonical)
+        .filter((diagnostic) => diagnostic.code === 'language.usage.line_count.invalid')
+        .map((diagnostic) => diagnostic.path),
+      expected.slice(2).map((_, index) => `languageUsages[${index + 2}].lineCount`),
+    )
+    deepStrictEqual(lyric, original)
+    const originalNodes = collectNodes(lyric)
+    deepStrictEqual(
+      [...collectNodes(canonical)].filter((node) => originalNodes.has(node)),
+      [],
+    )
+  })
+
+  it('merges non-negative language counts and caps finite overflow', () => {
+    const maximum = 2 ** 32 - 1
+    const languageUsages = [
+      { tag: 'EN', lineCount: 3_000_000_000 },
+      { tag: 'en', lineCount: 2_000_000_000 },
+      { tag: 'FR', lineCount: 1 },
+      { tag: 'fr', lineCount: Number.MAX_VALUE },
+      { tag: 'DE', lineCount: maximum + 1 },
+      { tag: 'ZH', lineCount: 2 },
+      { tag: 'JA', lineCount: 1 },
+      { tag: 'ja', lineCount: 1 },
+      { tag: 'UND', lineCount: 0 },
+      { tag: '', lineCount: 4 },
+    ]
+    deepStrictEqual(canonicalizeEnrichedLanguageUsages(languageUsages), [
+      { tag: 'de', lineCount: maximum },
+      { tag: 'en', lineCount: maximum },
+      { tag: 'fr', lineCount: maximum },
+      { tag: 'ja', lineCount: 2 },
+      { tag: 'zh', lineCount: 2 },
+      { tag: 'und', lineCount: 0 },
+    ])
   })
 
   it('preserves explicit emphasis decisions and origin while dropping empty emphasis', () => {

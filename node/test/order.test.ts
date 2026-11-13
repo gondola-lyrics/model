@@ -165,4 +165,26 @@ describe('order', () => {
       ['ja', 'en'],
     )
   })
+
+  it('keeps invalid language counts last in source order', () => {
+    const languageUsages = [
+      { tag: 'zz', lineCount: NaN },
+      { tag: 'ZH', lineCount: 2 },
+      { tag: 'aa', lineCount: Infinity },
+      { tag: 'JA', lineCount: 2 },
+      { tag: 'fr', lineCount: -2 },
+      { tag: 'und', lineCount: 0 },
+      { tag: 'de', lineCount: 0.5 },
+      { tag: 'en', lineCount: -1 },
+      { tag: 'es', lineCount: 2 ** 32 },
+    ]
+    const original = structuredClone(languageUsages)
+    const ordered = orderEnrichedLanguageUsages(languageUsages)
+    deepStrictEqual(
+      ordered.map((usage) => usage.tag),
+      ['es', 'JA', 'ZH', 'und', 'zz', 'aa', 'fr', 'de', 'en'],
+    )
+    deepStrictEqual(orderEnrichedLanguageUsages(ordered), ordered)
+    deepStrictEqual(languageUsages, original)
+  })
 })
