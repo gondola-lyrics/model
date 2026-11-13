@@ -349,20 +349,20 @@ python ../script/generate-proto-binding.py kotlin
 **Build**
 
 ```bash
-./gradlew build
+bash ./gradlew build
 ```
 
 **Check**
 
 ```bash
-./gradlew check
-./gradlew spotlessApply
+bash ./gradlew check
+bash ./gradlew spotlessApply
 ```
 
 **Test**
 
 ```bash
-./gradlew test
+bash ./gradlew test
 ```
 
 ## License

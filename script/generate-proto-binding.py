@@ -136,7 +136,9 @@ def format_files(name: str, files: list[str]) -> None:
         gradle_command = [gradlew] if os.name == "nt" else ["bash", gradlew]
         command(
             *gradle_command,
-            "--quiet",
+            "--no-daemon",
+            "--console=plain",
+            "--stacktrace",
             "spotlessKotlinGeneratedApply",
             cwd=os.path.join(ROOT, "kotlin"),
         )

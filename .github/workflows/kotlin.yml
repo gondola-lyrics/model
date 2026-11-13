@@ -55,14 +55,16 @@ jobs:
           version: '1.72.0'
 
       - name: Verify generated bindings
-        run: python3 script/generate-proto-binding.py kotlin --check
+        run: |
+          bash kotlin/gradlew -p kotlin --no-daemon --console=plain --refresh-dependencies help --stacktrace --info
+          python3 script/generate-proto-binding.py kotlin --check
 
       - name: Build
-        run: bash ./gradlew --no-daemon build emptyJavadocJar checkPomFileForMavenPublication
+        run: bash ./gradlew --no-daemon --console=plain --stacktrace build emptyJavadocJar checkPomFileForMavenPublication
         working-directory: kotlin
 
       - name: Publish
-        run: bash ./gradlew --no-daemon -PcentralRelease=true publishAndReleaseToMavenCentral
+        run: bash ./gradlew --no-daemon --console=plain --stacktrace -PcentralRelease=true publishAndReleaseToMavenCentral
         working-directory: kotlin
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
