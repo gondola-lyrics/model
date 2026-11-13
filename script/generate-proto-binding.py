@@ -39,7 +39,11 @@ class Binding:
 
 BINDINGS = {
     "node": Binding(("node", "src", "generated"), ("**", "*.gen.ts")),
-    "kotlin": Binding(("kotlin", "src", "generated", "kotlin"), ("**", "*.gen.kt"), ("package=gondola.lyrics.model",)),
+    "kotlin": Binding(
+        ("kotlin", "src", "generated", "kotlin"),
+        ("**", "*.gen.kt"),
+        ("package=gondola.lyrics.model",),
+    ),
     "go": Binding(("go",), ("**", "*.gen.go"), ("module=github.com/gondola-lyrics/model/go",)),
     "cpp": Binding(("cpp", "include"), ("**", "*.gen.hpp")),
 }
@@ -129,7 +133,13 @@ def format_files(name: str, files: list[str]) -> None:
         return
     if name == "kotlin":
         gradlew = os.path.join(ROOT, "kotlin", "gradlew.bat" if os.name == "nt" else "gradlew")
-        command(gradlew, "--quiet", "spotlessKotlinGeneratedApply", cwd=os.path.join(ROOT, "kotlin"))
+        gradle_command = [gradlew] if os.name == "nt" else ["bash", gradlew]
+        command(
+            *gradle_command,
+            "--quiet",
+            "spotlessKotlinGeneratedApply",
+            cwd=os.path.join(ROOT, "kotlin"),
+        )
     elif name == "go":
         command("gofmt", "-w", *files)
     else:
@@ -138,7 +148,16 @@ def format_files(name: str, files: list[str]) -> None:
 
 def check_committed(names: list[str]) -> None:
     pathspecs = [f":(glob){posixpath.join(*BINDINGS[name].out, *BINDINGS[name].pattern)}" for name in names]
-    status = command("git", "status", "--porcelain=v1", "-z", "--untracked-files=all", "--", *pathspecs, capture=True)
+    status = command(
+        "git",
+        "status",
+        "--porcelain=v1",
+        "-z",
+        "--untracked-files=all",
+        "--",
+        *pathspecs,
+        capture=True,
+    )
     changed = [entry[3:] for entry in status.split("\0") if entry]
     if changed:
         fail("regenerated files differ from the committed ones; commit them first:\n  " + "\n  ".join(changed))
@@ -146,8 +165,17 @@ def check_committed(names: list[str]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate the native models and wire codecs from proto/.")
-    parser.add_argument("bindings", nargs="*", metavar="binding", help=f"one of {', '.join(BINDINGS)}; all by default")
-    parser.add_argument("--check", action="store_true", help="fail when the regenerated files are not committed")
+    parser.add_argument(
+        "bindings",
+        nargs="*",
+        metavar="binding",
+        help=f"one of {', '.join(BINDINGS)}; all by default",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="fail when the regenerated files are not committed",
+    )
     parser.add_argument("--out", help="write the raw plugin output into this empty directory instead")
     args = parser.parse_args()
 
