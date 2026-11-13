@@ -6,30 +6,102 @@ import gondola.lyrics.model.utils.FieldShape
 import gondola.lyrics.model.utils.childPath
 import gondola.lyrics.model.utils.visitFields
 
-/**
- * A tag is written as subtags of letters and digits, one to eight each, the first naming the language and so letters alone.
- * A private-use tag may be one subtag, so the bound is on the parts rather than their count.
- */
-private val SUBTAG_PATTERN = Regex("^[a-z0-9]{1,8}$")
+private val INVALID_TAG_CHARACTER = Regex("[^A-Za-z0-9-]")
 private val LANGUAGE_PATTERN = Regex("^[a-z]{2,8}$")
+private val EXTLANG_PATTERN = Regex("^[a-z]{3}$")
+private val SCRIPT_PATTERN = Regex("^[a-z]{4}$")
+private val REGION_PATTERN = Regex("^(?:[a-z]{2}|[0-9]{3})$")
+private val VARIANT_PATTERN = Regex("^(?:[a-z0-9]{5,8}|[0-9][a-z0-9]{3})$")
 
 /**
- * The longest tag in the registry is 35 characters, so anything past that is not one.
+ * RFC 5646 fixes this list; several entries cannot be parsed as ordinary tags.
  */
-private const val MAX_TAG_LENGTH = 35
+private val GRANDFATHERED_TAGS = setOf(
+    "en-gb-oed",
+    "i-ami",
+    "i-bnn",
+    "i-default",
+    "i-enochian",
+    "i-hak",
+    "i-klingon",
+    "i-lux",
+    "i-mingo",
+    "i-navajo",
+    "i-pwn",
+    "i-tao",
+    "i-tay",
+    "i-tsu",
+    "sgn-be-fr",
+    "sgn-be-nl",
+    "sgn-ch-de",
+    "art-lojban",
+    "cel-gaulish",
+    "no-bok",
+    "no-nyn",
+    "zh-guoyu",
+    "zh-hakka",
+    "zh-min",
+    "zh-min-nan",
+    "zh-xiang",
+)
 
 /**
- * Reports whether a tag is a well-formed BCP 47 language tag.
- * Only the shape is read, so `qqq` passes: whether a subtag is registered belongs to the registry rather than to this schema.
- * Tags are compared case-insensitively by the schema, and stored in lower case by its own rule, so a tag is read in lower case here.
+ * Checks BCP 47 syntax as defined by RFC 5646, including private use and grandfathered tags.
+ *
+ * Registry validity, uniqueness of variants and extension singletons, and extension semantics are not checked.
  */
 fun isLanguageTag(tag: String): Boolean {
-    val lower = tag.lowercase()
-    if (lower.length > MAX_TAG_LENGTH) {
+    // Check before case conversion, which can map non-ASCII characters into ASCII.
+    if (tag.isEmpty() || INVALID_TAG_CHARACTER.containsMatchIn(tag)) {
         return false
     }
+    val lower = tag.lowercase()
+    if (lower in GRANDFATHERED_TAGS) {
+        return true
+    }
     val subtags = lower.split('-')
-    return LANGUAGE_PATTERN.matches(subtags.first()) && subtags.all { SUBTAG_PATTERN.matches(it) }
+    if (subtags.any { it.length !in 1..8 }) {
+        return false
+    }
+    val language = subtags.first()
+    if (language == "x") {
+        return subtags.size > 1
+    }
+    if (!LANGUAGE_PATTERN.matches(language)) {
+        return false
+    }
+
+    var index = 1
+    if (language.length <= 3) {
+        var extlangs = 0
+        while (extlangs < 3 && EXTLANG_PATTERN.matches(subtags.getOrNull(index).orEmpty())) {
+            index++
+            extlangs++
+        }
+    }
+    if (SCRIPT_PATTERN.matches(subtags.getOrNull(index).orEmpty())) {
+        index++
+    }
+    if (REGION_PATTERN.matches(subtags.getOrNull(index).orEmpty())) {
+        index++
+    }
+    while (VARIANT_PATTERN.matches(subtags.getOrNull(index).orEmpty())) {
+        index++
+    }
+    while (subtags.getOrNull(index)?.length == 1 && subtags[index] != "x") {
+        index++
+        val contentStart = index
+        while (index < subtags.size && subtags[index].length >= 2) {
+            index++
+        }
+        if (index == contentStart) {
+            return false
+        }
+    }
+    if (subtags.getOrNull(index) == "x") {
+        return index + 1 < subtags.size
+    }
+    return index == subtags.size
 }
 
 /**
