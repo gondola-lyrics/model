@@ -98,10 +98,10 @@ public fun validateEnrichedLyric(lyric: Lyric): List<Diagnostic> {
         }
         diagnostics += validateEnrichedLanguageUsage(usage, path)
     }
-    // The usages are derived from the lines, so the stored list must be exactly what deriving them yields, order included.
+    // Derived usages define counts and order; tag spelling compares without case.
     val derived = deriveEnrichedLanguageUsages(lyric.lines)
     val sameLanguageUsages = lyric.languageUsages.size == derived.size && lyric.languageUsages.zip(derived).all { (usage, expected) ->
-        usage.tag == expected.tag && usage.lineCount == expected.lineCount
+        usage.tag.lowercase() == expected.tag && usage.lineCount == expected.lineCount
     }
     if (!sameLanguageUsages) {
         diagnostics += Diagnostic("languageUsages", DiagnosticCode.LyricLanguageUsagesMismatch)

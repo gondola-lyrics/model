@@ -28,6 +28,7 @@ import {
   makeDocumentWordAnnotationRoman,
   makeDocumentWordAnnotationRuby,
   makeDocumentWordAnnotationTranslation,
+  makeEnrichedLanguageUsage,
   makeEnrichedLineAnnotation,
   makeEnrichedLineAnnotationRoman,
   makeEnrichedLineAnnotationRomanContentText,
@@ -69,6 +70,22 @@ const textLine = (start: number, end?: number): EnrichedLine => {
 
 const lineTimed = (...lines: EnrichedLine[]): EnrichedLyric => {
   return makeEnrichedLyric({ format: 'lrc', timing: TimingLevel.LINE, status: EnrichedLyricStatus.VALID, lines })
+}
+
+const multilingualLyric = (): EnrichedLyric => {
+  return makeEnrichedLyric({
+    status: EnrichedLyricStatus.VALID,
+    timing: TimingLevel.NONE,
+    lines: [
+      makeEnrichedLineNormal({ languages: ['EN', 'JA-Latn', 'ZH-Hans'], content: makeEnrichedLineContentText('first') }),
+      makeEnrichedLineNormal({ languages: ['en'], content: makeEnrichedLineContentText('second') }),
+    ],
+    languageUsages: [
+      makeEnrichedLanguageUsage({ tag: 'EN', lineCount: 2 }),
+      makeEnrichedLanguageUsage({ tag: 'JA-Latn', lineCount: 1 }),
+      makeEnrichedLanguageUsage({ tag: 'zh-HANS', lineCount: 1 }),
+    ],
+  })
 }
 
 const validatePartsInBothLayers = (parts: (Part | undefined)[]): Diagnostic[][] => {
@@ -443,6 +460,47 @@ describe('validate', () => {
       ],
     })
     deepStrictEqual(validateDocumentLyric(lyric), [{ path: 'timing', code: 'lyric.timing.unspecified' }])
+  })
+
+  it('compares language usages without case and preserves the input', () => {
+    const lyric = multilingualLyric()
+    const original = structuredClone(lyric)
+    deepStrictEqual(validateEnrichedLyric(lyric), [])
+    deepStrictEqual(lyric, original)
+  })
+
+  it('keeps language usage count, order, and tag errors visible', () => {
+    const lyric = multilingualLyric()
+    const english = lyric.languageUsages[0]!
+    const japanese = lyric.languageUsages[1]!
+    const chinese = lyric.languageUsages[2]!
+    const mismatch = { path: 'languageUsages', code: 'lyric.language_usages.mismatch' }
+    for (const languageUsages of [
+      [{ ...english, lineCount: 3 }, japanese, chinese],
+      [japanese, english, chinese],
+      [english, chinese, japanese],
+      [english, japanese],
+      [english, japanese, chinese, makeEnrichedLanguageUsage({ tag: 'fr', lineCount: 1 })],
+      [{ ...english, tag: 'en-US' }, japanese, chinese],
+    ]) {
+      const input = { ...lyric, languageUsages }
+      const original = structuredClone(input)
+      deepStrictEqual(validateEnrichedLyric(input), [mismatch])
+      deepStrictEqual(input, original)
+    }
+    deepStrictEqual(validateEnrichedLyric({ ...lyric, languageUsages: [english, japanese, chinese, { ...english, tag: 'en' }] }), [
+      { path: 'languageUsages[3]', code: 'lyric.language_usages.tag.duplicate' },
+      mismatch,
+    ])
+    for (const [tag, code] of [
+      ['', 'language.usage.tag.empty'],
+      ['en_US', 'language.tag.malformed'],
+    ] as const) {
+      deepStrictEqual(validateEnrichedLyric({ ...lyric, languageUsages: [{ ...english, tag }, japanese, chinese] }), [
+        { path: 'languageUsages[0].tag', code },
+        mismatch,
+      ])
+    }
   })
 
   it('reports missing language usages and an unsplit word', () => {

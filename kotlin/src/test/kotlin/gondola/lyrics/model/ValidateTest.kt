@@ -68,6 +68,22 @@ private fun lineTimed(vararg lines: Line): Lyric {
     return makeEnrichedLyric(format = "lrc", timing = TimingLevel.TIMING_LEVEL_LINE, status = LyricStatus.LYRIC_STATUS_VALID, lines = lines.toList())
 }
 
+private fun multilingualLyric(): Lyric {
+    return makeEnrichedLyric(
+        status = LyricStatus.LYRIC_STATUS_VALID,
+        timing = TimingLevel.TIMING_LEVEL_NONE,
+        lines = listOf(
+            makeEnrichedLineNormal(languages = listOf("EN", "JA-Latn", "ZH-Hans"), content = makeEnrichedLineContentText("first")),
+            makeEnrichedLineNormal(languages = listOf("en"), content = makeEnrichedLineContentText("second")),
+        ),
+        languageUsages = listOf(
+            LanguageUsage(tag = "EN", lineCount = 2),
+            LanguageUsage(tag = "JA-Latn", lineCount = 1),
+            LanguageUsage(tag = "zh-HANS", lineCount = 1),
+        ),
+    )
+}
+
 private fun List<Diagnostic>.asPairs(): List<Pair<String, String>> {
     return map { it.path to it.code.value }
 }
@@ -533,6 +549,46 @@ class ValidateTest {
             ),
         )
         assertEquals(listOf("timing" to "lyric.timing.unspecified"), validateDocumentLyric(lyric).asPairs())
+    }
+
+    @Test
+    fun comparesLanguageUsagesWithoutCaseAndPreservesTheInput() {
+        val lyric = multilingualLyric()
+        val original = lyric.copy(
+            languageUsages = lyric.languageUsages.toList(),
+            lines = lyric.lines.map { it.copy(languages = it.languages.toList()) },
+        )
+        assertEquals(emptyList(), validateEnrichedLyric(lyric))
+        assertEquals(original, lyric)
+    }
+
+    @Test
+    fun keepsLanguageUsageCountOrderAndTagErrorsVisible() {
+        val lyric = multilingualLyric()
+        val (english, japanese, chinese) = lyric.languageUsages
+        val mismatch = "languageUsages" to "lyric.language_usages.mismatch"
+        for (languageUsages in listOf(
+            listOf(english.copy(lineCount = 3), japanese, chinese),
+            listOf(japanese, english, chinese),
+            listOf(english, chinese, japanese),
+            listOf(english, japanese),
+            listOf(english, japanese, chinese, LanguageUsage(tag = "fr", lineCount = 1)),
+            listOf(english.copy(tag = "en-US"), japanese, chinese),
+        )) {
+            val original = languageUsages.toList()
+            assertEquals(listOf(mismatch), validateEnrichedLyric(lyric.copy(languageUsages = languageUsages)).asPairs())
+            assertEquals(original, languageUsages)
+        }
+        assertEquals(
+            listOf("languageUsages[3]" to "lyric.language_usages.tag.duplicate", mismatch),
+            validateEnrichedLyric(lyric.copy(languageUsages = listOf(english, japanese, chinese, english.copy(tag = "en")))).asPairs(),
+        )
+        for ((tag, code) in listOf("" to "language.usage.tag.empty", "en_US" to "language.tag.malformed")) {
+            assertEquals(
+                listOf("languageUsages[0].tag" to code, mismatch),
+                validateEnrichedLyric(lyric.copy(languageUsages = listOf(english.copy(tag = tag), japanese, chinese))).asPairs(),
+            )
+        }
     }
 
     @Test

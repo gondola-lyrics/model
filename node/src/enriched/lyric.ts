@@ -102,11 +102,14 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
     diagnostics.push(...validateEnrichedLanguageUsage(usage, path))
   })
 
-  // The usages are derived from the lines, so the stored list must be exactly what deriving them yields, order included.
+  // Derived usages define counts and order; tag spelling compares without case.
   const derived = deriveEnrichedLanguageUsages(lyric.lines)
   const sameLanguageUsages =
     lyric.languageUsages.length === derived.length &&
-    lyric.languageUsages.every((usage, i) => usage.tag === derived[i]?.tag && usage.lineCount === derived[i]?.lineCount)
+    lyric.languageUsages.every((usage, i) => {
+      const expected = derived[i]
+      return usage.tag.toLowerCase() === expected?.tag && usage.lineCount === expected?.lineCount
+    })
   if (!sameLanguageUsages) {
     diagnostics.push({ path: 'languageUsages', code: DiagnosticCode.LyricLanguageUsagesMismatch })
   }
