@@ -63,7 +63,7 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
     diagnostics.push({ path: 'version', code: DiagnosticCode.LyricVersionMalformed })
   }
 
-  if (lyric.status === LyricStatus.UNSPECIFIED) {
+  if (isUnresolved(LyricStatus, lyric.status)) {
     diagnostics.push({ path: 'status', code: DiagnosticCode.LyricStatusUnspecified })
   }
 

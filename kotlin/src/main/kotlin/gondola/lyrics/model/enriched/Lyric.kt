@@ -67,7 +67,7 @@ public fun validateEnrichedLyric(lyric: Lyric): List<Diagnostic> {
     if (!SEMVER_PATTERN.matches(lyric.version)) {
         diagnostics += Diagnostic("version", DiagnosticCode.LyricVersionMalformed)
     }
-    if (lyric.status.value == 0) {
+    if (isUnresolved(lyric.status)) {
         diagnostics += Diagnostic("status", DiagnosticCode.LyricStatusUnspecified)
     }
     // An unresolved timing level leaves every timing rule with nothing to hold the lyric to, so a lyric that never stated one is reported rather than read as untimed.

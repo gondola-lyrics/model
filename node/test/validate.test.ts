@@ -11,7 +11,9 @@ import {
   TimingLevel,
   canonicalizeEnrichedLyric,
   canonicalizeMetaCredit,
+  decodeEnrichedLyric,
   deriveEnrichedLanguageUsages,
+  encodeEnrichedLyric,
   makeAgent,
   makeDocumentLineAnnotation,
   makeDocumentLineAnnotationRoman,
@@ -404,6 +406,28 @@ describe('validate', () => {
       lines,
     })
     deepStrictEqual(validateEnrichedLyric(lyric), [])
+  })
+
+  it('reports unresolved status values after decoding', () => {
+    const lyric = makeEnrichedLyric({ status: EnrichedLyricStatus.VALID, timing: TimingLevel.NONE })
+    for (const status of [EnrichedLyricStatus.UNSPECIFIED, 99 as EnrichedLyricStatus, -1 as EnrichedLyricStatus]) {
+      const decoded = decodeEnrichedLyric(encodeEnrichedLyric({ ...lyric, status }))
+      deepStrictEqual(decoded.status, status)
+      deepStrictEqual(validateEnrichedLyric(decoded), [{ path: 'status', code: 'lyric.status.unspecified' }])
+      deepStrictEqual(validateEnrichedLyric({ ...decoded, lines: [makeEnrichedLineNormal()] }), [
+        { path: 'status', code: 'lyric.status.unspecified' },
+        { path: 'lines[0]', code: 'line.content.missing' },
+      ])
+    }
+  })
+
+  it('accepts resolved statuses without relaxing content validation', () => {
+    for (const status of [EnrichedLyricStatus.VALID, EnrichedLyricStatus.INVALID] as const) {
+      const lyric = decodeEnrichedLyric(encodeEnrichedLyric(makeEnrichedLyric({ status, timing: TimingLevel.NONE })))
+      deepStrictEqual(lyric.status, status)
+      deepStrictEqual(validateEnrichedLyric(lyric), [])
+      deepStrictEqual(validateEnrichedLyric({ ...lyric, lines: [makeEnrichedLineNormal()] }), [{ path: 'lines[0]', code: 'line.content.missing' }])
+    }
   })
 
   // The codes are a contract the other bindings copy verbatim, so they are asserted as the strings they are.

@@ -31,7 +31,9 @@ import gondola.lyrics.model.enriched.Line
 import gondola.lyrics.model.enriched.Lyric
 import gondola.lyrics.model.enriched.LyricStatus
 import gondola.lyrics.model.enriched.canonicalizeEnrichedLyric
+import gondola.lyrics.model.enriched.decodeEnrichedLyric
 import gondola.lyrics.model.enriched.deriveEnrichedLanguageUsages
+import gondola.lyrics.model.enriched.encodeEnrichedLyric
 import gondola.lyrics.model.enriched.makeEnrichedLineAnnotation
 import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRoman
 import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRomanContentText
@@ -486,6 +488,35 @@ class ValidateTest {
             lines = lines,
         )
         assertEquals(emptyList(), validateEnrichedLyric(lyric))
+    }
+
+    @Test
+    fun reportsUnresolvedStatusValuesAfterDecoding() {
+        val lyric = makeEnrichedLyric(status = LyricStatus.LYRIC_STATUS_VALID, timing = TimingLevel.TIMING_LEVEL_NONE)
+        for (status in listOf(LyricStatus.LYRIC_STATUS_UNSPECIFIED, LyricStatus(99), LyricStatus(-1))) {
+            val decoded = decodeEnrichedLyric(encodeEnrichedLyric(lyric.copy(status = status)))
+            assertEquals(status, decoded.status)
+            assertEquals(listOf("status" to "lyric.status.unspecified"), validateEnrichedLyric(decoded).asPairs())
+            assertEquals(
+                listOf("status" to "lyric.status.unspecified", "lines[0]" to "line.content.missing"),
+                validateEnrichedLyric(decoded.copy(lines = listOf(makeEnrichedLineNormal()))).asPairs(),
+            )
+        }
+    }
+
+    @Test
+    fun acceptsResolvedStatusesWithoutRelaxingContentValidation() {
+        for (status in listOf(LyricStatus.LYRIC_STATUS_VALID, LyricStatus.LYRIC_STATUS_INVALID)) {
+            val lyric = decodeEnrichedLyric(
+                encodeEnrichedLyric(makeEnrichedLyric(status = status, timing = TimingLevel.TIMING_LEVEL_NONE)),
+            )
+            assertEquals(status, lyric.status)
+            assertEquals(emptyList(), validateEnrichedLyric(lyric))
+            assertEquals(
+                listOf("lines[0]" to "line.content.missing"),
+                validateEnrichedLyric(lyric.copy(lines = listOf(makeEnrichedLineNormal()))).asPairs(),
+            )
+        }
     }
 
     // The codes are a contract the other bindings copy verbatim, so they are asserted as the strings they are.
