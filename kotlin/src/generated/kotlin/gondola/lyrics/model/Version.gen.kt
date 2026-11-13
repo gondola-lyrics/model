@@ -9,4 +9,4 @@ package gondola.lyrics.model
  *
  * Producers write this value into the lyric's version field.
  */
-public const val SCHEMA_VERSION: String = "1.1.0"
+public const val SCHEMA_VERSION: String = "2.0.0"
