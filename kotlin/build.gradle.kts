@@ -10,7 +10,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 group = "io.github.gondola-lyrics"
 
-version = "1.0.0"
+version = "2.0.0"
 
 description = "Gondola lyrics data model for Kotlin and Java"
 
