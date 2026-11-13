@@ -1,4 +1,4 @@
-import { deepStrictEqual } from 'node:assert/strict'
+import { deepStrictEqual, strictEqual } from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import {
@@ -24,8 +24,62 @@ import {
   makeEnrichedWordNormal,
   makeEnrichedWordSpace,
   makeText,
+  pickItemByLanguage,
   resolveLineAgents,
 } from '@root/index'
+
+describe('pick by language', () => {
+  it('tries ordered preferences before falling back to an untagged entry', () => {
+    const defaultItem = makeText({ text: 'Default' })
+    const english = makeText({ language: 'en', text: 'English' })
+    const chinese = makeText({ language: 'zh-TW', text: 'Chinese' })
+    const items = [defaultItem, english] as const
+    const preferences = ['zh', 'en'] as const
+    const snapshot = structuredClone({ items, preferences })
+
+    strictEqual(pickItemByLanguage(items, preferences), english)
+    strictEqual(pickItemByLanguage(items, ['', 'zh', 'EN']), english)
+    strictEqual(pickItemByLanguage([...items, chinese], ['zh', 'en']), chinese)
+    strictEqual(pickItemByLanguage([...items, chinese], ['en', 'zh']), english)
+    deepStrictEqual({ items, preferences }, snapshot)
+  })
+
+  it('preserves single-language ranking, boundaries, and source order on ties', () => {
+    const english = makeText({ language: 'en', text: 'English' })
+    const extended = makeText({ language: 'en-US-x-demo', text: 'Extended' })
+    const regional = makeText({ language: 'en-US', text: 'Regional' })
+    const tied = makeText({ language: 'EN-us', text: 'Tied' })
+    const items = [english, extended, regional, tied] as const
+    const cases = [
+      ['en', english],
+      ['EN-us', regional],
+      ['en-US-x-demo', extended],
+      ['en-US-x-other', regional],
+    ] as const
+    for (const [wanted, expected] of cases) {
+      strictEqual(pickItemByLanguage(items, wanted), expected)
+      strictEqual(pickItemByLanguage(items, [wanted]), expected)
+    }
+    strictEqual(pickItemByLanguage([makeText({ language: 'jav', text: 'Other' })], ['ja']), undefined)
+    strictEqual(pickItemByLanguage([makeText({ language: 'zh-CN', text: 'Other' })], ['zh-Hans']), undefined)
+  })
+
+  it('applies default and explicit first-item fallback after all preferences fail', () => {
+    const english = makeText({ language: 'en', text: 'English' })
+    const emptyLanguage = makeText({ language: '', text: 'Default' })
+    const untagged = makeText({ text: 'Untagged' })
+    const items = [english, emptyLanguage, untagged] as const
+    for (const wanted of [undefined, '', [], [''], ['fr', 'de']] as const) {
+      strictEqual(pickItemByLanguage(items, wanted), emptyLanguage)
+      strictEqual(pickItemByLanguage(items, wanted, true), emptyLanguage)
+    }
+    strictEqual(pickItemByLanguage([english], ['fr', 'de']), undefined)
+    strictEqual(pickItemByLanguage([english], ['fr', 'de'], true), english)
+    strictEqual(pickItemByLanguage([english], undefined, true), english)
+    strictEqual(pickItemByLanguage([english], 'fr', true), english)
+    strictEqual(pickItemByLanguage([], ['en'], true), undefined)
+  })
+})
 
 describe('derive line languages', () => {
   // Returning the line's own array let a caller mutate the line through the result.

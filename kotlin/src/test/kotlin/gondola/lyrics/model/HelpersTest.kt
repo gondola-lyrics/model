@@ -4,6 +4,7 @@ import gondola.lyrics.model.common.AgentType
 import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.DiagnosticCode
 import gondola.lyrics.model.common.Meta
+import gondola.lyrics.model.common.Text
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.common.getTimeRangeDuration
@@ -11,6 +12,7 @@ import gondola.lyrics.model.common.makeAgent
 import gondola.lyrics.model.common.makeText
 import gondola.lyrics.model.common.makeTextToken
 import gondola.lyrics.model.common.makeTimeRange
+import gondola.lyrics.model.common.pickItemByLanguage
 import gondola.lyrics.model.common.resolveDiagnosticPath
 import gondola.lyrics.model.common.validateTimeRange
 import gondola.lyrics.model.document.makeDocumentLineContentText
@@ -44,6 +46,63 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 
 class HelpersTest {
+    @Test
+    fun triesOrderedLanguagePreferencesBeforeFallingBackToAnUntaggedEntry() {
+        val defaultItem = makeText(text = "Default")
+        val english = makeText(language = "en", text = "English")
+        val chinese = makeText(language = "zh-TW", text = "Chinese")
+        val items = listOf(defaultItem, english)
+        val preferences = listOf("zh", "en")
+        val snapshot = items.toList()
+
+        assertSame(english, pickItemByLanguage(items, preferences))
+        assertSame(english, pickItemByLanguage(items, listOf("", "zh", "EN")))
+        assertSame(chinese, pickItemByLanguage(items + chinese, listOf("zh", "en")))
+        assertSame(english, pickItemByLanguage(items + chinese, listOf("en", "zh")))
+        assertEquals(snapshot, items)
+        assertEquals(listOf("zh", "en"), preferences)
+
+        val genericItems = listOf("default" to null, "english" to "en", "chinese" to "zh-TW")
+        assertSame(genericItems[1], pickItemByLanguage(genericItems, listOf("fr", "EN")) { it.second })
+        assertSame(genericItems[2], pickItemByLanguage(genericItems, listOf("zh", "en")) { it.second })
+        assertSame(genericItems[1], pickItemByLanguage(genericItems, "EN") { it.second })
+    }
+
+    @Test
+    fun preservesSingleLanguageRankingBoundariesAndSourceOrderOnTies() {
+        val english = makeText(language = "en", text = "English")
+        val extended = makeText(language = "en-US-x-demo", text = "Extended")
+        val regional = makeText(language = "en-US", text = "Regional")
+        val tied = makeText(language = "EN-us", text = "Tied")
+        val items = listOf(english, extended, regional, tied)
+        for ((wanted, expected) in listOf("en" to english, "EN-us" to regional, "en-US-x-demo" to extended, "en-US-x-other" to regional)) {
+            assertSame(expected, pickItemByLanguage(items, wanted))
+            assertSame(expected, pickItemByLanguage(items, listOf(wanted)))
+        }
+        assertNull(pickItemByLanguage(listOf(makeText(language = "jav", text = "Other")), listOf("ja")))
+        assertNull(pickItemByLanguage(listOf(makeText(language = "zh-CN", text = "Other")), listOf("zh-Hans")))
+    }
+
+    @Test
+    fun appliesDefaultAndExplicitFirstItemFallbackAfterAllPreferencesFail() {
+        val english = makeText(language = "en", text = "English")
+        val emptyLanguage = makeText(language = "", text = "Default")
+        val untagged = makeText(text = "Untagged")
+        val items = listOf(english, emptyLanguage, untagged)
+        assertSame(emptyLanguage, pickItemByLanguage(items))
+        assertSame(emptyLanguage, pickItemByLanguage(items, null))
+        assertSame(emptyLanguage, pickItemByLanguage(items, ""))
+        for (wanted in listOf(emptyList(), listOf(""), listOf("fr", "de"))) {
+            assertSame(emptyLanguage, pickItemByLanguage(items, wanted))
+            assertSame(emptyLanguage, pickItemByLanguage(items, wanted, true))
+        }
+        assertNull(pickItemByLanguage(listOf(english), listOf("fr", "de")))
+        assertSame(english, pickItemByLanguage(listOf(english), listOf("fr", "de"), true))
+        assertSame(english, pickItemByLanguage(listOf(english), fallback = true))
+        assertSame(english, pickItemByLanguage(listOf(english), "fr", true))
+        assertNull(pickItemByLanguage(emptyList<Text>(), listOf("en"), true))
+    }
+
     @Test
     fun resolvesLocalContentAndArrayDiagnosticsAgainstTheirActualInputs() {
         val documentContent = makeDocumentLineContentText("")
