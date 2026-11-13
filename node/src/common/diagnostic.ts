@@ -94,7 +94,7 @@ export enum DiagnosticCode {
 }
 
 /**
- * A problem `validate*` reports, with `path` locating the offending message such as `lines[3].words[0]` and `code` naming the broken rule.
+ * A model violation located relative to the validated input or its supplied path prefix.
  */
 export interface Diagnostic {
   path: string
@@ -103,7 +103,7 @@ export interface Diagnostic {
 
 /**
  * Resolves a diagnostic path against the node it was reported from, returning the value located there.
- * The path locates by field name and list index only, each segment `field` or `field[n]` joined by dots, as `validate*` builds it.
+ * Field segments use `field` or `field[n]`; a root array may start with `[n]`.
  * It returns undefined when a segment names an unset field or runs past a list, so a diagnostic about an absent field yields undefined there.
  */
 export const resolveDiagnosticPath = (root: unknown, path: string): unknown => {
@@ -111,10 +111,15 @@ export const resolveDiagnosticPath = (root: unknown, path: string): unknown => {
     return root
   }
   let node: unknown = root
-  for (const segment of path.split('.')) {
-    // A field is named by the identifier the generated code gives it, which is the schema's own name in lower camel case, so a name of more than one word resolves like any other.
+  const segments = path.split('.')
+  for (const [i, segment] of segments.entries()) {
+    const rootIndex = i === 0 ? /^\[(\d+)\]$/.exec(segment) : null
+    if (rootIndex !== null && rootIndex[0] === segment) {
+      node = Array.isArray(node) ? node[Number(rootIndex[1])] : undefined
+      continue
+    }
     const match = /^([$A-Za-z_][$\w]*)(?:\[(\d+)\])?$/.exec(segment)
-    if (match === null || node === null || typeof node !== 'object') {
+    if (match === null || match[0] !== segment || node === null || typeof node !== 'object') {
       return undefined
     }
     node = (node as Record<string, unknown>)[match[1]!]

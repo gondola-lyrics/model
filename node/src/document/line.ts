@@ -14,12 +14,11 @@ import type {
 } from '@root/generated/document/index.gen'
 
 import { DiagnosticCode, canonicalizeTextToken, validatePart, validateTextToken, validateTimeRange } from '@root/common'
-import { validateLineTags } from '@root/common/tag'
+import { validateLanguageTag, validateLanguageTags } from '@root/common/tag'
 import { PartType, TimingLevel } from '@root/generated/common/index.gen'
 import {
   fieldsCommonPart,
   fieldsCommonTextToken,
-  fieldsDocumentLine,
   fieldsDocumentLineAnnotation,
   fieldsDocumentLineAnnotationRoman,
   fieldsDocumentLineAnnotationRomanContent,
@@ -43,6 +42,7 @@ import {
   childPath,
   copyMessage,
   dropDefault,
+  findDefaultEntries,
   findDuplicates,
   findUnordered,
   getAnnotationKey,
@@ -65,7 +65,8 @@ import {
 /**
  * Checks that exactly one non-empty content form is present and validates its words.
  *
- * An unresolved line kind may omit content when required is false.
+ * NONE and LINE require whole-line text; an unresolved line kind may omit content when required is false.
+ * Paths are relative to this content unless its location is supplied.
  */
 export const validateDocumentLineContent = (
   content: LineContent | undefined,
@@ -75,19 +76,23 @@ export const validateDocumentLineContent = (
   required = true,
 ): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
-  const contentPath = childPath(path, 'content')
   const hasWords = content !== undefined && content.words.length > 0
   const hasText = content?.text !== undefined
   if (required && !hasWords && !hasText) {
     diagnostics.push({ path, code: DiagnosticCode.LineContentMissing })
   } else if (hasWords && hasText) {
-    diagnostics.push({ path: contentPath, code: DiagnosticCode.LineContentAmbiguous })
+    diagnostics.push({ path, code: DiagnosticCode.LineContentAmbiguous })
   }
   // Empty text still counts as present for exclusivity.
   if (content?.text === '') {
-    diagnostics.push({ path: childPath(contentPath, 'text'), code: DiagnosticCode.LineContentTextEmpty })
+    diagnostics.push({ path: childPath(path, 'text'), code: DiagnosticCode.LineContentTextEmpty })
   }
-  diagnostics.push(...validateDocumentWords(content?.words ?? [], time, contentPath, timing))
+  if (hasWords && timing === TimingLevel.NONE) {
+    diagnostics.push({ path: childPath(path, 'words'), code: DiagnosticCode.LyricTimingNoneWords })
+  } else if (hasWords && timing === TimingLevel.LINE) {
+    diagnostics.push({ path: childPath(path, 'words'), code: DiagnosticCode.LyricTimingLineWords })
+  }
+  diagnostics.push(...validateDocumentWords(content?.words ?? [], time, childPath(path, 'words'), timing))
   return diagnostics
 }
 
@@ -175,10 +180,13 @@ export const validateDocumentLineAnnotationRomanContent = (
 }
 
 /**
- * Checks the declared range and required roman content without constraining them to the original line.
+ * Checks the language, declared range, and required roman content independently of the original line.
+ *
+ * Paths are relative to this romanization unless its location is supplied.
  */
 export const validateDocumentLineAnnotationRoman = (roman: LineAnnotationRoman, path = ''): Diagnostic[] => {
   const diagnostics = validateDocumentLineAnnotationRomanContent(roman.content, childPath(path, 'content'), roman.time)
+  diagnostics.push(...validateLanguageTag(roman.language, childPath(path, 'language')))
   if (roman.time) {
     diagnostics.push(...validateTimeRange(roman.time, childPath(path, 'time')))
   }
@@ -186,7 +194,9 @@ export const validateDocumentLineAnnotationRoman = (roman: LineAnnotationRoman, 
 }
 
 /**
- * Checks roman content and timing, uniqueness by language and scheme, and translation uniqueness by language.
+ * Checks romanizations and translations, including their languages, list entries, and variant uniqueness.
+ *
+ * Paths are relative to this annotation unless its location is supplied.
  */
 export const validateDocumentLineAnnotation = (annotation: LineAnnotation, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -198,6 +208,17 @@ export const validateDocumentLineAnnotation = (annotation: LineAnnotation, path 
   })
   annotation.romans.forEach((roman, i) => {
     diagnostics.push(...validateDocumentLineAnnotationRoman(roman, childPath(path, `romans[${i}]`)))
+  })
+  annotation.translations.forEach((translation, i) => {
+    diagnostics.push(...validateLanguageTag(translation.language, childPath(path, `translations[${i}].language`)))
+  })
+  findDefaultEntries(
+    fieldsDocumentLineAnnotation,
+    annotation,
+    diagnostics.map((diagnostic) => diagnostic.path),
+    path,
+  ).forEach((entryPath) => {
+    diagnostics.push({ path: entryPath, code: DiagnosticCode.LyricListEntryEmpty })
   })
   return diagnostics
 }
@@ -401,23 +422,26 @@ export const makeDocumentLineBackground = (init?: MakeInit<LineBackground>): Lin
 /**
  * Checks the line kind, permitted fields, timing, annotations, and backgrounds.
  *
- * Unresolved kinds may omit content; untimed instrumental lines are reported by validateDocumentLyric.
+ * Unresolved kinds may omit content; supplied timing determines the line's own requirements.
+ * Paths are relative to this line unless its location is supplied.
  */
 export const validateDocumentLine = (line: Line, path = '', timing = TimingLevel.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
-  // Tags are read here rather than by the lyric, since only this knows which fields a line's kind forbids, and a forbidden field is never descended into.
-  if (line.type !== LineType.INSTRUMENTAL) {
-    diagnostics.push(...validateLineTags(fieldsDocumentLine, line, path))
-  }
   const instrumental = line.type === LineType.INSTRUMENTAL
 
   if (isUnresolved(LineType, line.type)) {
     diagnostics.push({ path: childPath(path, 'type'), code: DiagnosticCode.LineTypeUnspecified })
   }
+  if (instrumental && timing === TimingLevel.NONE) {
+    diagnostics.push({ path: childPath(path, 'type'), code: DiagnosticCode.LyricTimingNoneInstrumental })
+  }
   // An instrumental line is the stretch its range marks out, so it is nothing without a range, and nothing with one that never ends or one that ends where it starts.
-  // An untimed lyric marks out no stretches, so there the lyric reports the line itself and asks for no range here.
+  // NONE forbids instrumental lines without requiring a range on top.
   const needsRange = instrumental && timing !== TimingLevel.NONE
   if (line.time) {
+    if (timing === TimingLevel.NONE) {
+      diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingNonePresent })
+    }
     diagnostics.push(...validateTimeRange(line.time, childPath(path, 'time')))
     if (needsRange && line.time.end === undefined) {
       diagnostics.push({ path: childPath(path, 'time.end'), code: DiagnosticCode.LineTimeEndMissing })
@@ -429,6 +453,9 @@ export const validateDocumentLine = (line: Line, path = '', timing = TimingLevel
   } else if (needsRange) {
     diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LineTimeMissing })
   }
+  if (line.type === LineType.NORMAL && (timing === TimingLevel.LINE || timing === TimingLevel.WORD) && line.time === undefined) {
+    diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingLineTimeMissing })
+  }
   if (line.part) {
     diagnostics.push(...validatePart(line.part, childPath(path, 'part')))
     if (line.part.type === PartType.INTERLUDE && line.type === LineType.NORMAL) {
@@ -439,9 +466,17 @@ export const validateDocumentLine = (line: Line, path = '', timing = TimingLevel
   if (instrumental && line.agentIds.length > 0) {
     diagnostics.push({ path: childPath(path, 'agentIds'), code: DiagnosticCode.LineAgentIdsUnexpected })
   }
+  if (!instrumental) {
+    line.agentIds.forEach((id, i) => {
+      if (id === '') {
+        diagnostics.push({ path: childPath(path, `agentIds[${i}]`), code: DiagnosticCode.LyricListEntryEmpty })
+      }
+    })
+  }
   if (instrumental && line.languages.length > 0) {
     diagnostics.push({ path: childPath(path, 'languages'), code: DiagnosticCode.LineLanguagesUnexpected })
   } else if (!instrumental) {
+    diagnostics.push(...validateLanguageTags(line.languages, childPath(path, 'languages')))
     findDuplicates(line.languages, (tag) => lowerTag(tag) ?? '').forEach((i) => {
       diagnostics.push({ path: childPath(path, `languages[${i}]`), code: DiagnosticCode.LineLanguagesDuplicate })
     })
@@ -452,7 +487,7 @@ export const validateDocumentLine = (line: Line, path = '', timing = TimingLevel
       diagnostics.push({ path: childPath(path, 'content'), code: DiagnosticCode.LineContentUnexpected })
     }
   } else {
-    diagnostics.push(...validateDocumentLineContent(line.content, line.time, path, timing, line.type === LineType.NORMAL))
+    diagnostics.push(...validateDocumentLineContent(line.content, line.time, childPath(path, 'content'), timing, line.type === LineType.NORMAL))
   }
   if (instrumental && line.annotation !== undefined) {
     diagnostics.push({ path: childPath(path, 'annotation'), code: DiagnosticCode.LineAnnotationUnexpected })
@@ -481,16 +516,30 @@ export const validateDocumentLine = (line: Line, path = '', timing = TimingLevel
 
 /**
  * Checks background content, timing, languages, and annotations.
+ *
+ * Parent containment and references are checked by the enclosing line and lyric.
+ * Paths are relative to this background unless its location is supplied.
  */
 export const validateDocumentLineBackground = (background: LineBackground, path = '', timing = TimingLevel.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   if (background.time) {
+    if (timing === TimingLevel.NONE) {
+      diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingNonePresent })
+    }
     diagnostics.push(...validateTimeRange(background.time, childPath(path, 'time')))
+  } else if (timing === TimingLevel.LINE || timing === TimingLevel.WORD) {
+    diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingLineTimeMissing })
   }
+  background.agentIds.forEach((id, i) => {
+    if (id === '') {
+      diagnostics.push({ path: childPath(path, `agentIds[${i}]`), code: DiagnosticCode.LyricListEntryEmpty })
+    }
+  })
+  diagnostics.push(...validateLanguageTags(background.languages, childPath(path, 'languages')))
   findDuplicates(background.languages, (tag) => lowerTag(tag) ?? '').forEach((i) => {
     diagnostics.push({ path: childPath(path, `languages[${i}]`), code: DiagnosticCode.LineLanguagesDuplicate })
   })
-  diagnostics.push(...validateDocumentLineContent(background.content, background.time, path, timing))
+  diagnostics.push(...validateDocumentLineContent(background.content, background.time, childPath(path, 'content'), timing))
   if (background.annotation) {
     diagnostics.push(...validateDocumentLineAnnotation(background.annotation, childPath(path, 'annotation')))
     diagnostics.push(...validateRomanPlacement(background.annotation, background.content, childPath(path, 'annotation')))

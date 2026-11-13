@@ -8,12 +8,14 @@ import gondola.lyrics.model.common.TextToken
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.common.canonicalizeTextToken
+import gondola.lyrics.model.common.validateLanguageTag
 import gondola.lyrics.model.common.validateTextToken
 import gondola.lyrics.model.common.validateTimeRange
 import gondola.lyrics.model.utils.canonicalizeField
 import gondola.lyrics.model.utils.canonicalizeList
 import gondola.lyrics.model.utils.childPath
 import gondola.lyrics.model.utils.dropDefault
+import gondola.lyrics.model.utils.findDefaultEntries
 import gondola.lyrics.model.utils.findDuplicates
 import gondola.lyrics.model.utils.getAnnotationKey
 import gondola.lyrics.model.utils.isTimeRangeUncovered
@@ -74,12 +76,15 @@ public fun makeEnrichedWordAnnotation(
 }
 
 /**
- * Checks annotation uniqueness, valid time ranges, and containment within inherited timing.
+ * Checks annotation languages, repeated entries, uniqueness, and time containment.
+ *
+ * Paths are relative to the annotation; containment uses the supplied parent-word range.
  */
 public fun validateEnrichedWordAnnotation(annotation: WordAnnotation, path: String = "", time: TimeRange? = null): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
 
-    fun validateItem(itemTime: TimeRange?, tokens: List<TextToken>, itemPath: String) {
+    fun validateItem(itemTime: TimeRange?, language: String?, tokens: List<TextToken>, itemPath: String) {
+        diagnostics.addAll(validateLanguageTag(language, childPath(itemPath, "language")))
         if (itemTime != null) {
             diagnostics.addAll(validateTimeRange(itemTime, childPath(itemPath, "time")))
         }
@@ -106,10 +111,16 @@ public fun validateEnrichedWordAnnotation(annotation: WordAnnotation, path: Stri
         diagnostics.add(Diagnostic(childPath(path, "translations[$index]"), DiagnosticCode.LineWordAnnotationTranslationsLanguageDuplicate))
     }
     annotation.rubies.forEachIndexed { index, item ->
-        validateItem(item.time, item.tokens, childPath(path, "rubies[$index]"))
+        validateItem(item.time, item.language, item.tokens, childPath(path, "rubies[$index]"))
     }
     annotation.romans.forEachIndexed { index, item ->
-        validateItem(item.time, item.tokens, childPath(path, "romans[$index]"))
+        validateItem(item.time, item.language, item.tokens, childPath(path, "romans[$index]"))
+    }
+    annotation.translations.forEachIndexed { index, item ->
+        diagnostics.addAll(validateLanguageTag(item.language, childPath(path, "translations[$index].language")))
+    }
+    findDefaultEntries(annotation, diagnostics.map { it.path }, path).forEach { entryPath ->
+        diagnostics.add(Diagnostic(entryPath, DiagnosticCode.LyricListEntryEmpty))
     }
     return diagnostics
 }
@@ -117,7 +128,9 @@ public fun validateEnrichedWordAnnotation(annotation: WordAnnotation, path: Stri
 /**
  * Checks the word kind, text, permitted fields, annotations, and timing.
  *
- * The declared timing level determines whether annotation timing is constrained by the word.
+ * Paths are relative to the word unless its location is supplied.
+ * NONE forbids original timing; NONE and LINE suppress required word timing and parent-word annotation containment.
+ * Unspecified timing retains the word-level checks used by the word-list validator.
  */
 public fun validateEnrichedWord(word: Word, path: String = "", timing: TimingLevel = TimingLevel.TIMING_LEVEL_UNSPECIFIED): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
@@ -149,11 +162,17 @@ public fun validateEnrichedWord(word: Word, path: String = "", timing: TimingLev
         }
         return diagnostics
     }
+    diagnostics.addAll(validateLanguageTag(word.language, childPath(path, "language")))
+    if (ownsWordTimes(timing) && word.type == WordType.WORD_TYPE_NORMAL && word.time == null) {
+        diagnostics.add(Diagnostic(path, DiagnosticCode.LineWordTimeMissing))
+    }
     if (word.time != null) {
+        if (timing == TimingLevel.TIMING_LEVEL_NONE) {
+            diagnostics.add(Diagnostic(childPath(path, "time"), DiagnosticCode.LyricTimingNonePresent))
+        }
         diagnostics.addAll(validateTimeRange(word.time, childPath(path, "time")))
     }
     if (word.annotation != null) {
-        // NONE and LINE timing validate the word list at the lyric level.
         diagnostics.addAll(validateEnrichedWordAnnotation(word.annotation, childPath(path, "annotation"), word.time.takeIf { ownsWordTimes(timing) }))
     }
     val emphasis = word.emphasis
@@ -164,7 +183,9 @@ public fun validateEnrichedWord(word: Word, path: String = "", timing: TimingLev
 }
 
 /**
- * Validates each word and, when word timing applies, requires sung-word times within the enclosing range.
+ * Validates words and, when word timing applies, checks containment within the supplied line range.
+ *
+ * Paths are relative to the word list; only an index is appended to its supplied location.
  */
 public fun validateEnrichedWords(
     words: List<Word>,
@@ -175,11 +196,8 @@ public fun validateEnrichedWords(
     val diagnostics = mutableListOf<Diagnostic>()
     val ownTimes = ownsWordTimes(timing)
     words.forEachIndexed { index, word ->
-        val wordPath = childPath(path, "words[$index]")
+        val wordPath = "$path[$index]"
         diagnostics.addAll(validateEnrichedWord(word, wordPath, timing))
-        if (ownTimes && word.type == WordType.WORD_TYPE_NORMAL && word.time == null) {
-            diagnostics.add(Diagnostic(wordPath, DiagnosticCode.LineWordTimeMissing))
-        }
         // SPACE timing is already reported as forbidden.
         if (ownTimes && word.type != WordType.WORD_TYPE_SPACE && isTimeRangeUncovered(word.time, time)) {
             diagnostics.add(Diagnostic(childPath(wordPath, "time"), DiagnosticCode.LineWordTimeUncovered))

@@ -1,4 +1,4 @@
-import type { Diagnostic, EnrichedLine, EnrichedLyric, Part } from '@root/index'
+import type { Diagnostic, EnrichedLine, EnrichedLyric, Part, TimeRange } from '@root/index'
 
 import { deepStrictEqual } from 'node:assert/strict'
 import { describe, it } from 'node:test'
@@ -21,6 +21,7 @@ import {
   makeDocumentLineAnnotationTranslation,
   makeDocumentLineBackground,
   makeDocumentLineContentText,
+  makeDocumentLineContentWords,
   makeDocumentLineInstrumental,
   makeDocumentLineNormal,
   makeDocumentLyric,
@@ -28,6 +29,8 @@ import {
   makeDocumentWordAnnotationRoman,
   makeDocumentWordAnnotationRuby,
   makeDocumentWordAnnotationTranslation,
+  makeDocumentWordNormal,
+  makeDocumentWordSpace,
   makeEnrichedLanguageUsage,
   makeEnrichedLineAnnotation,
   makeEnrichedLineAnnotationRoman,
@@ -48,20 +51,36 @@ import {
   makeEnrichedWordNormal,
   makeEnrichedWordSpace,
   makeMetaCredit,
+  makeMeta,
+  makeMetaReference,
   makePart,
   makeText,
   makeTimeRange,
   resolveDiagnosticPath,
   validateDocumentLine,
   validateDocumentLineAnnotation,
+  validateDocumentLineAnnotationRoman,
+  validateDocumentLineBackground,
+  validateDocumentLineContent,
   validateDocumentLyric,
+  validateDocumentWord,
   validateDocumentWordAnnotation,
+  validateDocumentWords,
   validateEnrichedLine,
   validateEnrichedLineAnnotation,
+  validateEnrichedLineAnnotationRoman,
+  validateEnrichedLineBackground,
+  validateEnrichedLineContent,
   validateEnrichedLyric,
   validateEnrichedWord,
   validateEnrichedWordAnnotation,
+  validateEnrichedWords,
+  validateAgent,
+  validateMeta,
   validateMetaCredit,
+  validateMetaReference,
+  validateText,
+  validateTextToken,
 } from '@root/index'
 
 const textLine = (start: number, end?: number): EnrichedLine => {
@@ -122,6 +141,269 @@ const validateTimedPartsInBothLayers = (parts: (Part | undefined)[], sungLineInd
 }
 
 describe('validate', () => {
+  it('reports text languages and empty reference ids locally and once under either lyric', () => {
+    const text = makeText({ text: 'Song', language: 'en_US' })
+    const reference = makeMetaReference({ platform: 'catalog', ids: [''] })
+    const agent = makeAgent({ id: 'singer', type: AgentType.PERSON, names: [text] })
+    const credit = makeMetaCredit({ role: CreditRole.PERFORMER, names: [text] })
+    const meta = makeMeta({ language: 'en_US', titles: [text], references: [reference], credits: [credit] })
+    const snapshot = structuredClone({ text, reference, agent, meta })
+    deepStrictEqual(validateText(text), [{ path: 'language', code: 'language.tag.malformed' }])
+    deepStrictEqual(validateMetaReference(reference), [{ path: 'ids[0]', code: 'lyric.list.entry.empty' }])
+    deepStrictEqual(validateAgent(agent), [{ path: 'names[0].language', code: 'language.tag.malformed' }])
+    deepStrictEqual(validateMetaCredit(credit), [{ path: 'names[0].language', code: 'language.tag.malformed' }])
+    const expected = [{ path: 'agents[0].names[0].language', code: 'language.tag.malformed' }, ...validateMeta(meta, 'meta')]
+    deepStrictEqual(validateMeta(meta), [
+      { path: 'language', code: 'language.tag.malformed' },
+      { path: 'titles[0].language', code: 'language.tag.malformed' },
+      { path: 'credits[0].names[0].language', code: 'language.tag.malformed' },
+      { path: 'references[0].ids[0]', code: 'lyric.list.entry.empty' },
+    ])
+    const document = makeDocumentLyric({ timing: TimingLevel.NONE, meta, agents: [agent] })
+    const enriched = makeEnrichedLyric({ status: EnrichedLyricStatus.VALID, timing: TimingLevel.NONE, meta, agents: [agent] })
+    deepStrictEqual(validateDocumentLyric(document), expected)
+    deepStrictEqual(validateEnrichedLyric(enriched), expected)
+    deepStrictEqual({ text, reference, agent, meta }, snapshot)
+  })
+
+  it('keeps allowed word, background, and annotation diagnostics consistent when nested', () => {
+    const time = makeTimeRange({ start: 0, end: 1000 })
+    const annotation = makeDocumentWordAnnotation({
+      rubies: [makeDocumentWordAnnotationRuby({ language: 'en_US', tokens: [makeTextToken({ text: 'ruby' })] })],
+      romans: [makeDocumentWordAnnotationRoman({ language: 'en_US', tokens: [makeTextToken({ text: 'roman' })] })],
+      translations: [makeDocumentWordAnnotationTranslation({ language: 'en_US', text: 'translation' })],
+    })
+    const roman = makeDocumentLineAnnotationRoman({ language: 'en_US', content: makeDocumentLineAnnotationRomanContentText('roman') })
+    const lineAnnotation = makeDocumentLineAnnotation({
+      romans: [roman],
+      translations: [makeDocumentLineAnnotationTranslation({ language: 'en_US', text: 'translation' })],
+    })
+    const background = makeDocumentLineBackground({
+      time,
+      languages: ['en_US'],
+      content: makeDocumentLineContentText('background'),
+      annotation: lineAnnotation,
+    })
+    const word = makeDocumentWordNormal({ text: 'word', language: 'en_US', time, annotation })
+    const line = makeDocumentLineNormal({ time, content: makeDocumentLineContentWords([word]), backgrounds: [background] })
+    const enrichedWord = makeEnrichedWordNormal({ text: 'word', language: 'en_US', time, annotation })
+    const enrichedBackground = makeEnrichedLineBackground({ ...background, content: makeEnrichedLineContentText('background') })
+    const enrichedLine = makeEnrichedLineNormal({ time, content: makeEnrichedLineContentWords([enrichedWord]), backgrounds: [enrichedBackground] })
+    const wordExpected = [
+      { path: 'language', code: 'language.tag.malformed' },
+      { path: 'annotation.rubies[0].language', code: 'language.tag.malformed' },
+      { path: 'annotation.romans[0].language', code: 'language.tag.malformed' },
+      { path: 'annotation.translations[0].language', code: 'language.tag.malformed' },
+    ]
+    const backgroundExpected = [
+      { path: 'languages[0]', code: 'language.tag.malformed' },
+      { path: 'annotation.romans[0].language', code: 'language.tag.malformed' },
+      { path: 'annotation.translations[0].language', code: 'language.tag.malformed' },
+    ]
+    const nestedExpected = [
+      ...wordExpected.map((diagnostic) => ({ ...diagnostic, path: `content.words[0].${diagnostic.path}` })),
+      ...backgroundExpected.map((diagnostic) => ({ ...diagnostic, path: `backgrounds[0].${diagnostic.path}` })),
+    ]
+    deepStrictEqual(validateDocumentLineAnnotationRoman(roman), [{ path: 'language', code: 'language.tag.malformed' }])
+    deepStrictEqual(validateEnrichedLineAnnotationRoman(roman), [{ path: 'language', code: 'language.tag.malformed' }])
+    deepStrictEqual(validateDocumentWord(word, '', TimingLevel.WORD), wordExpected)
+    deepStrictEqual(validateEnrichedWord(enrichedWord, '', TimingLevel.WORD), wordExpected)
+    deepStrictEqual(validateDocumentLineBackground(background, '', TimingLevel.WORD), backgroundExpected)
+    deepStrictEqual(validateEnrichedLineBackground(enrichedBackground, '', TimingLevel.WORD), backgroundExpected)
+    deepStrictEqual(validateDocumentLine(line, '', TimingLevel.WORD), nestedExpected)
+    deepStrictEqual(validateEnrichedLine(enrichedLine, '', TimingLevel.WORD), nestedExpected)
+  })
+
+  it('checks declared timing locally while leaving sibling and parent relationships to their containers', () => {
+    const time = makeTimeRange({ start: 0, end: 1000 })
+    const word = makeDocumentWordNormal({ text: 'word' })
+    const line = makeDocumentLineNormal({ content: makeDocumentLineContentText('line') })
+    const background = makeDocumentLineBackground({ content: makeDocumentLineContentText('background') })
+    const check = <W, L, B, C>(
+      word: W,
+      line: L,
+      background: B,
+      content: C,
+      model: {
+        word: (word: W, path: string, timing: TimingLevel) => Diagnostic[]
+        words: (words: W[], time: TimeRange | undefined, path: string, timing: TimingLevel) => Diagnostic[]
+        line: (line: L, path: string, timing: TimingLevel) => Diagnostic[]
+        background: (background: B, path: string, timing: TimingLevel) => Diagnostic[]
+        content: (content: C, time: TimeRange | undefined, path: string, timing: TimingLevel) => Diagnostic[]
+      },
+    ): void => {
+      for (const timing of [TimingLevel.WORD, TimingLevel.UNSPECIFIED, 99 as TimingLevel]) {
+        deepStrictEqual(model.word(word, '', timing), [{ path: '', code: 'line.word.time.missing' }])
+        deepStrictEqual(model.words([word], time, '', timing), [{ path: '[0]', code: 'line.word.time.missing' }])
+      }
+      for (const timing of [TimingLevel.NONE, TimingLevel.LINE]) {
+        deepStrictEqual(model.word(word, '', timing), [])
+      }
+      for (const timing of [TimingLevel.LINE, TimingLevel.WORD]) {
+        deepStrictEqual(model.line(line, '', timing), [{ path: 'time', code: 'lyric.timing.line.time_missing' }])
+        deepStrictEqual(model.background(background, '', timing), [{ path: 'time', code: 'lyric.timing.line.time_missing' }])
+      }
+      deepStrictEqual(model.word({ ...word, time }, '', TimingLevel.NONE), [{ path: 'time', code: 'lyric.timing.none.present' }])
+      deepStrictEqual(model.line({ ...line, time }, '', TimingLevel.NONE), [{ path: 'time', code: 'lyric.timing.none.present' }])
+      deepStrictEqual(model.background({ ...background, time }, '', TimingLevel.NONE), [{ path: 'time', code: 'lyric.timing.none.present' }])
+      deepStrictEqual(model.content(content, time, '', TimingLevel.NONE), [{ path: 'words', code: 'lyric.timing.none.words' }])
+      deepStrictEqual(model.content(content, time, '', TimingLevel.LINE), [{ path: 'words', code: 'lyric.timing.line.words' }])
+      const uncovered = { ...word, time: makeTimeRange({ start: 0, end: 2000 }) }
+      deepStrictEqual(model.word(uncovered, '', TimingLevel.WORD), [])
+      deepStrictEqual(model.words([uncovered], time, '', TimingLevel.WORD), [{ path: '[0].time', code: 'line.word.time.uncovered' }])
+    }
+    check(word, line, background, makeDocumentLineContentWords([word]), {
+      word: validateDocumentWord,
+      words: validateDocumentWords,
+      line: validateDocumentLine,
+      background: validateDocumentLineBackground,
+      content: validateDocumentLineContent,
+    })
+    const enrichedWord = makeEnrichedWordNormal({ text: 'word' })
+    const enrichedLine = makeEnrichedLineNormal({ content: makeEnrichedLineContentText('line') })
+    check(
+      enrichedWord,
+      enrichedLine,
+      makeEnrichedLineBackground({ content: makeEnrichedLineContentText('background') }),
+      makeEnrichedLineContentWords([enrichedWord]),
+      {
+        word: validateEnrichedWord,
+        words: validateEnrichedWords,
+        line: validateEnrichedLine,
+        background: validateEnrichedLineBackground,
+        content: validateEnrichedLineContent,
+      },
+    )
+    const document = makeDocumentLyric({ timing: TimingLevel.LINE, lines: [line] })
+    const enriched = makeEnrichedLyric({ status: EnrichedLyricStatus.VALID, timing: TimingLevel.LINE, lines: [enrichedLine] })
+    const expected = [{ path: 'lines[0].time', code: 'lyric.timing.line.time_missing' }]
+    deepStrictEqual(validateDocumentLyric(document), expected)
+    deepStrictEqual(validateEnrichedLyric(enriched), expected)
+  })
+
+  it('reports all-default repeated entries locally without rejecting meaningful empty word tokens', () => {
+    const tokens = [makeTextToken(), makeTextToken({ time: makeTimeRange({ start: 0 }) }), makeTextToken({ extra: { source: '' } })]
+    const annotation = makeDocumentWordAnnotation({
+      rubies: [makeDocumentWordAnnotationRuby()],
+      romans: [makeDocumentWordAnnotationRoman({ tokens })],
+      translations: [makeDocumentWordAnnotationTranslation()],
+    })
+    const expected = [
+      { path: 'rubies[0]', code: 'lyric.list.entry.empty' },
+      { path: 'romans[0].tokens[0]', code: 'lyric.list.entry.empty' },
+      { path: 'translations[0]', code: 'lyric.list.entry.empty' },
+    ]
+    deepStrictEqual(validateTextToken(tokens[0]!), [])
+    deepStrictEqual(validateDocumentWordAnnotation(annotation), expected)
+    deepStrictEqual(validateEnrichedWordAnnotation(annotation), expected)
+    const lineAnnotation = makeDocumentLineAnnotation({ translations: [makeDocumentLineAnnotationTranslation()] })
+    deepStrictEqual(validateDocumentLineAnnotation(lineAnnotation), [{ path: 'translations[0]', code: 'lyric.list.entry.empty' }])
+    deepStrictEqual(validateEnrichedLineAnnotation(lineAnnotation), [{ path: 'translations[0]', code: 'lyric.list.entry.empty' }])
+    const reference = makeMetaReference({ platform: 'catalog', ids: [''] })
+    const meta = makeMeta({ unknowns: [{ key: '', value: '' }], isrcs: [''], references: [reference] })
+    deepStrictEqual(validateMeta(meta), [
+      { path: 'references[0].ids[0]', code: 'lyric.list.entry.empty' },
+      { path: 'unknowns[0]', code: 'lyric.list.entry.empty' },
+      { path: 'isrcs[0]', code: 'lyric.list.entry.empty' },
+    ])
+    const time = makeTimeRange({ start: 0 })
+    const word = makeDocumentWordNormal({ text: 'word', time, annotation })
+    const line = makeDocumentLineNormal({ time, content: makeDocumentLineContentWords([word]), annotation: lineAnnotation })
+    const document = makeDocumentLyric({ timing: TimingLevel.WORD, lines: [line] })
+    const enrichedWord = makeEnrichedWordNormal({ text: 'word', time, annotation })
+    const enriched = makeEnrichedLyric({
+      status: EnrichedLyricStatus.VALID,
+      timing: TimingLevel.WORD,
+      lines: [makeEnrichedLineNormal({ time, content: makeEnrichedLineContentWords([enrichedWord]), annotation: lineAnnotation })],
+    })
+    const nested = [
+      ...expected.map((diagnostic) => ({ ...diagnostic, path: `lines[0].content.words[0].annotation.${diagnostic.path}` })),
+      { path: 'lines[0].annotation.translations[0]', code: 'lyric.list.entry.empty' },
+    ]
+    deepStrictEqual(validateDocumentLyric(document), nested)
+    deepStrictEqual(validateEnrichedLyric(enriched), nested)
+  })
+
+  it('resolves content and array diagnostics relative to the actual input', () => {
+    const content = makeDocumentLineContentText('')
+    const word = makeDocumentWordNormal({ text: 'word', time: makeTimeRange({ start: -1 }) })
+    const check = <C, W>(
+      content: C,
+      word: W,
+      model: {
+        content: (content: C | undefined, time: TimeRange | undefined, path?: string) => Diagnostic[]
+        words: (words: W[], time: TimeRange | undefined, path?: string) => Diagnostic[]
+      },
+    ): void => {
+      const diagnostic = model.content(content, undefined)[0]!
+      deepStrictEqual(diagnostic, { path: 'text', code: 'line.content.text.empty' })
+      deepStrictEqual(resolveDiagnosticPath(content, diagnostic.path), '')
+      const nested = model.content(content, undefined, 'lines[0].content')[0]!
+      deepStrictEqual(nested.path, 'lines[0].content.text')
+      deepStrictEqual(resolveDiagnosticPath({ lines: [{ content }] }, nested.path), '')
+      deepStrictEqual(model.content(undefined, undefined), [{ path: '', code: 'line.content.missing' }])
+      deepStrictEqual(model.words([word], undefined), [{ path: '[0].time', code: 'time.range.start.invalid' }])
+      deepStrictEqual(model.words([word], undefined, 'lines[0].content.words'), [
+        { path: 'lines[0].content.words[0].time', code: 'time.range.start.invalid' },
+      ])
+    }
+    check(content, word, { content: validateDocumentLineContent, words: validateDocumentWords })
+    check(makeEnrichedLineContentText(''), makeEnrichedWordNormal({ text: 'word', time: word.time }), {
+      content: validateEnrichedLineContent,
+      words: validateEnrichedWords,
+    })
+    deepStrictEqual(resolveDiagnosticPath([word], '[0]'), word)
+    deepStrictEqual(resolveDiagnosticPath([word], '[0].time.start'), -1)
+    deepStrictEqual(resolveDiagnosticPath([word], ''), [word])
+    deepStrictEqual(resolveDiagnosticPath([word], '[1]'), undefined)
+    deepStrictEqual(resolveDiagnosticPath([{ missing: undefined }], '[0].missing'), undefined)
+    for (const path of ['[-1]', '[0.5]', '[0].', '[0][0]', '[0].time.[0]', '[0].time()', '[0];text', '[0]\n', '[0].time\n']) {
+      deepStrictEqual(resolveDiagnosticPath([word], path), undefined, path)
+    }
+  })
+
+  it('stops local checks at forbidden fields while retaining global line identities', () => {
+    const time = makeTimeRange({ start: 0, end: 1000 })
+    const space = {
+      ...makeDocumentWordSpace({ text: ' ' }),
+      language: 'en_US',
+      annotation: makeDocumentWordAnnotation({ romans: [makeDocumentWordAnnotationRoman({ language: 'en_US' })] }),
+    }
+    const line = makeDocumentLineNormal({ time, content: makeDocumentLineContentWords([space]) })
+    const enrichedSpace = { ...makeEnrichedWordSpace({ text: ' ' }), language: 'en_US', annotation: space.annotation }
+    const enrichedLine = makeEnrichedLineNormal({ time, content: makeEnrichedLineContentWords([enrichedSpace]) })
+    const expected = [
+      { path: 'language', code: 'line.word.language.unexpected' },
+      { path: 'annotation', code: 'line.word.annotation.unexpected' },
+    ]
+    deepStrictEqual(validateDocumentWord(space, '', TimingLevel.WORD), expected)
+    deepStrictEqual(validateEnrichedWord(enrichedSpace, '', TimingLevel.WORD), expected)
+    const nested = expected.map((diagnostic) => ({ ...diagnostic, path: `content.words[0].${diagnostic.path}` }))
+    deepStrictEqual(validateDocumentLine(line, '', TimingLevel.WORD), nested)
+    deepStrictEqual(validateEnrichedLine(enrichedLine, '', TimingLevel.WORD), nested)
+    const instrumental = {
+      ...makeDocumentLineInstrumental({ id: 'duplicate', time }),
+      backgrounds: [makeDocumentLineBackground({ id: 'duplicate', time, languages: ['en_US'], content: makeDocumentLineContentWords([space]) })],
+    }
+    const enrichedInstrumental = {
+      ...makeEnrichedLineInstrumental({ id: 'duplicate', time }),
+      backgrounds: [
+        makeEnrichedLineBackground({ id: 'duplicate', time, languages: ['en_US'], content: makeEnrichedLineContentWords([enrichedSpace]) }),
+      ],
+    }
+    deepStrictEqual(validateDocumentLine(instrumental, '', TimingLevel.WORD), [{ path: 'backgrounds', code: 'line.backgrounds.unexpected' }])
+    deepStrictEqual(validateEnrichedLine(enrichedInstrumental, '', TimingLevel.WORD), [{ path: 'backgrounds', code: 'line.backgrounds.unexpected' }])
+    const global = [
+      { path: 'lines[0].backgrounds[0]', code: 'lyric.line.id.duplicate' },
+      { path: 'lines[0].backgrounds', code: 'line.backgrounds.unexpected' },
+    ]
+    deepStrictEqual(validateDocumentLyric(makeDocumentLyric({ timing: TimingLevel.WORD, lines: [instrumental] })), global)
+    deepStrictEqual(
+      validateEnrichedLyric(makeEnrichedLyric({ status: EnrichedLyricStatus.VALID, timing: TimingLevel.WORD, lines: [enrichedInstrumental] })),
+      global,
+    )
+  })
+
   it('accepts new credit roles with optional source labels and preserves their meaning', () => {
     for (const role of [CreditRole.SONGWRITER, CreditRole.RECORDING_ENGINEER]) {
       for (const raw of [undefined, 'Source Role']) {
@@ -202,11 +484,14 @@ describe('validate', () => {
       deepStrictEqual(validateEnrichedLyric(lyric), [{ path: 'lines[0].content.words[0].emphasis.value', code: 'line.word.emphasis.value.missing' }])
       for (const value of [false, true]) {
         const word = makeEnrichedWordNormal({ text: 'ah', emphasis: makeEnrichedWordEmphasis({ value, derived }) })
-        deepStrictEqual(validateEnrichedWord(word), [])
+        deepStrictEqual(validateEnrichedWord(word, '', TimingLevel.LINE), [])
       }
     }
-    deepStrictEqual(validateEnrichedWord(makeEnrichedWordNormal({ text: 'ah', emphasis: makeEnrichedWordEmphasis() })), [])
-    deepStrictEqual(validateEnrichedWord(makeEnrichedWordNormal({ text: 'ah', emphasis: makeEnrichedWordEmphasis({ value: false }) })), [])
+    deepStrictEqual(validateEnrichedWord(makeEnrichedWordNormal({ text: 'ah', emphasis: makeEnrichedWordEmphasis() }), '', TimingLevel.LINE), [])
+    deepStrictEqual(
+      validateEnrichedWord(makeEnrichedWordNormal({ text: 'ah', emphasis: makeEnrichedWordEmphasis({ value: false }) }), '', TimingLevel.LINE),
+      [],
+    )
   })
 
   it('allows consistent part ids across adjacent lines and compares ids exactly', () => {
@@ -433,7 +718,7 @@ describe('validate', () => {
       deepStrictEqual(validateEnrichedLyric(decoded), [{ path: 'status', code: 'lyric.status.unspecified' }])
       deepStrictEqual(validateEnrichedLyric({ ...decoded, lines: [makeEnrichedLineNormal()] }), [
         { path: 'status', code: 'lyric.status.unspecified' },
-        { path: 'lines[0]', code: 'line.content.missing' },
+        { path: 'lines[0].content', code: 'line.content.missing' },
       ])
     }
   })
@@ -443,7 +728,9 @@ describe('validate', () => {
       const lyric = decodeEnrichedLyric(encodeEnrichedLyric(makeEnrichedLyric({ status, timing: TimingLevel.NONE })))
       deepStrictEqual(lyric.status, status)
       deepStrictEqual(validateEnrichedLyric(lyric), [])
-      deepStrictEqual(validateEnrichedLyric({ ...lyric, lines: [makeEnrichedLineNormal()] }), [{ path: 'lines[0]', code: 'line.content.missing' }])
+      deepStrictEqual(validateEnrichedLyric({ ...lyric, lines: [makeEnrichedLineNormal()] }), [
+        { path: 'lines[0].content', code: 'line.content.missing' },
+      ])
     }
   })
 

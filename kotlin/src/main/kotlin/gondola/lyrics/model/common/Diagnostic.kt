@@ -108,15 +108,16 @@ enum class DiagnosticCode(val value: String) {
 }
 
 /**
- * A problem `validate*` reports, with `path` locating the offending message such as `lines[3].words[0]` and `code` naming the broken rule.
+ * A model violation located relative to the validated input or its supplied path prefix.
  */
 data class Diagnostic(val path: String, val code: DiagnosticCode)
 
 private val PATH_SEGMENT = Regex("""^([${'$'}A-Za-z_][${'$'}\w]*)(?:\[(\d+)\])?$""")
+private val ROOT_INDEX = Regex("""^\[(\d+)\]$""")
 
 /**
  * Resolves a diagnostic path against the node it was reported from, returning the value located there.
- * The path locates by field name and list index only, each segment `field` or `field[n]` joined by dots, as `validate*` builds it.
+ * Paths use field names and non-negative list indexes; a root list may start with `[n]`.
  * It returns null when a segment names an unset field or runs past a list, so a diagnostic about an absent field yields null there.
  *
  * Generated structures, maps, and diagnostics are supported; enum fields return their raw numbers.
@@ -126,7 +127,15 @@ fun resolveDiagnosticPath(root: Any?, path: String): Any? {
         return root
     }
     var node = root
-    for (segment in path.split('.')) {
+    for ((segmentIndex, segment) in path.split('.').withIndex()) {
+        if (segmentIndex == 0) {
+            val rootIndex = ROOT_INDEX.matchEntire(segment)
+            if (rootIndex != null) {
+                val position = rootIndex.groupValues[1].toIntOrNull() ?: return null
+                node = (node as? List<*>)?.getOrNull(position)
+                continue
+            }
+        }
         // A field is named by the identifier the generated code gives it, which is the schema's own name in lower camel case, so a name of more than one word resolves like any other.
         val match = PATH_SEGMENT.matchEntire(segment) ?: return null
         val name = match.groupValues[1]

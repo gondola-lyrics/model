@@ -13,6 +13,10 @@ import gondola.lyrics.model.common.makeTextToken
 import gondola.lyrics.model.common.makeTimeRange
 import gondola.lyrics.model.common.resolveDiagnosticPath
 import gondola.lyrics.model.common.validateTimeRange
+import gondola.lyrics.model.document.makeDocumentLineContentText
+import gondola.lyrics.model.document.makeDocumentWordNormal
+import gondola.lyrics.model.document.validateDocumentLineContent
+import gondola.lyrics.model.document.validateDocumentWords
 import gondola.lyrics.model.enriched.Line
 import gondola.lyrics.model.enriched.LineContent
 import gondola.lyrics.model.enriched.Lyric
@@ -22,6 +26,7 @@ import gondola.lyrics.model.enriched.deriveEnrichedLineLanguages
 import gondola.lyrics.model.enriched.deriveEnrichedLineRomans
 import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRoman
 import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRomanContentText
+import gondola.lyrics.model.enriched.makeEnrichedLineContentText
 import gondola.lyrics.model.enriched.makeEnrichedLineContentWords
 import gondola.lyrics.model.enriched.makeEnrichedLineNormal
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotation
@@ -29,13 +34,57 @@ import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRoman
 import gondola.lyrics.model.enriched.makeEnrichedWordNormal
 import gondola.lyrics.model.enriched.makeEnrichedWordSpace
 import gondola.lyrics.model.enriched.resolveEnrichedLineAgents
+import gondola.lyrics.model.enriched.validateEnrichedLineContent
 import gondola.lyrics.model.enriched.validateEnrichedWord
+import gondola.lyrics.model.enriched.validateEnrichedWords
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 
 class HelpersTest {
+    @Test
+    fun resolvesLocalContentAndArrayDiagnosticsAgainstTheirActualInputs() {
+        val documentContent = makeDocumentLineContentText("")
+        val enrichedContent = makeEnrichedLineContentText("")
+        for ((content, diagnostics) in listOf(
+            documentContent to validateDocumentLineContent(documentContent, null),
+            enrichedContent to validateEnrichedLineContent(enrichedContent, null),
+        )) {
+            assertEquals(listOf(Diagnostic("text", DiagnosticCode.LineContentTextEmpty)), diagnostics)
+            assertEquals("", resolveDiagnosticPath(content, diagnostics.single().path))
+        }
+        val documentWords = listOf(makeDocumentWordNormal(text = "Hello"))
+        val enrichedWords = listOf(makeEnrichedWordNormal(text = "Hello"))
+        for ((words, diagnostics) in listOf(
+            documentWords to validateDocumentWords(documentWords, null),
+            enrichedWords to validateEnrichedWords(enrichedWords, null),
+        )) {
+            assertEquals(listOf(Diagnostic("[0]", DiagnosticCode.LineWordTimeMissing)), diagnostics)
+            assertSame(words.single(), resolveDiagnosticPath(words, diagnostics.single().path))
+        }
+        val root = mapOf("lines" to listOf(mapOf("content" to documentContent)))
+        val nested = validateDocumentLineContent(documentContent, null, "lines[0].content")
+        assertEquals("lines[0].content.text", nested.single().path)
+        assertEquals("", resolveDiagnosticPath(root, nested.single().path))
+        val absent = validateDocumentLineContent(null, null, "lines[0].content")
+        assertEquals(listOf(Diagnostic("lines[0].content", DiagnosticCode.LineContentMissing)), absent)
+    }
+
+    @Test
+    fun resolvesOnlyFieldPathsAndAnOptionalRootArrayIndex() {
+        val words = listOf(makeEnrichedWordNormal(text = "Hello", time = makeTimeRange(start = 1, end = 2)))
+        assertSame(words, resolveDiagnosticPath(words, ""))
+        assertSame(words.single(), resolveDiagnosticPath(words, "[0]"))
+        assertEquals(1L, resolveDiagnosticPath(words, "[0].time.start"))
+        for (path in listOf("[1]", "[-1]", "[0.5]", "[0][0]", "[0].time()", "[0].", ".[0]", "[999999999999999999999]", "[0]\n", "[0].time\n")) {
+            assertNull(resolveDiagnosticPath(words, path), path)
+        }
+        assertNull(resolveDiagnosticPath(mapOf("words" to words), "words.[0]"))
+        assertNull(resolveDiagnosticPath(words, "[0].missing"))
+    }
+
     @Test
     fun derivesRomansSeparatelyBySchemeInFirstAppearanceOrder() {
         val first = makeEnrichedWordAnnotation(
@@ -198,10 +247,10 @@ class HelpersTest {
             assertEquals(emptyList(), validateEnrichedWord(makeEnrichedWordSpace(text = separator)))
             assertEquals(
                 listOf(Diagnostic("text", DiagnosticCode.WordTextSeparator)),
-                validateEnrichedWord(makeEnrichedWordNormal(text = "a${separator}b")),
+                validateEnrichedWord(makeEnrichedWordNormal(text = "a${separator}b"), timing = TimingLevel.TIMING_LEVEL_LINE),
             )
         }
-        assertEquals(emptyList(), validateEnrichedWord(makeEnrichedWordNormal(text = "a\u200bb")))
+        assertEquals(emptyList(), validateEnrichedWord(makeEnrichedWordNormal(text = "a\u200bb"), timing = TimingLevel.TIMING_LEVEL_LINE))
         assertEquals(listOf(Diagnostic("text", DiagnosticCode.WordTextNotSeparator)), validateEnrichedWord(makeEnrichedWordSpace(text = "\u200b")))
     }
 }

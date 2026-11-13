@@ -14,11 +14,17 @@ fun makeText(language: String? = null, text: String = ""): Text {
 }
 
 /**
- * Validates a Text: its text must be non-empty, since a Text names something and an empty one names nothing.
- * A list holding one entry per language still holds a language with it, so the empty entry is reported here rather than dropped.
+ * Checks non-empty text and the syntax of its optional language tag.
+ *
+ * Paths are relative to the text unless its location is supplied.
  */
 fun validateText(text: Text, path: String = ""): List<Diagnostic> {
-    return if (text.text.isEmpty()) listOf(Diagnostic(path, DiagnosticCode.TextTextEmpty)) else emptyList()
+    val diagnostics = mutableListOf<Diagnostic>()
+    if (text.text.isEmpty()) {
+        diagnostics.add(Diagnostic(path, DiagnosticCode.TextTextEmpty))
+    }
+    diagnostics.addAll(validateLanguageTag(text.language, childPath(path, "language")))
+    return diagnostics
 }
 
 /**

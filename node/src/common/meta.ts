@@ -3,18 +3,20 @@ import type { Meta, MetaCredit, MetaReference } from '@root/generated/common/ind
 import type { Diagnostic } from './diagnostic'
 
 import { CreditRole } from '@root/generated/common/index.gen'
-import { DiagnosticCode } from './diagnostic'
-
-import { canonicalizeList, checkNumberDomain, childPath, findDuplicates, isUnresolved, lowerTag, withInit } from '@root/utils'
 import {
-  createCommonMeta,
-  createCommonMetaCredit,
-  createCommonMetaReference,
+  fieldsCommonMeta,
   fieldsCommonMetaCredit,
   fieldsCommonMetaReference,
   fieldsCommonText,
   fieldsCommonUnknownEntry,
+  createCommonMeta,
+  createCommonMetaCredit,
+  createCommonMetaReference,
 } from '@root/generated/detail.gen'
+import { canonicalizeList, checkNumberDomain, childPath, findDefaultEntries, findDuplicates, isUnresolved, lowerTag, withInit } from '@root/utils'
+
+import { DiagnosticCode } from './diagnostic'
+import { validateLanguageTag } from './tag'
 import { canonicalizeText, validateText } from './text'
 
 /**
@@ -78,7 +80,9 @@ export const validateMetaCredit = (credit: MetaCredit, path = ''): Diagnostic[] 
 }
 
 /**
- * Validates a MetaReference: it must name the platform it points at, and carry at least one identifier on it; an empty identifier is reported by the lyric's entry sweep.
+ * Checks the platform and requires at least one non-empty identifier.
+ *
+ * Paths are relative to this reference unless its location is supplied.
  */
 export const validateMetaReference = (reference: MetaReference, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -88,14 +92,24 @@ export const validateMetaReference = (reference: MetaReference, path = ''): Diag
   if (reference.ids.length === 0) {
     diagnostics.push({ path: childPath(path, 'ids'), code: DiagnosticCode.MetaReferenceIdsEmpty })
   }
+  findDefaultEntries(
+    fieldsCommonMetaReference,
+    reference,
+    diagnostics.map((diagnostic) => diagnostic.path),
+    path,
+  ).forEach((entryPath) => {
+    diagnostics.push({ path: entryPath, code: DiagnosticCode.LyricListEntryEmpty })
+  })
   return diagnostics
 }
 
 /**
- * Validates a Meta: its offset and its duration, when set, must lie within the schema's domain, its titles, albums and references hold one entry per key, and each of its credits and references must be valid.
+ * Checks metadata values, language tags, list uniqueness, and child entries.
+ *
+ * Paths are relative to this metadata unless its location is supplied.
  */
 export const validateMeta = (meta: Meta, path = ''): Diagnostic[] => {
-  const diagnostics: Diagnostic[] = []
+  const diagnostics = validateLanguageTag(meta.language, childPath(path, 'language'))
   /**
    * Reports every entry of one list whose key an earlier entry already took, locating the later one.
    */
@@ -135,6 +149,14 @@ export const validateMeta = (meta: Meta, path = ''): Diagnostic[] => {
   meta.credits.forEach((credit, i) => diagnostics.push(...validateMetaCredit(credit, childPath(path, `credits[${i}]`))))
   checkDuplicates(meta.references, (reference) => reference.platform.toLowerCase(), 'references', DiagnosticCode.MetaReferencesPlatformDuplicate)
   meta.references.forEach((reference, i) => diagnostics.push(...validateMetaReference(reference, childPath(path, `references[${i}]`))))
+  findDefaultEntries(
+    fieldsCommonMeta,
+    meta,
+    diagnostics.map((diagnostic) => diagnostic.path),
+    path,
+  ).forEach((entryPath) => {
+    diagnostics.push({ path: entryPath, code: DiagnosticCode.LyricListEntryEmpty })
+  })
   return diagnostics
 }
 

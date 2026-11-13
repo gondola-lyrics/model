@@ -4,22 +4,11 @@ import type { LineContent, Lyric } from '@root/generated/enriched/index.gen'
 
 import { DiagnosticCode, canonicalizeAgent, canonicalizeMeta, validateAgent, validateMeta } from '@root/common'
 import { validateLyricParts } from '@root/common/part'
-import { validateLyricTags } from '@root/common/tag'
 import { decodeEnrichedLyric as decodeEnrichedLyricMessage, encodeEnrichedLyric as encodeEnrichedLyricMessage } from '@root/generated/codec.gen'
 import { TimingLevel } from '@root/generated/common/index.gen'
-import { createEnrichedLyric, fieldsCommonAgent, fieldsCommonMeta, fieldsEnrichedLine, fieldsEnrichedLyric } from '@root/generated/detail.gen'
+import { createEnrichedLyric, fieldsCommonAgent, fieldsCommonMeta, fieldsEnrichedLine } from '@root/generated/detail.gen'
 import { LineType, LyricStatus } from '@root/generated/enriched/index.gen'
-import {
-  SEMVER_PATTERN,
-  byTime,
-  canonicalizeField,
-  canonicalizeList,
-  childPath,
-  findDefaultEntries,
-  findUnordered,
-  isUnresolved,
-  withInit,
-} from '@root/utils'
+import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath, findUnordered, isUnresolved, withInit } from '@root/utils'
 import { read, write } from '@root/utils/wire'
 import { SCHEMA_VERSION } from '@root/version'
 
@@ -88,9 +77,6 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
     diagnostics.push(...validateMeta(lyric.meta, 'meta'))
   }
 
-  // Every tag outside the lines is read here, since a line's own are read by validateEnrichedLine, which knows the fields its kind forbids.
-  diagnostics.push(...validateLyricTags(fieldsEnrichedLyric, lyric))
-
   const languageTags = new Set<string>()
   lyric.languageUsages.forEach((usage, i) => {
     const path = `languageUsages[${i}]`
@@ -114,9 +100,7 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
     diagnostics.push({ path: 'languageUsages', code: DiagnosticCode.LyricLanguageUsagesMismatch })
   }
 
-  const untimed = lyric.timing === TimingLevel.NONE
-  const lineTimed = lyric.timing === TimingLevel.LINE
-  const timed = lineTimed || lyric.timing === TimingLevel.WORD
+  const timed = lyric.timing === TimingLevel.LINE || lyric.timing === TimingLevel.WORD
   let anyContent = false
   let anyWords = false
   const lineIds = new Set<string>()
@@ -133,7 +117,7 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
     lineIds.add(id)
   }
   /**
-   * Checks agent references and timing requirements for a line or background.
+   * Checks global references, timing coverage, and the end required before a following line.
    *
    * Forbidden nodes and unresolved kinds require no additional fields; open nodes may omit their end.
    */
@@ -149,8 +133,7 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
     const words = content?.words ?? []
     // A kind outside the enum turns out to need no range as readily as the zero value, so both are left unasked.
     const unresolvedType = isUnresolved(LineType, type)
-    const sung = type !== LineType.INSTRUMENTAL
-    if (sung) {
+    if (type !== LineType.INSTRUMENTAL) {
       agentIds.forEach((id, j) => {
         if (!ids.has(id)) {
           diagnostics.push({ path: `${path}.agentIds[${j}]`, code: DiagnosticCode.LyricLineAgentDangling })
@@ -158,34 +141,10 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
       })
       anyWords = anyWords || words.length > 0
       anyContent = anyContent || words.length > 0 || content?.text !== undefined
-      // Line-level timing sits on the line itself, so a sung line needs its own range and may not be split into words.
-      if (lineTimed && words.length > 0) {
-        diagnostics.push({ path: `${path}.content.words`, code: DiagnosticCode.LyricTimingLineWords })
-      }
-      // Only a kind known to sing is asked for a range, since an unresolved one may turn out to need none, and a node that is not allowed in the first place is asked for nothing.
-      if (timed && time === undefined && !unresolvedType && !forbidden) {
-        diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingLineTimeMissing })
-      }
       // A sung line is shown for as long as its range runs, so the range has to end somewhere.
       if (timed && time !== undefined && time.end === undefined && !unresolvedType && !forbidden && !open) {
         diagnostics.push({ path: childPath(path, 'time.end'), code: DiagnosticCode.LyricLineTimeEndMissing })
       }
-    } else if (untimed) {
-      // An untimed lyric marks out no stretches, so it carries no instrumental line at all.
-      diagnostics.push({ path: childPath(path, 'type'), code: DiagnosticCode.LyricTimingNoneInstrumental })
-    }
-    if (untimed && time) {
-      diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingNonePresent })
-    }
-    if (untimed && words.length > 0) {
-      diagnostics.push({ path: `${path}.content.words`, code: DiagnosticCode.LyricTimingNoneWords })
-    }
-    if (untimed) {
-      words.forEach((word, j) => {
-        if (word.time) {
-          diagnostics.push({ path: `${path}.content.words[${j}].time`, code: DiagnosticCode.LyricTimingNonePresent })
-        }
-      })
     }
   }
   lyric.lines.forEach((line, i) => {
@@ -214,13 +173,6 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
       lyric.lines.findLastIndex((line) => line.type === LineType.NORMAL),
     ),
   )
-  // A rule that already spoke about a path keeps the sweep off it, and validateAgent reports an all-default agent at the agent rather than inside it.
-  const covered = diagnostics.map((diagnostic) => diagnostic.path)
-  lyric.agents.forEach((agent, i) => covered.push(`agents[${i}]`))
-  findDefaultEntries(fieldsEnrichedLyric, lyric, covered).forEach((path) => {
-    diagnostics.push({ path, code: DiagnosticCode.LyricListEntryEmpty })
-  })
-
   return diagnostics
 }
 

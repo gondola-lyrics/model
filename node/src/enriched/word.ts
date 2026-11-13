@@ -11,6 +11,7 @@ import type {
 } from '@root/generated/enriched/index.gen'
 
 import { DiagnosticCode, canonicalizeTextToken, validateTextToken, validateTimeRange } from '@root/common'
+import { validateLanguageTag } from '@root/common/tag'
 import { TimingLevel } from '@root/generated/common/index.gen'
 import {
   fieldsCommonTextToken,
@@ -33,6 +34,7 @@ import {
   childPath,
   copyMessage,
   dropDefault,
+  findDefaultEntries,
   findDuplicates,
   getAnnotationKey,
   isTimeRangeUncovered,
@@ -83,7 +85,9 @@ export const makeEnrichedWordAnnotation = (init?: MakeInit<WordAnnotation>): Wor
 }
 
 /**
- * Checks annotation uniqueness, valid time ranges, and containment within inherited timing.
+ * Checks annotation languages, list entries, uniqueness, and containment within supplied word timing.
+ *
+ * Paths are relative to this annotation unless its location is supplied.
  */
 export const validateEnrichedWordAnnotation = (annotation: WordAnnotation, path = '', time?: TimeRange): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -93,6 +97,7 @@ export const validateEnrichedWordAnnotation = (annotation: WordAnnotation, path 
   const validateItems = (items: (WordAnnotationRuby | WordAnnotationRoman)[], field: string): void => {
     items.forEach((item, i) => {
       const itemPath = childPath(path, `${field}[${i}]`)
+      diagnostics.push(...validateLanguageTag(item.language, childPath(itemPath, 'language')))
       if (item.time) {
         diagnostics.push(...validateTimeRange(item.time, childPath(itemPath, 'time')))
       }
@@ -122,13 +127,26 @@ export const validateEnrichedWordAnnotation = (annotation: WordAnnotation, path 
   })
   validateItems(annotation.rubies, 'rubies')
   validateItems(annotation.romans, 'romans')
+  annotation.translations.forEach((translation, i) => {
+    diagnostics.push(...validateLanguageTag(translation.language, childPath(path, `translations[${i}].language`)))
+  })
+  findDefaultEntries(
+    fieldsEnrichedWordAnnotation,
+    annotation,
+    diagnostics.map((diagnostic) => diagnostic.path),
+    path,
+  ).forEach((entryPath) => {
+    diagnostics.push({ path: entryPath, code: DiagnosticCode.LyricListEntryEmpty })
+  })
   return diagnostics
 }
 
 /**
  * Checks the word kind, text, permitted fields, annotations, and timing.
  *
- * The declared timing level determines whether annotation timing is constrained by the word.
+ * NONE forbids original timing; NONE and LINE suppress required word timing and parent-word annotation containment.
+ * Other levels retain the standalone word-timing checks.
+ * Paths are relative to this word unless its location is supplied.
  */
 export const validateEnrichedWord = (word: Word, path = '', timing = TimingLevel.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
@@ -161,11 +179,17 @@ export const validateEnrichedWord = (word: Word, path = '', timing = TimingLevel
     }
     return diagnostics
   }
+  diagnostics.push(...validateLanguageTag(word.language, childPath(path, 'language')))
+  if (ownsWordTimes(timing) && word.type === WordType.NORMAL && word.time === undefined) {
+    diagnostics.push({ path, code: DiagnosticCode.LineWordTimeMissing })
+  }
   if (word.time) {
+    if (timing === TimingLevel.NONE) {
+      diagnostics.push({ path: childPath(path, 'time'), code: DiagnosticCode.LyricTimingNonePresent })
+    }
     diagnostics.push(...validateTimeRange(word.time, childPath(path, 'time')))
   }
   if (word.annotation) {
-    // NONE and LINE timing validate the word list at the lyric level.
     diagnostics.push(...validateEnrichedWordAnnotation(word.annotation, childPath(path, 'annotation'), ownsWordTimes(timing) ? word.time : undefined))
   }
   const emphasis = word.emphasis
@@ -176,17 +200,16 @@ export const validateEnrichedWord = (word: Word, path = '', timing = TimingLevel
 }
 
 /**
- * Validates each word and, when word timing applies, requires sung-word times within the enclosing range.
+ * Validates each word and compares its timing with the supplied enclosing range.
+ *
+ * Paths are relative to this array unless its location is supplied.
  */
 export const validateEnrichedWords = (words: Word[], time: TimeRange | undefined, path = '', timing = TimingLevel.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   const ownTimes = ownsWordTimes(timing)
   words.forEach((word, i) => {
-    const wordPath = childPath(path, `words[${i}]`)
+    const wordPath = `${path}[${i}]`
     diagnostics.push(...validateEnrichedWord(word, wordPath, timing))
-    if (ownTimes && word.type === WordType.NORMAL && word.time === undefined) {
-      diagnostics.push({ path: wordPath, code: DiagnosticCode.LineWordTimeMissing })
-    }
     // SPACE timing is already reported as forbidden.
     if (ownTimes && word.type !== WordType.SPACE && isTimeRangeUncovered(word.time, time)) {
       diagnostics.push({ path: childPath(wordPath, 'time'), code: DiagnosticCode.LineWordTimeUncovered })

@@ -6,6 +6,7 @@ import { createCommonText, createCommonTextToken } from '@root/generated/detail.
 import { childPath, copyMessage, lowerTag, withInit } from '@root/utils'
 
 import { DiagnosticCode } from './diagnostic'
+import { validateLanguageTag } from './tag'
 import { validateTimeRange } from './time'
 
 /**
@@ -17,14 +18,16 @@ export const makeText = (init?: MakeInit<Text>): Text => {
 }
 
 /**
- * Validates a Text: its text must be non-empty, since a Text names something and an empty one names nothing.
- * A list holding one entry per language still holds a language with it, so the empty entry is reported here rather than dropped.
+ * Checks non-empty text and the optional language tag.
+ *
+ * Paths are relative to this text unless its location is supplied.
  */
 export const validateText = (text: Text, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
   if (text.text === '') {
     diagnostics.push({ path, code: DiagnosticCode.TextTextEmpty })
   }
+  diagnostics.push(...validateLanguageTag(text.language, childPath(path, 'language')))
   return diagnostics
 }
 

@@ -5,6 +5,7 @@ package gondola.lyrics.model.common
 import gondola.lyrics.model.utils.MAX_TIME
 import gondola.lyrics.model.utils.canonicalizeList
 import gondola.lyrics.model.utils.childPath
+import gondola.lyrics.model.utils.findDefaultEntries
 import gondola.lyrics.model.utils.findDuplicates
 import gondola.lyrics.model.utils.isUnresolved
 import gondola.lyrics.model.utils.lowerTag
@@ -81,7 +82,9 @@ fun validateMetaCredit(credit: MetaCredit, path: String = ""): List<Diagnostic> 
 }
 
 /**
- * Validates a MetaReference: it must name the platform it points at, and carry at least one identifier on it; an empty identifier is reported by the lyric's entry sweep.
+ * Checks a non-empty platform and a non-empty list of non-empty identifiers.
+ *
+ * Paths are relative to the reference unless its location is supplied.
  */
 fun validateMetaReference(reference: MetaReference, path: String = ""): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
@@ -91,16 +94,21 @@ fun validateMetaReference(reference: MetaReference, path: String = ""): List<Dia
     if (reference.ids.isEmpty()) {
         diagnostics.add(Diagnostic(childPath(path, "ids"), DiagnosticCode.MetaReferenceIdsEmpty))
     }
+    findDefaultEntries(reference, diagnostics.map { it.path }, path).forEach { entryPath ->
+        diagnostics.add(Diagnostic(entryPath, DiagnosticCode.LyricListEntryEmpty))
+    }
     return diagnostics
 }
 
 /**
- * Validates a Meta: its offset and its duration, when set, must lie within the schema's domain, its titles, albums and references hold one entry per key, and each of its credits and references must be valid.
+ * Checks metadata values, language tags, keyed-list uniqueness, and nested entries.
  *
  * The Int offset already fits the schema's sint32 domain.
+ * Paths are relative to the metadata unless its location is supplied.
  */
 fun validateMeta(meta: Meta, path: String = ""): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
+    diagnostics.addAll(validateLanguageTag(meta.language, childPath(path, "language")))
     val duration = meta.duration
     if (duration != null) {
         if (duration < 0) {
@@ -133,6 +141,9 @@ fun validateMeta(meta: Meta, path: String = ""): List<Diagnostic> {
     }
     meta.references.forEachIndexed { index, reference ->
         diagnostics.addAll(validateMetaReference(reference, childPath(path, "references[$index]")))
+    }
+    findDefaultEntries(meta, diagnostics.map { it.path }, path).forEach { entryPath ->
+        diagnostics.add(Diagnostic(entryPath, DiagnosticCode.LyricListEntryEmpty))
     }
     return diagnostics
 }

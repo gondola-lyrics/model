@@ -13,14 +13,12 @@ import gondola.lyrics.model.common.canonicalizeAgent
 import gondola.lyrics.model.common.canonicalizeMeta
 import gondola.lyrics.model.common.validateAgent
 import gondola.lyrics.model.common.validateLyricParts
-import gondola.lyrics.model.common.validateLyricTags
 import gondola.lyrics.model.common.validateMeta
 import gondola.lyrics.model.utils.SEMVER_PATTERN
 import gondola.lyrics.model.utils.byTime
 import gondola.lyrics.model.utils.canonicalizeField
 import gondola.lyrics.model.utils.canonicalizeList
 import gondola.lyrics.model.utils.childPath
-import gondola.lyrics.model.utils.findDefaultEntries
 import gondola.lyrics.model.utils.findUnordered
 import gondola.lyrics.model.utils.isUnresolved
 import gondola.lyrics.model.utils.read
@@ -79,10 +77,6 @@ public fun validateDocumentLyric(lyric: Lyric): List<Diagnostic> {
     if (lyric.meta != null) {
         diagnostics += validateMeta(lyric.meta, "meta")
     }
-    // Every tag outside the lines is read here, since a line's own are read by validateDocumentLine, which knows the fields its kind forbids.
-    diagnostics += validateLyricTags(lyric)
-
-    val untimed = lyric.timing == TimingLevel.TIMING_LEVEL_NONE
     val lineTimed = lyric.timing == TimingLevel.TIMING_LEVEL_LINE
     val timed = lineTimed || lyric.timing == TimingLevel.TIMING_LEVEL_WORD
     var anyContent = false
@@ -102,10 +96,8 @@ public fun validateDocumentLyric(lyric: Lyric): List<Diagnostic> {
     }
 
     /**
-     * Reports the whole-tree rules for one line or background line: agent references resolving to no agent, and whatever the declared timing asks of it.
-     * It walks every node whatever the line's kind, since a whole-tree invariant holds regardless; an instrumental line's agent ids and own range validateDocumentLine already rules on, and a background line is read as the sung line it always is.
-     * `forbidden` marks a node its parent's kind does not allow at all: what it carries is still held to the rules it breaks by carrying it, but nothing further is asked of it, since the node as a whole is already reported.
-     * `open` marks a node whose range may stay open above: the last line, which nothing in the lyric bounds, and every background line, which the line it attaches to already bounds.
+     * Checks global agent references and the end requirement of non-final sung lines.
+     * Forbidden backgrounds still participate in reference resolution, but require no additional timing fields.
      */
     fun checkReferences(
         agentIds: List<String>,
@@ -127,33 +119,9 @@ public fun validateDocumentLyric(lyric: Lyric): List<Diagnostic> {
             }
             anyWords = anyWords || words.isNotEmpty()
             anyContent = anyContent || words.isNotEmpty() || content?.text != null
-            // Line-level timing sits on the line itself, so a sung line needs its own range and may not be split into words.
-            if (lineTimed && words.isNotEmpty()) {
-                diagnostics += Diagnostic("$path.content.words", DiagnosticCode.LyricTimingLineWords)
-            }
-            // Only a kind known to sing is asked for a range, since an unresolved one may turn out to need none, and a node that is not allowed in the first place is asked for nothing.
-            if (timed && time == null && !unresolvedType && !forbidden) {
-                diagnostics += Diagnostic(childPath(path, "time"), DiagnosticCode.LyricTimingLineTimeMissing)
-            }
             // A sung line is shown for as long as its range runs, so the range has to end somewhere.
             if (timed && time != null && time.end == null && !unresolvedType && !forbidden && !open) {
                 diagnostics += Diagnostic(childPath(path, "time.end"), DiagnosticCode.LyricLineTimeEndMissing)
-            }
-        } else if (untimed) {
-            // An untimed lyric marks out no stretches, so it carries no instrumental line at all.
-            diagnostics += Diagnostic(childPath(path, "type"), DiagnosticCode.LyricTimingNoneInstrumental)
-        }
-        if (untimed && time != null) {
-            diagnostics += Diagnostic(childPath(path, "time"), DiagnosticCode.LyricTimingNonePresent)
-        }
-        if (untimed && words.isNotEmpty()) {
-            diagnostics += Diagnostic("$path.content.words", DiagnosticCode.LyricTimingNoneWords)
-        }
-        if (untimed) {
-            words.forEachIndexed { index, word ->
-                if (word.time != null) {
-                    diagnostics += Diagnostic("$path.content.words[$index].time", DiagnosticCode.LyricTimingNonePresent)
-                }
             }
         }
     }
@@ -192,11 +160,6 @@ public fun validateDocumentLyric(lyric: Lyric): List<Diagnostic> {
         diagnostics += Diagnostic("lines[$index]", DiagnosticCode.LyricLinesUnordered)
     }
     diagnostics += validateLyricParts(lyric.lines.map { it.part }, lyric.lines.indexOfLast { it.type == LineType.LINE_TYPE_NORMAL })
-    // A rule that already spoke about a path keeps the sweep off it, and validateAgent reports an all-default agent at the agent rather than inside it.
-    val covered = diagnostics.map { it.path } + lyric.agents.indices.map { "agents[$it]" }
-    for (path in findDefaultEntries(lyric, covered)) {
-        diagnostics += Diagnostic(path, DiagnosticCode.LyricListEntryEmpty)
-    }
     return diagnostics
 }
 

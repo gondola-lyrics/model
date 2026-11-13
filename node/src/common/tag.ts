@@ -1,4 +1,3 @@
-import type { MessageFields } from '@root/generated/detail.gen'
 import type { Diagnostic } from './diagnostic'
 
 import { DiagnosticCode } from './diagnostic'
@@ -102,57 +101,21 @@ export const isLanguageTag = (tag: string): boolean => {
 }
 
 /**
- * Collects the malformed language tags below a message, reading the tree from its schema: a `languages` list holds tags directly, while a field named `language` holds one tag.
- * Only a malformed tag is reported, since an unset or empty one is what the rule demanding a tag is for.
- * `sealed` names the fields another validator reads, so a tag is never reported twice.
+ * Checks a non-empty tag after its owner has established that the field is allowed.
  */
-const collectTagDiagnostics = (schema: MessageFields<any>, message: unknown, sealed: readonly string[], path: string): Diagnostic[] => {
-  const diagnostics: Diagnostic[] = []
-  const entries = message as Record<string, unknown>
-  for (const field of schema.fields) {
-    const child = path === '' ? field.name : `${path}.${field.name}`
-    if (sealed.includes(field.name)) {
-      continue
-    }
-    if (field.shape === 'message') {
-      const value = entries[field.name]
-      if (value !== undefined) {
-        diagnostics.push(...collectTagDiagnostics(field.message, value, sealed, child))
-      }
-    } else if (field.shape === 'list-message') {
-      const values = entries[field.name] as readonly unknown[]
-      values.forEach((value, i) => {
-        diagnostics.push(...collectTagDiagnostics(field.message, value, sealed, `${child}[${i}]`))
-      })
-    } else if (field.shape === 'list-scalar' && field.name === 'languages') {
-      const values = entries[field.name] as readonly string[]
-      values.forEach((value, i) => {
-        if (value !== '' && !isLanguageTag(value)) {
-          diagnostics.push({ path: `${child}[${i}]`, code: DiagnosticCode.LanguageTagMalformed })
-        }
-      })
-    } else if ((field.shape === 'scalar' || field.shape === 'optional') && field.name === 'language') {
-      const value = entries[field.name] as string | undefined
-      if (value !== undefined && value !== '' && !isLanguageTag(value)) {
-        diagnostics.push({ path: child, code: DiagnosticCode.LanguageTagMalformed })
-      }
-    }
+export const validateLanguageTag = (tag: string | undefined, path = ''): Diagnostic[] => {
+  if (tag !== undefined && tag !== '' && !isLanguageTag(tag)) {
+    return [{ path, code: DiagnosticCode.LanguageTagMalformed }]
   }
-  return diagnostics
+  return []
 }
 
 /**
- * Collects the malformed language tags of one line: its own list, its words and its annotations.
- * A line is validated on its own as well as under a lyric, so where it sits changes nothing and the path is the line's own.
+ * Checks a permitted tag list, where empty entries cannot name a language.
  */
-export const validateLineTags = (schema: MessageFields<any>, line: unknown, path = ''): Diagnostic[] => {
-  return collectTagDiagnostics(schema, line, [], path)
-}
-
-/**
- * Collects the malformed language tags a lyric carries outside its lines: the language its metadata declares and the tags on every text it holds.
- * The lines are left to `validateLine`, which alone knows which fields a line's kind forbids.
- */
-export const validateLyricTags = (schema: MessageFields<any>, lyric: unknown): Diagnostic[] => {
-  return collectTagDiagnostics(schema, lyric, ['lines'], '')
+export const validateLanguageTags = (tags: string[], path = ''): Diagnostic[] => {
+  return tags.flatMap((tag, i) => {
+    const tagPath = `${path}[${i}]`
+    return tag === '' ? [{ path: tagPath, code: DiagnosticCode.LyricListEntryEmpty }] : validateLanguageTag(tag, tagPath)
+  })
 }

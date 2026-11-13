@@ -213,10 +213,10 @@ private fun collectDefaultEntries(message: Any, path: String): List<String> {
 /**
  * Collects the path of every entry in a repeated field that is all default, reading the whole tree through its generated field accessors.
  * A repeated field never holds one, since a list the source never mentioned at that index shifts the ones after it and counts as a declaration of its own.
- * `covered` holds the paths an existing diagnostic locates, which silence an entry at or above them, so a rule that already spoke about a field is not restated by this sweep.
+ * `covered` suppresses entries with existing diagnostics; `path` locates the subtree in its caller.
  */
-internal fun findDefaultEntries(message: Any, covered: List<String> = emptyList()): List<String> {
-    return collectDefaultEntries(message, "").filter { path ->
-        covered.none { other -> other == path || other.startsWith("$path.") || other.startsWith("$path[") }
+internal fun findDefaultEntries(message: Any, covered: List<String> = emptyList(), path: String = ""): List<String> {
+    return collectDefaultEntries(message, path).filter { entryPath ->
+        covered.none { other -> other == entryPath || other.startsWith("$entryPath.") || other.startsWith("$entryPath[") }
     }
 }

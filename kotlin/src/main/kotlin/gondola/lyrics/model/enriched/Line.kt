@@ -12,7 +12,8 @@ import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.TimingLevel
 import gondola.lyrics.model.common.canonicalizeTextToken
 import gondola.lyrics.model.common.resolveAgents
-import gondola.lyrics.model.common.validateLineTags
+import gondola.lyrics.model.common.validateLanguageTag
+import gondola.lyrics.model.common.validateLanguageTags
 import gondola.lyrics.model.common.validatePart
 import gondola.lyrics.model.common.validateTextToken
 import gondola.lyrics.model.common.validateTimeRange
@@ -21,6 +22,7 @@ import gondola.lyrics.model.utils.canonicalizeField
 import gondola.lyrics.model.utils.canonicalizeList
 import gondola.lyrics.model.utils.childPath
 import gondola.lyrics.model.utils.dropDefault
+import gondola.lyrics.model.utils.findDefaultEntries
 import gondola.lyrics.model.utils.findDuplicates
 import gondola.lyrics.model.utils.findUnordered
 import gondola.lyrics.model.utils.getAnnotationKey
@@ -32,15 +34,14 @@ import gondola.lyrics.model.utils.lowerTag
 
 private fun validateContentFields(hasWords: Boolean, text: String?, path: String, required: Boolean): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
-    val contentPath = childPath(path, "content")
     if (required && !hasWords && text == null) {
         diagnostics.add(Diagnostic(path, DiagnosticCode.LineContentMissing))
     } else if (hasWords && text != null) {
-        diagnostics.add(Diagnostic(contentPath, DiagnosticCode.LineContentAmbiguous))
+        diagnostics.add(Diagnostic(path, DiagnosticCode.LineContentAmbiguous))
     }
     // Empty text still counts as present for exclusivity.
     if (text == "") {
-        diagnostics.add(Diagnostic(childPath(contentPath, "text"), DiagnosticCode.LineContentTextEmpty))
+        diagnostics.add(Diagnostic(childPath(path, "text"), DiagnosticCode.LineContentTextEmpty))
     }
     return diagnostics
 }
@@ -48,6 +49,7 @@ private fun validateContentFields(hasWords: Boolean, text: String?, path: String
 /**
  * Checks that exactly one non-empty content form is present and validates its words.
  *
+ * Paths are relative to the content; NONE and LINE require whole-line text.
  * An unresolved line kind may omit content when required is false.
  */
 public fun validateEnrichedLineContent(
@@ -57,8 +59,16 @@ public fun validateEnrichedLineContent(
     timing: TimingLevel = TimingLevel.TIMING_LEVEL_UNSPECIFIED,
     required: Boolean = true,
 ): List<Diagnostic> {
-    return validateContentFields(!content?.words.isNullOrEmpty(), content?.text, path, required) +
-        validateEnrichedWords(content?.words.orEmpty(), time, childPath(path, "content"), timing)
+    val diagnostics = validateContentFields(!content?.words.isNullOrEmpty(), content?.text, path, required).toMutableList()
+    if (!content?.words.isNullOrEmpty()) {
+        if (timing == TimingLevel.TIMING_LEVEL_NONE) {
+            diagnostics.add(Diagnostic(childPath(path, "words"), DiagnosticCode.LyricTimingNoneWords))
+        } else if (timing == TimingLevel.TIMING_LEVEL_LINE) {
+            diagnostics.add(Diagnostic(childPath(path, "words"), DiagnosticCode.LyricTimingLineWords))
+        }
+    }
+    diagnostics.addAll(validateEnrichedWords(content?.words.orEmpty(), time, childPath(path, "words"), timing))
+    return diagnostics
 }
 
 /**
@@ -171,10 +181,13 @@ public fun validateEnrichedLineAnnotationRomanContent(
 }
 
 /**
- * Checks the declared range and required roman content without constraining them to the original line.
+ * Checks the language, declared range, and required roman content independently of the original line.
+ *
+ * Paths are relative to the romanization unless its location is supplied.
  */
 public fun validateEnrichedLineAnnotationRoman(roman: LineAnnotationRoman, path: String = ""): List<Diagnostic> {
     val diagnostics = validateEnrichedLineAnnotationRomanContent(roman.content, childPath(path, "content"), roman.time).toMutableList()
+    diagnostics.addAll(validateLanguageTag(roman.language, childPath(path, "language")))
     if (roman.time != null) {
         diagnostics.addAll(validateTimeRange(roman.time, childPath(path, "time")))
     }
@@ -182,7 +195,9 @@ public fun validateEnrichedLineAnnotationRoman(roman: LineAnnotationRoman, path:
 }
 
 /**
- * Checks roman content and timing, uniqueness by language and scheme, and translation uniqueness by language.
+ * Checks annotation languages, repeated entries, roman content, and variant uniqueness.
+ *
+ * Paths are relative to the annotation unless its location is supplied.
  */
 public fun validateEnrichedLineAnnotation(annotation: LineAnnotation, path: String = ""): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
@@ -194,6 +209,12 @@ public fun validateEnrichedLineAnnotation(annotation: LineAnnotation, path: Stri
     }
     annotation.romans.forEachIndexed { index, roman ->
         diagnostics.addAll(validateEnrichedLineAnnotationRoman(roman, childPath(path, "romans[$index]")))
+    }
+    annotation.translations.forEachIndexed { index, translation ->
+        diagnostics.addAll(validateLanguageTag(translation.language, childPath(path, "translations[$index].language")))
+    }
+    findDefaultEntries(annotation, diagnostics.map { it.path }, path).forEach { entryPath ->
+        diagnostics.add(Diagnostic(entryPath, DiagnosticCode.LyricListEntryEmpty))
     }
     return diagnostics
 }
@@ -422,22 +443,24 @@ public fun makeEnrichedLineBackground(
 /**
  * Checks the line kind, permitted fields, timing, annotations, and backgrounds.
  *
- * An unresolved kind may omit content; TIMING_LEVEL_NONE reports instrumental lines through validateEnrichedLyric.
+ * Paths are relative to the line; the supplied timing level controls original content and time requirements.
+ * An unresolved kind may omit content; whether a sung line must have an end depends on its lyric position.
  */
 public fun validateEnrichedLine(line: Line, path: String = "", timing: TimingLevel = TimingLevel.TIMING_LEVEL_UNSPECIFIED): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
     val instrumental = line.type == LineType.LINE_TYPE_INSTRUMENTAL
-    // Forbidden fields are not traversed for nested diagnostics.
-    if (!instrumental) {
-        diagnostics += validateLineTags(line, path)
-    }
     if (isUnresolved(line.type)) {
         diagnostics += Diagnostic(childPath(path, "type"), DiagnosticCode.LineTypeUnspecified)
     }
     val time = line.time
-    // Untimed instrumental lines are reported by validateEnrichedLyric instead.
     val needsRange = instrumental && timing != TimingLevel.TIMING_LEVEL_NONE
+    if (instrumental && timing == TimingLevel.TIMING_LEVEL_NONE) {
+        diagnostics += Diagnostic(childPath(path, "type"), DiagnosticCode.LyricTimingNoneInstrumental)
+    }
     if (time != null) {
+        if (timing == TimingLevel.TIMING_LEVEL_NONE) {
+            diagnostics += Diagnostic(childPath(path, "time"), DiagnosticCode.LyricTimingNonePresent)
+        }
         diagnostics += validateTimeRange(time, childPath(path, "time"))
         if (needsRange && time.end == null) {
             diagnostics += Diagnostic(childPath(path, "time.end"), DiagnosticCode.LineTimeEndMissing)
@@ -448,6 +471,10 @@ public fun validateEnrichedLine(line: Line, path: String = "", timing: TimingLev
         }
     } else if (needsRange) {
         diagnostics += Diagnostic(childPath(path, "time"), DiagnosticCode.LineTimeMissing)
+    } else if (line.type == LineType.LINE_TYPE_NORMAL &&
+        (timing == TimingLevel.TIMING_LEVEL_LINE || timing == TimingLevel.TIMING_LEVEL_WORD)
+    ) {
+        diagnostics += Diagnostic(childPath(path, "time"), DiagnosticCode.LyricTimingLineTimeMissing)
     }
     if (line.part != null) {
         diagnostics += validatePart(line.part, childPath(path, "part"))
@@ -457,10 +484,17 @@ public fun validateEnrichedLine(line: Line, path: String = "", timing: TimingLev
     }
     if (instrumental && line.agentIds.size > 0) {
         diagnostics += Diagnostic(childPath(path, "agentIds"), DiagnosticCode.LineAgentIdsUnexpected)
+    } else if (!instrumental) {
+        line.agentIds.forEachIndexed { index, id ->
+            if (id.isEmpty()) {
+                diagnostics += Diagnostic(childPath(path, "agentIds[$index]"), DiagnosticCode.LyricListEntryEmpty)
+            }
+        }
     }
     if (instrumental && line.languages.size > 0) {
         diagnostics += Diagnostic(childPath(path, "languages"), DiagnosticCode.LineLanguagesUnexpected)
     } else if (!instrumental) {
+        diagnostics += validateLanguageTags(line.languages, childPath(path, "languages"))
         for (index in findDuplicates(line.languages) { lowerTag(it) ?: "" }) {
             diagnostics += Diagnostic(childPath(path, "languages[$index]"), DiagnosticCode.LineLanguagesDuplicate)
         }
@@ -471,7 +505,7 @@ public fun validateEnrichedLine(line: Line, path: String = "", timing: TimingLev
             diagnostics += Diagnostic(childPath(path, "content"), DiagnosticCode.LineContentUnexpected)
         }
     } else {
-        diagnostics += validateEnrichedLineContent(line.content, time, path, timing, line.type == LineType.LINE_TYPE_NORMAL)
+        diagnostics += validateEnrichedLineContent(line.content, time, childPath(path, "content"), timing, line.type == LineType.LINE_TYPE_NORMAL)
     }
     if (instrumental && line.annotation != null) {
         diagnostics += Diagnostic(childPath(path, "annotation"), DiagnosticCode.LineAnnotationUnexpected)
@@ -499,7 +533,9 @@ public fun validateEnrichedLine(line: Line, path: String = "", timing: TimingLev
 }
 
 /**
- * Checks required content, timing, languages, and annotations of background vocals.
+ * Checks background content, languages, reference strings, annotations, and declared timing requirements.
+ *
+ * Paths are relative to the background; parent containment and global reference resolution need a containing line or lyric.
  */
 public fun validateEnrichedLineBackground(
     background: LineBackground,
@@ -509,12 +545,23 @@ public fun validateEnrichedLineBackground(
     val diagnostics = mutableListOf<Diagnostic>()
     val time = background.time
     if (time != null) {
+        if (timing == TimingLevel.TIMING_LEVEL_NONE) {
+            diagnostics += Diagnostic(childPath(path, "time"), DiagnosticCode.LyricTimingNonePresent)
+        }
         diagnostics += validateTimeRange(time, childPath(path, "time"))
+    } else if (timing == TimingLevel.TIMING_LEVEL_LINE || timing == TimingLevel.TIMING_LEVEL_WORD) {
+        diagnostics += Diagnostic(childPath(path, "time"), DiagnosticCode.LyricTimingLineTimeMissing)
     }
+    background.agentIds.forEachIndexed { index, id ->
+        if (id.isEmpty()) {
+            diagnostics += Diagnostic(childPath(path, "agentIds[$index]"), DiagnosticCode.LyricListEntryEmpty)
+        }
+    }
+    diagnostics += validateLanguageTags(background.languages, childPath(path, "languages"))
     for (index in findDuplicates(background.languages) { lowerTag(it) ?: "" }) {
         diagnostics += Diagnostic(childPath(path, "languages[$index]"), DiagnosticCode.LineLanguagesDuplicate)
     }
-    diagnostics += validateEnrichedLineContent(background.content, time, path, timing)
+    diagnostics += validateEnrichedLineContent(background.content, time, childPath(path, "content"), timing)
     if (background.annotation != null) {
         diagnostics += validateEnrichedLineAnnotation(background.annotation, childPath(path, "annotation"))
         diagnostics += validateRomanPlacement(background.annotation, background.content, childPath(path, "annotation"))

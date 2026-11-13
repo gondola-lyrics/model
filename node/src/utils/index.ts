@@ -316,8 +316,8 @@ const collectDefaultEntries = (schema: MessageFields<any>, message: unknown, pat
 /**
  * Collects the path of every entry in a repeated field that is all default, reading the whole tree by its field tables.
  * A repeated field never holds one, since a list the source never mentioned at that index shifts the ones after it and counts as a declaration of its own.
- * `covered` holds the paths an existing diagnostic locates, which silence an entry at or above them, so a rule that already spoke about a field is not restated by this sweep.
+ * `covered` suppresses entries with existing diagnostics; `path` locates the subtree in its caller.
  */
-export const findDefaultEntries = <T>(schema: MessageFields<T>, message: T, covered: readonly string[] = []): string[] => {
-  return collectDefaultEntries(schema, message, '').filter((path) => !covered.some((other) => coversPath(other, path)))
+export const findDefaultEntries = <T>(schema: MessageFields<T>, message: T, covered: readonly string[] = [], path = ''): string[] => {
+  return collectDefaultEntries(schema, message, path).filter((entry) => !covered.some((other) => coversPath(other, entry)))
 }
