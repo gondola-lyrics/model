@@ -1,6 +1,6 @@
 # Gondola Lyric Model For Kotlin
 
-Gondola Lyric Model Kotlin binding.
+Native Kotlin models, helpers, Java-compatible APIs, and Protobuf codecs for `document` and `enriched` lyrics.
 
 ## Installation
 
@@ -10,27 +10,34 @@ repositories {
 }
 
 dependencies {
-    implementation("io.github.gondola-lyrics:gondola-model:1.0.0")
+    implementation("io.github.gondola-lyrics:gondola-model:<version>")
 }
 ```
 
-The library targets Java 8 bytecode and provides native Kotlin data classes with a Protobuf wire codec.
+Targets Java 8 bytecode and provides Kotlin data classes with Protobuf codecs.
 
 ## Usage
 
-- `timing` declares the timing precision of the original lyric:
-  - `TIMING_NONE`: No timing declared; every line is plain text.
-  - `TIMING_LINE`: Each line has one time range and plain text content. Use `TIMING_WORD` if any line needs word-level timing.
-  - `TIMING_WORD`: Normal words carry their own time ranges. Plain text lines may also appear; use `TIMING_LINE` if all lines are plain text.
+- `timing` specifies the timing level of the original lyric:
+  - `TimingLevel.TIMING_LEVEL_NONE`: Untimed; sung lines use whole-line text.
+  - `TimingLevel.TIMING_LEVEL_LINE`: Each sung line has a time range and whole-line text. Use `TIMING_LEVEL_WORD` if any line has word timing.
+  - `TimingLevel.TIMING_LEVEL_WORD`: Normal words carry time ranges; whole-line text lines may also appear. Use `TIMING_LEVEL_LINE` if all sung lines use whole-line text.
 
-Annotations can carry their own timing independently of the original lyric's precision.
+Annotations can carry timing independent of `timing`.
 
-Line romanizations use either `content.text` for whole-line text or `content.tokens` for source fragments, with at least one explicitly timed token.
-Use `makeDocumentLineAnnotationRomanContentText` or `makeDocumentLineAnnotationRomanContentTokens` to select the content form; the enriched helpers use the corresponding `Enriched` names.
-Token text preserves whitespace and is joined without added separators; word romanizations retain their existing token structure.
+`document` stores source declarations; `enriched` adds parse `status` and `languageUsages` (`tag` and `lineCount`).
+`Lyric.agents` defines agents, referenced from lines and backgrounds via `agentIds`.
+Model-specific helpers include `Document` or `Enriched` in their names and are imported from their respective packages.
 
-Messages expose immutable properties. Use data-class constructors or helpers to create values, and `copy()` to modify them.
-Optional fields use nullable values: `null` means absent, while explicit `false` and zero values remain present.
+Line romanizations use `content.text` for whole-line text or `content.tokens` for fragments (with at least one timed token), built via `make*LineAnnotationRomanContentText` or `make*LineAnnotationRomanContentTokens`.
+Word romanizations and ruby annotations store fragments directly in `tokens`.
+Fragments use `TextToken` (nullable `time`, `text`, and `extra`); `language` and `scheme` are set on the parent annotation.
+Token `text` keeps whitespace as-is and concatenates without extra separators.
+
+Models are data classes with `val` properties; create instances with constructors or `make*` helpers, and update them with `copy()`.
+`List` and `Map` properties use read-only interfaces, and constructors or `copy()` may keep passed collection references.
+Optional fields are nullable: `null` means unset, while explicit `0` and `false` values are preserved.
+Enums wrap an `Int` `value` with predefined constants so unknown wire numbers are retained.
 
 ### Document Examples
 
@@ -49,11 +56,10 @@ val persisted = makeDocumentLyric(
     timing = TimingLevel.TIMING_LEVEL_LINE,
     lines = listOf(
         makeDocumentLineNormal(
-            // If end is omitted, the endpoint is unknown.
+            // The last timed line may omit `end`.
             time = makeTimeRange(start = 170644),
             languages = listOf("en"),
             content = makeDocumentLineContentText("Like the first time tangled by the fishing line"),
-            // Translations go under annotation.translations, one per language.
             annotation = makeDocumentLineAnnotation(
                 translations = listOf(
                     makeDocumentLineAnnotationTranslation(language = "zh-Hans", text = "就像第一次被渔线缠住那样"),
@@ -102,7 +108,7 @@ val sung = makeEnrichedLineNormal(
                 language = "en",
                 time = makeTimeRange(start = 178550, end = 180198),
             ),
-            // Separators are SPACE words of their own.
+            // Separate words with `SPACE` words.
             makeEnrichedWordSpace(text = " "),
             makeEnrichedWordNormal(
                 text = "wish",
@@ -157,9 +163,8 @@ val sung = makeEnrichedLineNormal(
 val played = makeEnrichedLyric(
     format = "lrc",
     timing = TimingLevel.TIMING_LEVEL_WORD,
-    // Include the parser's status.
     status = LyricStatus.LYRIC_STATUS_VALID,
-    // Stored usages must match the declarations on normal lines and their normal words.
+    // Must match languages declared on normal lines and normal words.
     languageUsages = deriveEnrichedLanguageUsages(listOf(interlude, sung)),
     lines = listOf(interlude, sung),
 )
@@ -187,7 +192,7 @@ import gondola.lyrics.model.enriched.validateEnrichedLyric
 
 val brokenPersisted = makeDocumentLyric(
     format = "lrc",
-    // Timing is not declared.
+    // Unset `timing` is reported rather than inferred.
     lines = listOf(
         makeDocumentLineNormal(
             time = makeTimeRange(start = 163908),
@@ -204,7 +209,7 @@ val brokenPlayed = makeEnrichedLyric(
     format = "lrc",
     timing = TimingLevel.TIMING_LEVEL_WORD,
     status = LyricStatus.LYRIC_STATUS_VALID,
-    // Languages are not declared.
+    // Missing `languageUsages` is reported rather than derived.
     lines = listOf(
         makeEnrichedLineNormal(
             time = makeTimeRange(start = 163908, end = 169347),
@@ -212,7 +217,7 @@ val brokenPlayed = makeEnrichedLyric(
             content = makeEnrichedLineContentWords(
                 listOf(
                     makeEnrichedWordNormal(
-                        // The sentence has not been split into normal words and SPACE separators.
+                        // `NORMAL` words cannot contain whitespace.
                         text = "I'm still figuring out my life",
                         language = "en",
                         time = makeTimeRange(start = 163908, end = 169347),
@@ -227,11 +232,115 @@ validateEnrichedLyric(brokenPlayed).map { it.path to it.code.value }
 // => [(languageUsages, lyric.language_usages.mismatch), (lines[0].content.words[0].text, word.text.separator)]
 ```
 
-API details are documented in the source comments. Download the matching `-sources.jar` in IntelliJ IDEA or Android Studio to read helper KDoc and generated model documentation. Field semantics are also available in the [Proto definitions](https://github.com/gondola-lyrics/model/tree/main/proto).
+### Line Romanization Examples
+
+```kotlin
+import gondola.lyrics.model.common.makeTextToken
+import gondola.lyrics.model.common.makeTimeRange
+import gondola.lyrics.model.document.getDocumentLineAnnotationRomanText
+import gondola.lyrics.model.document.makeDocumentLineAnnotationRoman
+import gondola.lyrics.model.document.makeDocumentLineAnnotationRomanContentText
+import gondola.lyrics.model.document.makeDocumentLineAnnotationRomanContentTokens
+
+val plainRoman = makeDocumentLineAnnotationRoman(
+    language = "zh-latn",
+    scheme = "pinyin",
+    content = makeDocumentLineAnnotationRomanContentText("ni hao"),
+)
+
+val timedRoman = makeDocumentLineAnnotationRoman(
+    language = "zh-latn",
+    scheme = "pinyin",
+    content = makeDocumentLineAnnotationRomanContentTokens(
+        listOf(
+            makeTextToken(text = "ni ", time = makeTimeRange(start = 1000, end = 1800), extra = mapOf("source" to "parser")),
+            makeTextToken(text = "hao", time = makeTimeRange(start = 2000)),
+        ),
+    ),
+)
+
+getDocumentLineAnnotationRomanText(plainRoman) // => "ni hao"
+getDocumentLineAnnotationRomanText(timedRoman) // => "ni hao"
+```
+
+### Word Romanization Views
+
+`deriveDocumentLineRomanViews` and `deriveEnrichedLineRomanViews` merge word romanizations into `LineRomanView` items (`language`, `scheme`, and `text`) for display.
+Token timing and boundaries stay on the word annotations, and line-level romanizations remain in `line.annotation.romans`.
+
+```kotlin
+import gondola.lyrics.model.common.LineRomanView
+import gondola.lyrics.model.common.SchemePreference
+import gondola.lyrics.model.common.makeTextToken
+import gondola.lyrics.model.common.makeTimeRange
+import gondola.lyrics.model.common.pickItemByLanguage
+import gondola.lyrics.model.common.pickItemByScheme
+import gondola.lyrics.model.document.deriveDocumentLineRomanViews
+import gondola.lyrics.model.document.makeDocumentLineContentWords
+import gondola.lyrics.model.document.makeDocumentWordAnnotation
+import gondola.lyrics.model.document.makeDocumentWordAnnotationRoman
+import gondola.lyrics.model.document.makeDocumentWordNormal
+import gondola.lyrics.model.document.pickDocumentItemByLanguage
+
+val content = makeDocumentLineContentWords(
+    listOf(
+        makeDocumentWordNormal(
+            text = "你好",
+            language = "zh",
+            time = makeTimeRange(start = 1000, end = 2600),
+            annotation = makeDocumentWordAnnotation(
+                romans = listOf(
+                    makeDocumentWordAnnotationRoman(
+                        language = "zh-Latn",
+                        scheme = "pinyin",
+                        tokens = listOf(
+                            makeTextToken(text = "ni ", time = makeTimeRange(start = 1000, end = 1800)),
+                            makeTextToken(text = "hao", time = makeTimeRange(start = 2000, end = 2600)),
+                        ),
+                    ),
+                    makeDocumentWordAnnotationRoman(
+                        language = "zh-Latn",
+                        scheme = "pinyin-numeric",
+                        tokens = listOf(makeTextToken(text = "ni3 hao3")),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)
+
+val views: List<LineRomanView> = deriveDocumentLineRomanViews(content)
+// => [
+//      LineRomanView(language=zh-latn, scheme=pinyin, text=ni hao),
+//      LineRomanView(language=zh-latn, scheme=pinyin-numeric, text=ni3 hao3),
+//    ]
+
+pickItemByLanguage(views, listOf("zh-Latn", "en")) { it.language }?.text // => "ni hao"
+
+val selected = pickItemByScheme(
+    items = views,
+    preference = SchemePreference(scheme = "pinyin-numeric", languages = listOf("zh-Latn", "en")),
+    languageOf = { it.language },
+    schemeOf = { it.scheme },
+)
+selected?.text // => "ni3 hao3"
+
+val romans = content.words.single().annotation?.romans.orEmpty()
+pickDocumentItemByLanguage(romans, listOf("zh-Latn", "en"))?.scheme // => "pinyin"
+```
+
+`pickDocumentItemByLanguage` and `pickEnrichedItemByLanguage` accept a single language or an ordered list of language preferences.
+Language preferences are matched in order; untagged items are used only if no preference matches.
+`pickItemByScheme` filters by case-insensitive `scheme` first, then applies language matching and `fallback` within the filtered items.
+`scheme = null` skips scheme filtering; `scheme = ""` matches items without a scheme.
+
+API documentation is available in `-sources.jar` (KDoc) and the [Proto definitions](https://github.com/gondola-lyrics/model/tree/main/proto).
 
 ## Commands
 
 **Generate**
+
+Regenerates `src/generated/kotlin` from `proto/`; requires buf 1.72.0 on `PATH`.
 
 ```bash
 python ../script/generate-proto-binding.py kotlin
