@@ -1,3 +1,44 @@
+## v2.0.0 (2026-11-14)
+
+### Feature
+
+- support selecting annotations by scheme ([102a27a](https://github.com/gondola-lyrics/model/commit/102a27aa92e603e4ee1cedd9acb6000c48f0bed5))
+- support ordered language preference lists ([2b7cf1e](https://github.com/gondola-lyrics/model/commit/2b7cf1e1547fcc670aaab48b7efcf20a55928fa6))
+- add interlude part type ([9cf3b3d](https://github.com/gondola-lyrics/model/commit/9cf3b3df1db3b8c57e3547556bd454a625dbeacc))
+- add credit roles ([e9c034e](https://github.com/gondola-lyrics/model/commit/e9c034ee7194abd015483207af37aa4dfb59887c))
+- unify annotation tokens and extensions ([6c350a3](https://github.com/gondola-lyrics/model/commit/6c350a347a174d400ce2ba91cedbf1dbb3a52df7))
+- support romanization for timed lines ([cabfcbd](https://github.com/gondola-lyrics/model/commit/cabfcbda61499e369d88591fcb778f51d9d26c17))
+- add part id field ([f1c12bd](https://github.com/gondola-lyrics/model/commit/f1c12bdbce308bf33a149f7b10a05732cfb66261))
+- add transliteration scheme field ([b0a3545](https://github.com/gondola-lyrics/model/commit/b0a35459279698dda86303abcb454fec1d3b324d))
+- add format profile field ([ac3a460](https://github.com/gondola-lyrics/model/commit/ac3a460c94285b2bc616fbe3fe88ec5ff895069c))
+
+### Fix
+
+- align local validation rules and diagnostic paths ([2488071](https://github.com/gondola-lyrics/model/commit/248807197542e0f4316667381e5902af61283916))
+- preserve counts for invalid languages ([427883c](https://github.com/gondola-lyrics/model/commit/427883c8d325029ecc2d0df3051ce83a5e0a9252))
+- ignore case when comparing language usages ([c589f6c](https://github.com/gondola-lyrics/model/commit/c589f6cb89a5b1426fcf2bf651e825867a8fcb68))
+- validate language tag syntax ([957540a](https://github.com/gondola-lyrics/model/commit/957540a9b21e94043adef597208957fa22a30531))
+- report unrecognized lyric statuses ([329d1aa](https://github.com/gondola-lyrics/model/commit/329d1aa411f99d3017128993a222f36247657edd))
+- preserve line order when start times are equal ([3f8c58a](https://github.com/gondola-lyrics/model/commit/3f8c58a7f8e1de22fa43643d651c0b2b9d61d676))
+- preserve explicit emphasis values ([9281a86](https://github.com/gondola-lyrics/model/commit/9281a861bc8cb3a968065e635129d7db6fecb847))
+- correct package names ([fa67fa4](https://github.com/gondola-lyrics/model/commit/fa67fa402fd015ac0b7254433c56773ee8f5d087))
+
+### Refactor
+
+- rename helpers for clarity ([c1882f1](https://github.com/gondola-lyrics/model/commit/c1882f13c637a2e0d708eb301dd031f822c6b417))
+- rename engineering credit roles ([10ab898](https://github.com/gondola-lyrics/model/commit/10ab898d2f74d511448533a434d08178de47f550))
+- reorder lyric and line fields ([b9c732b](https://github.com/gondola-lyrics/model/commit/b9c732b19e31cb09ab20b27d1baa333450b11b29))
+- rename language usage fields ([66457c4](https://github.com/gondola-lyrics/model/commit/66457c4b3f3f59300a592f84c39f5723ce94ef68))
+- rename line agents to agent ids ([bf944b2](https://github.com/gondola-lyrics/model/commit/bf944b2d572184e79f03fcdfffdd4fce2986c939))
+- rename timing to timing level ([d9fc66c](https://github.com/gondola-lyrics/model/commit/d9fc66c7e5ff905da61833834925a72f61896a6b))
+- consolidate time definitions ([0f8a584](https://github.com/gondola-lyrics/model/commit/0f8a58474488c0f3c01ab794d32367f673ae6c24))
+- rename model layers to document and enriched ([29be7c4](https://github.com/gondola-lyrics/model/commit/29be7c4c436364ea1e9e8bc3bfc17dd56570dc71))
+
+### Document
+
+- align readmes with current models ([c3c9b14](https://github.com/gondola-lyrics/model/commit/c3c9b140c179c6b43ef4c33926cf1bc2a6a1bb87))
+- clarify storage timing contract ([d2d94b6](https://github.com/gondola-lyrics/model/commit/d2d94b694d5a97ab9ee66788c9e0249e10a68025))
+
 ## v1.1.0 (2026-10-14)
 
 ### Feature
