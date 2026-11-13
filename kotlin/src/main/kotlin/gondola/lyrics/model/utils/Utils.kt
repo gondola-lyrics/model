@@ -136,9 +136,8 @@ internal fun <T> findUnordered(items: List<T>, bounds: (T) -> TimeRange?): List<
 }
 
 /**
- * Builds a comparator ordering items by start ascending then end ascending, reading each item's bounds through a callback.
- * An unknown end is open above, so among equal starts it orders after every known one.
- * An item whose range cannot be related to another's claims no place among those that can, so it keeps its own order after all of them; `findUnordered` passes over exactly those items, so ordering and validating never contradict each other.
+ * Compares usable ranges by start only so stable sorting preserves section boundaries on ties.
+ * Unset or invalid ranges follow usable ones and compare equal to each other.
  */
 internal fun <T> byTime(bounds: (T) -> TimeRange?): Comparator<T> {
     return Comparator { a, b ->
@@ -146,13 +145,8 @@ internal fun <T> byTime(bounds: (T) -> TimeRange?): Comparator<T> {
         val y = bounds(b)
         when {
             !isTimeRangeOrdered(x) -> if (isTimeRangeOrdered(y)) 1 else 0
-
             !isTimeRangeOrdered(y) -> -1
-
-            else -> {
-                val start = x!!.start.compareTo(y!!.start)
-                if (start != 0) start else getTimeRangeEnd(x).compareTo(getTimeRangeEnd(y))
-            }
+            else -> x!!.start.compareTo(y!!.start)
         }
     }
 }

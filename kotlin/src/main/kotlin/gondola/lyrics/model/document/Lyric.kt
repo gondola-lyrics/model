@@ -201,7 +201,7 @@ public fun validateDocumentLyric(lyric: Lyric): List<Diagnostic> {
 }
 
 /**
- * Orders lines by start time and orders their backgrounds.
+ * Orders lines and backgrounds by start time, preserving source order when starts match.
  */
 public fun orderDocumentLyric(lyric: Lyric): Lyric {
     return lyric.copy(

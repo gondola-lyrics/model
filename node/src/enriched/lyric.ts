@@ -222,7 +222,7 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
 }
 
 /**
- * Orders lines and backgrounds by time, and language usages when present.
+ * Orders lines and backgrounds stably by start time and language usages by count and tag.
  */
 export const orderEnrichedLyric = (lyric: Lyric): Lyric => {
   return {

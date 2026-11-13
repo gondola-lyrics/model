@@ -523,7 +523,7 @@ public fun validateDocumentLineBackground(
 }
 
 /**
- * Orders background vocals by start time.
+ * Returns a copy with backgrounds stably ordered by start time.
  */
 public fun orderDocumentLine(line: Line): Line {
     return line.copy(backgrounds = line.backgrounds.sortedWith(byTime { it.time }))

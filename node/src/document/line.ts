@@ -499,7 +499,7 @@ export const validateDocumentLineBackground = (background: LineBackground, path 
 }
 
 /**
- * Returns a copy with backgrounds ordered by start time.
+ * Returns a copy with backgrounds stably ordered by start time.
  */
 export const orderDocumentLine = (line: Line): Line => {
   return { ...line, backgrounds: [...line.backgrounds].sort(byTime((background) => background.time)) }

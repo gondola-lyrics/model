@@ -186,7 +186,7 @@ export const validateDocumentLyric = (lyric: Lyric): Diagnostic[] => {
 }
 
 /**
- * Orders lines and backgrounds by time, and language usages when present.
+ * Orders lines and backgrounds by start time, preserving source order when starts match.
  */
 export const orderDocumentLyric = (lyric: Lyric): Lyric => {
   return {

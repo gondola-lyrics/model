@@ -192,9 +192,8 @@ export const scoreTag = (tag: string, range: string): number => {
 }
 
 /**
- * Builds a comparator ordering items by start ascending then end ascending, reading each item's bounds through a callback.
- * An unknown end is open above, so among equal starts it orders after every known one.
- * An item whose range cannot be related to another's claims no place among those that can, so it keeps its own order after all of them; `findUnordered` passes over exactly those items, so ordering and validating never contradict each other.
+ * Compares usable ranges by start only so stable sorting preserves section boundaries on ties.
+ * Unset or invalid ranges follow usable ones and compare equal to each other.
  */
 export const byTime = <T>(bounds: (item: T) => TimeRangeBounds | undefined) => {
   return (a: T, b: T): number => {
@@ -206,7 +205,7 @@ export const byTime = <T>(bounds: (item: T) => TimeRangeBounds | undefined) => {
     if (!isTimeRangeOrdered(y)) {
       return -1
     }
-    return x.start - y.start || getTimeRangeEnd(x) - getTimeRangeEnd(y)
+    return x.start - y.start
   }
 }
 

@@ -225,7 +225,7 @@ public fun validateEnrichedLyric(lyric: Lyric): List<Diagnostic> {
 }
 
 /**
- * Orders lines by start time and orders their backgrounds.
+ * Orders lines and backgrounds stably by start time and language usages by count and tag.
  */
 public fun orderEnrichedLyric(lyric: Lyric): Lyric {
     return lyric.copy(
