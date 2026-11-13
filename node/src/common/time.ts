@@ -2,15 +2,16 @@ import type { MakeInit } from '@root/utils'
 import type { TimeRange } from '@root/generated/common/index.gen'
 import type { Diagnostic } from './diagnostic'
 
-import { MAX_TIME, checkNumberDomain, withInit } from '@root/utils'
 import { createCommonTimeRange } from '@root/generated/detail.gen'
+import { MAX_TIME, assignDefinedFields, classifyNumberDomain } from '@root/utils'
+
 import { DiagnosticCode } from './diagnostic'
 
 /**
  * Creates a TimeRange, the half-open range [start, end); leaving the end unset opens it above.
  */
 export const makeTimeRange = (init?: MakeInit<TimeRange>): TimeRange => {
-  return withInit(createCommonTimeRange(), init)
+  return assignDefinedFields(createCommonTimeRange(), init)
 }
 
 /**
@@ -19,7 +20,7 @@ export const makeTimeRange = (init?: MakeInit<TimeRange>): TimeRange => {
  */
 export const validateTimeRange = (range: TimeRange, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
-  const start = checkNumberDomain(range.start, 0, MAX_TIME)
+  const start = classifyNumberDomain(range.start, 0, MAX_TIME)
   if (start === 'invalid') {
     diagnostics.push({ path, code: DiagnosticCode.TimeRangeStartInvalid })
   } else if (start === 'overflow') {
@@ -28,7 +29,7 @@ export const validateTimeRange = (range: TimeRange, path = ''): Diagnostic[] => 
   if (range.end === undefined) {
     return diagnostics
   }
-  const end = checkNumberDomain(range.end, 0, MAX_TIME)
+  const end = classifyNumberDomain(range.end, 0, MAX_TIME)
   if (end === 'invalid') {
     diagnostics.push({ path, code: DiagnosticCode.TimeRangeEndInvalid })
   } else if (end === 'overflow') {
@@ -67,8 +68,8 @@ export const getTimeRangeProgress = (range: TimeRange | undefined, at: number): 
 /**
  * Reports whether `at` falls inside a TimeRange, which includes its start but not its end, so a zero-length range never does.
  * An unknown end leaves the range open above, so every time from the start on falls inside it.
- * An unset TimeRange is never active.
+ * An unset TimeRange contains no time.
  */
-export const isTimeRangeActive = (range: TimeRange | undefined, at: number): boolean => {
+export const isTimeInTimeRange = (range: TimeRange | undefined, at: number): boolean => {
   return range !== undefined && range.start <= at && (range.end === undefined || at < range.end)
 }

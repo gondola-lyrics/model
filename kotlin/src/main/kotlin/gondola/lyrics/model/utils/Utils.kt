@@ -27,7 +27,7 @@ internal val SEMVER_PATTERN =
 /**
  * Checks that a constructor's unsigned value fits its wire field without silently truncating it.
  */
-internal fun uint32(value: Long): Long {
+internal fun requireUInt32(value: Long): Long {
     require(value in 0..MAX_COUNT) { "Value must fit in uint32: $value" }
     return value
 }
@@ -42,15 +42,15 @@ internal fun childPath(parent: String, child: String): String {
 /**
  * Lowercases a language tag or scheme identifier, treating an empty or unset value as unset.
  */
-internal fun lowerTag(tag: String?): String? {
+internal fun lowerNonEmptyTag(tag: String?): String? {
     return tag?.takeIf { it.isNotEmpty() }?.lowercase()
 }
 
 /**
  * Keys an annotation by its language and scheme without case, treating empty and unset values alike.
  */
-internal fun getAnnotationKey(language: String?, scheme: String?): Pair<String?, String?> {
-    return lowerTag(language) to lowerTag(scheme)
+internal fun getAnnotationVariantKey(language: String?, scheme: String?): Pair<String?, String?> {
+    return lowerNonEmptyTag(language) to lowerNonEmptyTag(scheme)
 }
 
 /**
@@ -92,7 +92,7 @@ internal fun isTimeRangeOrdered(range: TimeRange?): Boolean {
  * Returns a time range's end as a number two ranges can be compared on, where an unknown end is open above and so ranks past every value a bound may hold.
  * Long.MAX_VALUE stands in for an unknown end outside the schema's domain, so no end a range may actually hold can equal it.
  */
-internal fun getTimeRangeEnd(range: TimeRange?): Long {
+internal fun getComparableTimeRangeEnd(range: TimeRange?): Long {
     return range?.end ?: Long.MAX_VALUE
 }
 
@@ -104,13 +104,13 @@ internal fun isTimeRangeUncovered(range: TimeRange?, parent: TimeRange?): Boolea
     if (!isTimeRangeOrdered(range) || !isTimeRangeOrdered(parent)) {
         return false
     }
-    return range!!.start < parent!!.start || getTimeRangeEnd(range) > getTimeRangeEnd(parent)
+    return range!!.start < parent!!.start || getComparableTimeRangeEnd(range) > getComparableTimeRangeEnd(parent)
 }
 
 /**
  * Collects the indexes of entries whose key an earlier entry already took, so a list holding one entry per key can report every repeat without reordering or merging anything.
  */
-internal fun <T, K> findDuplicates(items: List<T>, key: (T) -> K): List<Int> {
+internal fun <T, K> findDuplicateIndices(items: List<T>, key: (T) -> K): List<Int> {
     val seen = mutableSetOf<K>()
     return items.mapIndexedNotNull { index, item -> if (seen.add(key(item))) null else index }
 }
@@ -119,7 +119,7 @@ internal fun <T, K> findDuplicates(items: List<T>, key: (T) -> K): List<Int> {
  * Collects the indexes of entries whose start time falls before the last start seen, so a list the schema declares ordered can report every entry out of place.
  * Entries carrying no usable range are passed over rather than treated as early, since a range that says nothing about when it starts cannot say it starts too soon.
  */
-internal fun <T> findUnordered(items: List<T>, bounds: (T) -> TimeRange?): List<Int> {
+internal fun <T> findUnorderedStartTimeIndices(items: List<T>, bounds: (T) -> TimeRange?): List<Int> {
     val unordered = mutableListOf<Int>()
     var last: Long? = null
     items.forEachIndexed { index, item ->
@@ -139,7 +139,7 @@ internal fun <T> findUnordered(items: List<T>, bounds: (T) -> TimeRange?): List<
  * Compares usable ranges by start only so stable sorting preserves section boundaries on ties.
  * Unset or invalid ranges follow usable ones and compare equal to each other.
  */
-internal fun <T> byTime(bounds: (T) -> TimeRange?): Comparator<T> {
+internal fun <T> byStartTime(bounds: (T) -> TimeRange?): Comparator<T> {
     return Comparator { a, b ->
         val x = bounds(a)
         val y = bounds(b)
@@ -154,7 +154,7 @@ internal fun <T> byTime(bounds: (T) -> TimeRange?): Comparator<T> {
 /**
  * Drops an all-default submessage to null so empty and unset encode alike, keeping a meaningful one as is.
  */
-internal fun <T : Any> dropDefault(message: T?): T? {
+internal fun <T : Any> unsetIfDefault(message: T?): T? {
     return message?.takeUnless(::isDefault)
 }
 
@@ -162,14 +162,14 @@ internal fun <T : Any> dropDefault(message: T?): T? {
  * Canonicalizes an optional submessage through a callback, then drops it when the result is all-default.
  */
 internal fun <T : Any> canonicalizeField(message: T?, canon: (T) -> T): T? {
-    return message?.let { dropDefault(canon(it)) }
+    return message?.let { unsetIfDefault(canon(it)) }
 }
 
 /**
  * Canonicalizes each entry of a repeated submessage field through a callback, then drops every all-default entry.
  */
 internal fun <T : Any> canonicalizeList(messages: List<T>, canon: (T) -> T): List<T> {
-    return messages.mapNotNull { dropDefault(canon(it)) }
+    return messages.mapNotNull { unsetIfDefault(canon(it)) }
 }
 
 /**

@@ -272,7 +272,7 @@ class CanonicalizeTest {
         assertEquals("hepburn", roman.scheme)
         assertEquals(listOf(token), roman.tokens)
         assertEquals(false, canonical.emphasis)
-        assertEquals(wordTime, gondola.lyrics.model.document.resolveDocumentAnnotationTokenTime(token, roman, canonical))
+        assertEquals(wordTime, gondola.lyrics.model.document.resolveDocumentWordAnnotationTokenTime(token, roman, canonical))
         assertEquals("JA-Latn", assertNotNull(word.annotation).romans[0].language)
         assertEquals(2, word.annotation.romans.size)
         assertEquals(emptyList(), gondola.lyrics.model.document.validateDocumentWord(canonical, timing = TimingLevel.TIMING_LEVEL_WORD))

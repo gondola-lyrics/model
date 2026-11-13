@@ -4,7 +4,7 @@ import { describe, it } from 'node:test'
 import {
   EnrichedLyricStatus,
   TimingLevel,
-  isLanguageTag,
+  isWellFormedLanguageTag,
   makeDocumentLyric,
   makeEnrichedLyric,
   makeMeta,
@@ -43,7 +43,7 @@ describe('language tag syntax', () => {
       'en-u-ca-gregory-ca-buddhist',
     ]
     for (const tag of tags) {
-      deepStrictEqual(isLanguageTag(tag), true, tag)
+      deepStrictEqual(isWellFormedLanguageTag(tag), true, tag)
     }
   })
 
@@ -64,7 +64,7 @@ describe('language tag syntax', () => {
       'en-x-12345678-12345678-12345678-12345678',
     ]
     for (const tag of tags) {
-      deepStrictEqual(isLanguageTag(tag), true, tag)
+      deepStrictEqual(isWellFormedLanguageTag(tag), true, tag)
     }
   })
 
@@ -98,8 +98,8 @@ describe('language tag syntax', () => {
       'zh-xiang',
     ]
     for (const tag of tags) {
-      deepStrictEqual(isLanguageTag(tag), true, tag)
-      deepStrictEqual(isLanguageTag(tag.toUpperCase()), true, tag)
+      deepStrictEqual(isWellFormedLanguageTag(tag), true, tag)
+      deepStrictEqual(isWellFormedLanguageTag(tag.toUpperCase()), true, tag)
     }
   })
 
@@ -150,7 +150,7 @@ describe('language tag syntax', () => {
       'en-x-',
     ]
     for (const tag of tags) {
-      deepStrictEqual(isLanguageTag(tag), false, JSON.stringify(tag))
+      deepStrictEqual(isWellFormedLanguageTag(tag), false, JSON.stringify(tag))
     }
   })
 

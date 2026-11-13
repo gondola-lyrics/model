@@ -1,4 +1,4 @@
-import { lowerTag, scoreTag } from '@root/utils'
+import { lowerNonEmptyTag, scoreTag } from '@root/utils'
 
 /**
  * Tries one language or an ordered preference list, ignoring case and matching on subtag boundaries.
@@ -14,14 +14,14 @@ export const pickItemByLanguage = <T extends { language?: string | undefined }>(
 ): T | undefined => {
   const preferences = typeof wanted === 'string' ? [wanted] : (wanted ?? [])
   for (const language of preferences) {
-    const range = lowerTag(language)
+    const range = lowerNonEmptyTag(language)
     if (range === undefined) {
       continue
     }
     let best: T | undefined
     let bestScore = 0
     for (const item of items) {
-      const tag = lowerTag(item.language)
+      const tag = lowerNonEmptyTag(item.language)
       const score = tag ? scoreTag(tag, range) : 0
       if (score > bestScore) {
         best = item

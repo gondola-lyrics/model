@@ -4,19 +4,19 @@ package gondola.lyrics.model.enriched
 
 import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.DiagnosticCode
-import gondola.lyrics.model.common.isLanguageTag
+import gondola.lyrics.model.common.isWellFormedLanguageTag
 import gondola.lyrics.model.utils.MAX_COUNT
 import gondola.lyrics.model.utils.childPath
 import gondola.lyrics.model.utils.compareTags
-import gondola.lyrics.model.utils.lowerTag
-import gondola.lyrics.model.utils.uint32
+import gondola.lyrics.model.utils.lowerNonEmptyTag
+import gondola.lyrics.model.utils.requireUInt32
 import gondola.lyrics.model.common.pickItemByLanguage as pickByLanguage
 
 /**
  * Creates a language usage measured in normal lines within the uint32 domain.
  */
 public fun makeEnrichedLanguageUsage(tag: String = "", lineCount: Long = 0): LanguageUsage {
-    return LanguageUsage(tag = tag, lineCount = uint32(lineCount))
+    return LanguageUsage(tag = tag, lineCount = requireUInt32(lineCount))
 }
 
 /**
@@ -26,7 +26,7 @@ public fun validateEnrichedLanguageUsage(usage: LanguageUsage, path: String = ""
     val diagnostics = mutableListOf<Diagnostic>()
     if (usage.tag.isEmpty()) {
         diagnostics += Diagnostic(childPath(path, "tag"), DiagnosticCode.LanguageUsageTagEmpty)
-    } else if (!isLanguageTag(usage.tag)) {
+    } else if (!isWellFormedLanguageTag(usage.tag)) {
         diagnostics += Diagnostic(childPath(path, "tag"), DiagnosticCode.LanguageTagMalformed)
     }
     if (usage.lineCount < 0) {
@@ -71,10 +71,10 @@ public fun deriveEnrichedLanguageUsages(lines: List<Line>): List<LanguageUsage> 
         if (line.type != LineType.LINE_TYPE_NORMAL) {
             continue
         }
-        val tags = line.languages.mapNotNull(::lowerTag).toMutableSet()
+        val tags = line.languages.mapNotNull(::lowerNonEmptyTag).toMutableSet()
         for (word in line.content?.words.orEmpty()) {
             if (word.type == WordType.WORD_TYPE_NORMAL) {
-                lowerTag(word.language)?.let(tags::add)
+                lowerNonEmptyTag(word.language)?.let(tags::add)
             }
         }
         for (tag in tags) {
@@ -97,10 +97,10 @@ public fun deriveEnrichedLanguageUsages(lines: List<gondola.lyrics.model.documen
         if (line.type != gondola.lyrics.model.document.LineType.LINE_TYPE_NORMAL) {
             continue
         }
-        val tags = line.languages.mapNotNull(::lowerTag).toMutableSet()
+        val tags = line.languages.mapNotNull(::lowerNonEmptyTag).toMutableSet()
         for (word in line.content?.words.orEmpty()) {
             if (word.type == gondola.lyrics.model.document.WordType.WORD_TYPE_NORMAL) {
-                lowerTag(word.language)?.let(tags::add)
+                lowerNonEmptyTag(word.language)?.let(tags::add)
             }
         }
         for (tag in tags) {
@@ -119,7 +119,7 @@ public fun canonicalizeEnrichedLanguageUsages(languageUsages: List<LanguageUsage
     val counts = linkedMapOf<String, Long>()
     val invalid = mutableListOf<LanguageUsage>()
     for (usage in languageUsages) {
-        val tag = lowerTag(usage.tag) ?: continue
+        val tag = lowerNonEmptyTag(usage.tag) ?: continue
         if (usage.lineCount < 0) {
             invalid += usage.copy(tag = tag)
             continue
@@ -143,6 +143,16 @@ fun pickEnrichedItemByLanguage(items: List<LineAnnotationRoman>, wanted: String?
 }
 
 /**
+ * Tries language preferences in order; ties within a preference keep source order.
+ *
+ * Uses an untagged entry after every preference fails, then the first entry only when fallback is enabled.
+ */
+@JvmName("pickEnrichedLineAnnotationRomanByLanguagePreferences")
+fun pickEnrichedItemByLanguage(items: List<LineAnnotationRoman>, wanted: List<String>, fallback: Boolean = false): LineAnnotationRoman? {
+    return pickByLanguage(items, wanted, fallback) { it.language }
+}
+
+/**
  * Selects the closest language match on subtag boundaries, ignoring case.
  *
  * Without a match, uses an untagged entry, then the first entry only when fallback is enabled.
@@ -157,6 +167,16 @@ fun pickEnrichedItemByLanguage(
 }
 
 /**
+ * Tries language preferences in order; ties within a preference keep source order.
+ *
+ * Uses an untagged entry after every preference fails, then the first entry only when fallback is enabled.
+ */
+@JvmName("pickEnrichedLineAnnotationTranslationByLanguagePreferences")
+fun pickEnrichedItemByLanguage(items: List<LineAnnotationTranslation>, wanted: List<String>, fallback: Boolean = false): LineAnnotationTranslation? {
+    return pickByLanguage(items, wanted, fallback) { it.language }
+}
+
+/**
  * Selects the closest language match on subtag boundaries, ignoring case.
  *
  * Without a match, uses an untagged entry, then the first entry only when fallback is enabled.
@@ -167,12 +187,32 @@ fun pickEnrichedItemByLanguage(items: List<WordAnnotationRoman>, wanted: String?
 }
 
 /**
+ * Tries language preferences in order; ties within a preference keep source order.
+ *
+ * Uses an untagged entry after every preference fails, then the first entry only when fallback is enabled.
+ */
+@JvmName("pickEnrichedWordAnnotationRomanByLanguagePreferences")
+fun pickEnrichedItemByLanguage(items: List<WordAnnotationRoman>, wanted: List<String>, fallback: Boolean = false): WordAnnotationRoman? {
+    return pickByLanguage(items, wanted, fallback) { it.language }
+}
+
+/**
  * Selects the closest language match on subtag boundaries, ignoring case.
  *
  * Without a match, uses an untagged entry, then the first entry only when fallback is enabled.
  */
 @JvmName("pickEnrichedWordAnnotationRubyByLanguage")
 fun pickEnrichedItemByLanguage(items: List<WordAnnotationRuby>, wanted: String? = null, fallback: Boolean = false): WordAnnotationRuby? {
+    return pickByLanguage(items, wanted, fallback) { it.language }
+}
+
+/**
+ * Tries language preferences in order; ties within a preference keep source order.
+ *
+ * Uses an untagged entry after every preference fails, then the first entry only when fallback is enabled.
+ */
+@JvmName("pickEnrichedWordAnnotationRubyByLanguagePreferences")
+fun pickEnrichedItemByLanguage(items: List<WordAnnotationRuby>, wanted: List<String>, fallback: Boolean = false): WordAnnotationRuby? {
     return pickByLanguage(items, wanted, fallback) { it.language }
 }
 
@@ -191,11 +231,31 @@ fun pickEnrichedItemByLanguage(
 }
 
 /**
+ * Tries language preferences in order; ties within a preference keep source order.
+ *
+ * Uses an untagged entry after every preference fails, then the first entry only when fallback is enabled.
+ */
+@JvmName("pickEnrichedWordAnnotationTranslationByLanguagePreferences")
+fun pickEnrichedItemByLanguage(items: List<WordAnnotationTranslation>, wanted: List<String>, fallback: Boolean = false): WordAnnotationTranslation? {
+    return pickByLanguage(items, wanted, fallback) { it.language }
+}
+
+/**
  * Selects the closest language match on subtag boundaries, ignoring case.
  *
  * Without a match, uses an untagged entry, then the first entry only when fallback is enabled.
  */
 @JvmName("pickEnrichedWordByLanguage")
 fun pickEnrichedItemByLanguage(items: List<Word>, wanted: String? = null, fallback: Boolean = false): Word? {
+    return pickByLanguage(items, wanted, fallback) { it.language }
+}
+
+/**
+ * Tries language preferences in order; ties within a preference keep source order.
+ *
+ * Uses an untagged entry after every preference fails, then the first entry only when fallback is enabled.
+ */
+@JvmName("pickEnrichedWordByLanguagePreferences")
+fun pickEnrichedItemByLanguage(items: List<Word>, wanted: List<String>, fallback: Boolean = false): Word? {
     return pickByLanguage(items, wanted, fallback) { it.language }
 }

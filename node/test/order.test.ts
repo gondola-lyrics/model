@@ -22,10 +22,10 @@ import {
   makeEnrichedLyric,
   makePart,
   makeTimeRange,
-  orderDocumentLine,
+  orderDocumentLineBackgrounds,
   orderDocumentLyric,
   orderEnrichedLanguageUsages,
-  orderEnrichedLine,
+  orderEnrichedLineBackgrounds,
   orderEnrichedLyric,
   validateDocumentLyric,
   validateEnrichedLyric,
@@ -128,7 +128,7 @@ describe('order', () => {
     makeLyric: (lines: DocumentLine[]) => {
       return makeDocumentLyric({ timing: TimingLevel.LINE, lines })
     },
-    orderLine: orderDocumentLine,
+    orderLine: orderDocumentLineBackgrounds,
     canonicalizeLine: canonicalizeDocumentLine,
     orderLyric: orderDocumentLyric,
     canonicalizeLyric: canonicalizeDocumentLyric,
@@ -142,7 +142,7 @@ describe('order', () => {
     makeLyric: (lines: EnrichedLine[]) => {
       return makeEnrichedLyric({ status: EnrichedLyricStatus.VALID, timing: TimingLevel.LINE, lines })
     },
-    orderLine: orderEnrichedLine,
+    orderLine: orderEnrichedLineBackgrounds,
     canonicalizeLine: canonicalizeEnrichedLine,
     orderLyric: orderEnrichedLyric,
     canonicalizeLyric: canonicalizeEnrichedLyric,

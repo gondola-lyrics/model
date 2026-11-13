@@ -46,7 +46,7 @@ private val GRANDFATHERED_TAGS = setOf(
  *
  * Registry validity, uniqueness of variants and extension singletons, and extension semantics are not checked.
  */
-fun isLanguageTag(tag: String): Boolean {
+fun isWellFormedLanguageTag(tag: String): Boolean {
     // Check before case conversion, which can map non-ASCII characters into ASCII.
     if (tag.isEmpty() || INVALID_TAG_CHARACTER.containsMatchIn(tag)) {
         return false
@@ -101,7 +101,7 @@ fun isLanguageTag(tag: String): Boolean {
 }
 
 internal fun validateLanguageTag(tag: String?, path: String = ""): List<Diagnostic> {
-    return if (!tag.isNullOrEmpty() && !isLanguageTag(tag)) listOf(Diagnostic(path, DiagnosticCode.LanguageTagMalformed)) else emptyList()
+    return if (!tag.isNullOrEmpty() && !isWellFormedLanguageTag(tag)) listOf(Diagnostic(path, DiagnosticCode.LanguageTagMalformed)) else emptyList()
 }
 
 internal fun validateLanguageTags(tags: List<String>, path: String = ""): List<Diagnostic> {

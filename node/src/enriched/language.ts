@@ -2,8 +2,8 @@ import type { Diagnostic } from '@root/common'
 import type { LanguageUsage } from '@root/generated/enriched/index.gen'
 import type { MakeInit } from '@root/utils'
 
-import { DiagnosticCode, isLanguageTag } from '@root/common'
-import { checkNumberDomain, childPath, compareTags, lowerTag, withInit } from '@root/utils'
+import { DiagnosticCode, isWellFormedLanguageTag } from '@root/common'
+import { classifyNumberDomain, childPath, compareTags, lowerNonEmptyTag, assignDefinedFields } from '@root/utils'
 import { createEnrichedLanguageUsage } from '@root/generated/detail.gen'
 import { LineType as DocumentLineType, WordType as DocumentWordType } from '@root/generated/document/index.gen'
 import { LineType, WordType } from '@root/generated/enriched/index.gen'
@@ -25,7 +25,7 @@ type LanguageLine = {
  * Creates a language usage measured in normal lines.
  */
 export const makeEnrichedLanguageUsage = (init?: MakeInit<LanguageUsage>): LanguageUsage => {
-  return withInit(createEnrichedLanguageUsage(), init)
+  return assignDefinedFields(createEnrichedLanguageUsage(), init)
 }
 
 /**
@@ -35,10 +35,10 @@ export const validateEnrichedLanguageUsage = (usage: LanguageUsage, path = ''): 
   const diagnostics: Diagnostic[] = []
   if (usage.tag === '') {
     diagnostics.push({ path: childPath(path, 'tag'), code: DiagnosticCode.LanguageUsageTagEmpty })
-  } else if (!isLanguageTag(usage.tag)) {
+  } else if (!isWellFormedLanguageTag(usage.tag)) {
     diagnostics.push({ path: childPath(path, 'tag'), code: DiagnosticCode.LanguageTagMalformed })
   }
-  const domain = checkNumberDomain(usage.lineCount, 0, MAX_COUNT)
+  const domain = classifyNumberDomain(usage.lineCount, 0, MAX_COUNT)
   if (domain === 'invalid') {
     diagnostics.push({ path: childPath(path, 'lineCount'), code: DiagnosticCode.LanguageUsageLineCountInvalid })
   } else if (domain === 'overflow') {
@@ -54,8 +54,8 @@ export const validateEnrichedLanguageUsage = (usage: LanguageUsage, path = ''): 
  */
 export const orderEnrichedLanguageUsages = (languageUsages: LanguageUsage[]): LanguageUsage[] => {
   return [...languageUsages].sort((a, b) => {
-    const aInvalid = checkNumberDomain(a.lineCount, 0, MAX_COUNT) === 'invalid'
-    const bInvalid = checkNumberDomain(b.lineCount, 0, MAX_COUNT) === 'invalid'
+    const aInvalid = classifyNumberDomain(a.lineCount, 0, MAX_COUNT) === 'invalid'
+    const bInvalid = classifyNumberDomain(b.lineCount, 0, MAX_COUNT) === 'invalid'
     if (aInvalid) {
       return bInvalid ? 0 : 1
     }
@@ -80,7 +80,7 @@ export const deriveEnrichedLanguageUsages = (lines: LanguageLine[]): LanguageUsa
     }
     const tags = new Set<string>()
     for (const language of line.languages ?? []) {
-      const tag = lowerTag(language)
+      const tag = lowerNonEmptyTag(language)
       if (tag) {
         tags.add(tag)
       }
@@ -89,7 +89,7 @@ export const deriveEnrichedLanguageUsages = (lines: LanguageLine[]): LanguageUsa
       if (!NORMAL_WORD_TYPES.has(word.type)) {
         continue
       }
-      const tag = lowerTag(word.language)
+      const tag = lowerNonEmptyTag(word.language)
       if (tag) {
         tags.add(tag)
       }
@@ -110,12 +110,12 @@ export const canonicalizeEnrichedLanguageUsages = (languageUsages: LanguageUsage
   const counts = new Map<string, number>()
   const invalid: LanguageUsage[] = []
   for (const usage of languageUsages) {
-    const tag = lowerTag(usage.tag)
+    const tag = lowerNonEmptyTag(usage.tag)
     // Untagged entries cannot contribute to any language's line count.
     if (tag === undefined) {
       continue
     }
-    if (checkNumberDomain(usage.lineCount, 0, MAX_COUNT) === 'invalid') {
+    if (classifyNumberDomain(usage.lineCount, 0, MAX_COUNT) === 'invalid') {
       invalid.push({ ...usage, tag })
       continue
     }

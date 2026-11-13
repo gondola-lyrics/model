@@ -3,7 +3,7 @@
 package gondola.lyrics.model.common
 
 import gondola.lyrics.model.utils.MAX_TIME
-import gondola.lyrics.model.utils.uint32
+import gondola.lyrics.model.utils.requireUInt32
 
 /**
  * Creates a TimeRange, the half-open range [start, end); leaving the end unset opens it above.
@@ -11,7 +11,7 @@ import gondola.lyrics.model.utils.uint32
  * Bounds must fit in uint32, while the schema's stricter time limit is checked by `validateTimeRange`.
  */
 fun makeTimeRange(start: Long = 0, end: Long? = null): TimeRange {
-    return TimeRange(start = uint32(start), end = end?.let(::uint32))
+    return TimeRange(start = requireUInt32(start), end = end?.let(::requireUInt32))
 }
 
 /**
@@ -65,8 +65,8 @@ fun getTimeRangeProgress(range: TimeRange?, at: Long): Double? {
 /**
  * Reports whether `at` falls inside a TimeRange, which includes its start but not its end, so a zero-length range never does.
  * An unknown end leaves the range open above, so every time from the start on falls inside it.
- * An unset TimeRange is never active.
+ * An unset TimeRange contains no time.
  */
-fun isTimeRangeActive(range: TimeRange?, at: Long): Boolean {
+fun isTimeInTimeRange(range: TimeRange?, at: Long): Boolean {
     return range != null && range.start <= at && (range.end == null || at < range.end)
 }

@@ -11,7 +11,7 @@ import gondola.lyrics.model.document.makeDocumentLineBackground
 import gondola.lyrics.model.document.makeDocumentLineContentText
 import gondola.lyrics.model.document.makeDocumentLineNormal
 import gondola.lyrics.model.document.makeDocumentLyric
-import gondola.lyrics.model.document.orderDocumentLine
+import gondola.lyrics.model.document.orderDocumentLineBackgrounds
 import gondola.lyrics.model.document.orderDocumentLyric
 import gondola.lyrics.model.document.validateDocumentLyric
 import gondola.lyrics.model.enriched.LanguageUsage
@@ -24,7 +24,7 @@ import gondola.lyrics.model.enriched.makeEnrichedLineContentText
 import gondola.lyrics.model.enriched.makeEnrichedLineNormal
 import gondola.lyrics.model.enriched.makeEnrichedLyric
 import gondola.lyrics.model.enriched.orderEnrichedLanguageUsages
-import gondola.lyrics.model.enriched.orderEnrichedLine
+import gondola.lyrics.model.enriched.orderEnrichedLineBackgrounds
 import gondola.lyrics.model.enriched.orderEnrichedLyric
 import gondola.lyrics.model.enriched.validateEnrichedLyric
 import kotlin.test.Test
@@ -94,13 +94,13 @@ class OrderTest {
         assertEquals(emptyList(), validateDocumentLyric(document))
         assertEquals(emptyList(), validateEnrichedLyric(enriched))
 
-        for (transform in listOf(::orderDocumentLine, ::canonicalizeDocumentLine)) {
+        for (transform in listOf(::orderDocumentLineBackgrounds, ::canonicalizeDocumentLine)) {
             val result = transform(documentLine)
             assertEquals(expected, result.backgrounds.map { it.id })
             assertEquals(emptyList(), validateDocumentLyric(document.copy(lines = listOf(result))))
             assertEquals(expected, documentLine.backgrounds.map { it.id })
         }
-        for (transform in listOf(::orderEnrichedLine, ::canonicalizeEnrichedLine)) {
+        for (transform in listOf(::orderEnrichedLineBackgrounds, ::canonicalizeEnrichedLine)) {
             val result = transform(enrichedLine)
             assertEquals(expected, result.backgrounds.map { it.id })
             assertEquals(emptyList(), validateEnrichedLyric(enriched.copy(lines = listOf(result))))

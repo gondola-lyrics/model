@@ -4,9 +4,9 @@ package gondola.lyrics.model.common
 
 import gondola.lyrics.model.utils.canonicalizeList
 import gondola.lyrics.model.utils.childPath
-import gondola.lyrics.model.utils.findDuplicates
+import gondola.lyrics.model.utils.findDuplicateIndices
 import gondola.lyrics.model.utils.isUnresolved
-import gondola.lyrics.model.utils.lowerTag
+import gondola.lyrics.model.utils.lowerNonEmptyTag
 
 /**
  * Creates an Agent, a performing voice referenced by lines through its id.
@@ -29,7 +29,7 @@ fun validateAgent(agent: Agent, path: String = ""): List<Diagnostic> {
         diagnostics.add(Diagnostic(path, DiagnosticCode.AgentRawMissing))
     }
     // The names are one per language rather than one per member, so a language may not repeat; an unset and an empty tag are the same default language.
-    findDuplicates(agent.names) { lowerTag(it.language) ?: "" }.forEach { index ->
+    findDuplicateIndices(agent.names) { lowerNonEmptyTag(it.language) ?: "" }.forEach { index ->
         diagnostics.add(Diagnostic(childPath(path, "names[$index]"), DiagnosticCode.AgentNamesLanguageDuplicate))
     }
     agent.names.forEachIndexed { index, name -> diagnostics.addAll(validateText(name, childPath(path, "names[$index]"))) }

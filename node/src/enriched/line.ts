@@ -1,4 +1,4 @@
-import type { Diagnostic } from '@root/common'
+import type { Diagnostic, LineRomanView } from '@root/common'
 import type { MakeInit } from '@root/utils'
 import type { TextToken, TimeRange } from '@root/generated/common/index.gen'
 import type {
@@ -36,28 +36,28 @@ import {
 } from '@root/generated/detail.gen'
 import { LineType, WordType } from '@root/generated/enriched/index.gen'
 import {
-  byTime,
+  byStartTime,
   canonicalizeField,
   canonicalizeList,
   childPath,
-  copyMessage,
-  dropDefault,
+  copyScalarMessage,
+  unsetIfDefault,
   findDefaultEntries,
-  findDuplicates,
-  findUnordered,
-  getAnnotationKey,
-  getTimeRangeEnd,
+  findDuplicateIndices,
+  findUnorderedStartTimeIndices,
+  getAnnotationVariantKey,
+  getComparableTimeRangeEnd,
   isTimeRangeOrdered,
   isTimeRangeUncovered,
   isUnresolved,
-  lowerTag,
-  withInit,
+  lowerNonEmptyTag,
+  assignDefinedFields,
 } from '@root/utils'
 
 import {
   canonicalizeEnrichedWord,
-  getEnrichedAnnotationItemText,
-  getEnrichedWordsLanguages,
+  getEnrichedWordAnnotationItemText,
+  collectEnrichedWordLanguages,
   getEnrichedWordsText,
   validateEnrichedWords,
 } from './word'
@@ -104,41 +104,41 @@ export const getEnrichedLineContentText = (content: LineContent | undefined): st
 }
 
 /**
- * Reports whether the line contains words.
+ * Checks for a non-empty words list without inferring the lyric's timing level.
  */
-export const isEnrichedWordLevelLine = (line: { content?: LineContent | undefined }): boolean => {
+export const hasEnrichedLineWords = (line: { content?: LineContent | undefined }): boolean => {
   return (line.content?.words.length ?? 0) > 0
 }
 
 /**
  * Returns distinct lowercase line languages, using normal-word languages when the line declares none.
  */
-export const deriveEnrichedLineLanguages = (line: { languages: string[]; content?: LineContent | undefined }): string[] => {
+export const resolveEnrichedLineLanguages = (line: { languages: string[]; content?: LineContent | undefined }): string[] => {
   if (line.languages.length === 0) {
-    return getEnrichedWordsLanguages(line.content?.words ?? [])
+    return collectEnrichedWordLanguages(line.content?.words ?? [])
   }
-  return [...new Set(line.languages.map((tag) => lowerTag(tag)).filter((tag) => tag !== undefined))]
+  return [...new Set(line.languages.map((tag) => lowerNonEmptyTag(tag)).filter((tag) => tag !== undefined))]
 }
 
 /**
  * Creates annotations explicitly attached to a whole line.
  */
 export const makeEnrichedLineAnnotation = (init?: MakeInit<LineAnnotation>): LineAnnotation => {
-  return withInit(createEnrichedLineAnnotation(), init)
+  return assignDefinedFields(createEnrichedLineAnnotation(), init)
 }
 
 /**
  * Creates roman content from source fragments without adding whole-line text.
  */
 export const makeEnrichedLineAnnotationRomanContentTokens = (tokens: TextToken[]): LineAnnotationRomanContent => {
-  return withInit(createEnrichedLineAnnotationRomanContent(), { tokens })
+  return assignDefinedFields(createEnrichedLineAnnotationRomanContent(), { tokens })
 }
 
 /**
  * Creates whole-line roman text without fragment timing.
  */
 export const makeEnrichedLineAnnotationRomanContentText = (text: string): LineAnnotationRomanContent => {
-  return withInit(createEnrichedLineAnnotationRomanContent(), { text })
+  return assignDefinedFields(createEnrichedLineAnnotationRomanContent(), { text })
 }
 
 /**
@@ -200,10 +200,10 @@ export const validateEnrichedLineAnnotationRoman = (roman: LineAnnotationRoman, 
  */
 export const validateEnrichedLineAnnotation = (annotation: LineAnnotation, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
-  findDuplicates(annotation.romans, getAnnotationKey).forEach((i) => {
+  findDuplicateIndices(annotation.romans, getAnnotationVariantKey).forEach((i) => {
     diagnostics.push({ path: childPath(path, `romans[${i}]`), code: DiagnosticCode.LineAnnotationRomansDuplicate })
   })
-  findDuplicates(annotation.translations, (item) => lowerTag(item.language) ?? '').forEach((i) => {
+  findDuplicateIndices(annotation.translations, (item) => lowerNonEmptyTag(item.language) ?? '').forEach((i) => {
     diagnostics.push({ path: childPath(path, `translations[${i}]`), code: DiagnosticCode.LineAnnotationTranslationsLanguageDuplicate })
   })
   annotation.romans.forEach((roman, i) => {
@@ -230,12 +230,12 @@ const validateRomanPlacement = (annotation: LineAnnotation, content: LineContent
       continue
     }
     for (const roman of word.annotation?.romans ?? []) {
-      wordKeys.add(getAnnotationKey(roman))
+      wordKeys.add(getAnnotationVariantKey(roman))
     }
   }
   const diagnostics: Diagnostic[] = []
   annotation.romans.forEach((roman, i) => {
-    if (wordKeys.has(getAnnotationKey(roman))) {
+    if (wordKeys.has(getAnnotationVariantKey(roman))) {
       diagnostics.push({ path: childPath(path, `romans[${i}]`), code: DiagnosticCode.LineAnnotationRomansConflict })
     }
   })
@@ -246,14 +246,14 @@ const validateRomanPlacement = (annotation: LineAnnotation, content: LineContent
  * Creates a whole-line romanization without normalizing its language or scheme.
  */
 export const makeEnrichedLineAnnotationRoman = (init?: MakeInit<LineAnnotationRoman>): LineAnnotationRoman => {
-  return withInit(createEnrichedLineAnnotationRoman(), init)
+  return assignDefinedFields(createEnrichedLineAnnotationRoman(), init)
 }
 
 /**
  * Creates a translation of a whole line.
  */
 export const makeEnrichedLineAnnotationTranslation = (init?: MakeInit<LineAnnotationTranslation>): LineAnnotationTranslation => {
-  return withInit(createEnrichedLineAnnotationTranslation(), init)
+  return assignDefinedFields(createEnrichedLineAnnotationTranslation(), init)
 }
 
 /**
@@ -272,9 +272,9 @@ export const canonicalizeEnrichedLineAnnotationRomanContent = (content: LineAnno
 export const canonicalizeEnrichedLineAnnotationRoman = (roman: LineAnnotationRoman): LineAnnotationRoman => {
   return {
     ...roman,
-    language: lowerTag(roman.language),
-    scheme: lowerTag(roman.scheme),
-    time: copyMessage(roman.time),
+    language: lowerNonEmptyTag(roman.language),
+    scheme: lowerNonEmptyTag(roman.scheme),
+    time: copyScalarMessage(roman.time),
     content: canonicalizeField(fieldsEnrichedLineAnnotationRomanContent, roman.content, canonicalizeEnrichedLineAnnotationRomanContent),
   }
 }
@@ -308,7 +308,7 @@ export const resolveEnrichedLineAnnotationRomanTokenTime = (
  * Lowercases the translation's language tag.
  */
 export const canonicalizeEnrichedLineAnnotationTranslation = (translation: LineAnnotationTranslation): LineAnnotationTranslation => {
-  return { ...translation, language: lowerTag(translation.language) }
+  return { ...translation, language: lowerNonEmptyTag(translation.language) }
 }
 
 /**
@@ -323,20 +323,20 @@ export const canonicalizeEnrichedLineAnnotation = (annotation: LineAnnotation): 
 }
 
 /**
- * Aggregates romanizations by language and scheme in first-appearance order.
+ * Aggregates word romanizations into display views by language and scheme in first-appearance order.
  *
  * Words without a matching romanization are skipped; separators collapse to one U+0020.
- * The returned annotations are for display and must not be stored on the line.
+ * Source timing and token boundaries remain on the original annotations.
  */
-export const deriveEnrichedLineRomans = (content: LineContent | undefined): LineAnnotationRoman[] => {
+export const deriveEnrichedLineRomanViews = (content: LineContent | undefined): LineRomanView[] => {
   const words = content?.words ?? []
   const variants = new Map<string, WordAnnotationRoman>()
   for (const word of words) {
     for (const roman of word.annotation?.romans ?? []) {
-      variants.set(getAnnotationKey(roman), roman)
+      variants.set(getAnnotationVariantKey(roman), roman)
     }
   }
-  const romans: LineAnnotationRoman[] = []
+  const views: LineRomanView[] = []
   for (const [key, variant] of variants) {
     let joined = ''
     let spaced = false
@@ -345,38 +345,36 @@ export const deriveEnrichedLineRomans = (content: LineContent | undefined): Line
         spaced = true
         continue
       }
-      const roman = word.annotation?.romans.find((item) => getAnnotationKey(item) === key)
-      const text = roman ? getEnrichedAnnotationItemText(roman) : ''
+      const roman = word.annotation?.romans.find((item) => getAnnotationVariantKey(item) === key)
+      const text = roman ? getEnrichedWordAnnotationItemText(roman) : ''
       if (text !== '') {
         joined += joined !== '' && spaced ? ` ${text}` : text
         spaced = false
       }
     }
     if (joined !== '') {
-      romans.push(
-        makeEnrichedLineAnnotationRoman({
-          language: lowerTag(variant.language),
-          scheme: lowerTag(variant.scheme),
-          content: makeEnrichedLineAnnotationRomanContentText(joined),
-        }),
-      )
+      views.push({
+        language: lowerNonEmptyTag(variant.language),
+        scheme: lowerNonEmptyTag(variant.scheme),
+        text: joined,
+      })
     }
   }
-  return romans
+  return views
 }
 
 /**
  * Creates content from ordered words.
  */
 export const makeEnrichedLineContentWords = (words: Word[]): LineContent => {
-  return withInit(createEnrichedLineContent(), { words })
+  return assignDefinedFields(createEnrichedLineContent(), { words })
 }
 
 /**
  * Creates content from whole-line text.
  */
 export const makeEnrichedLineContentText = (text: string): LineContent => {
-  return withInit(createEnrichedLineContent(), { text })
+  return assignDefinedFields(createEnrichedLineContent(), { text })
 }
 
 /**
@@ -390,7 +388,7 @@ export const canonicalizeEnrichedLineContent = (content: LineContent): LineConte
  * Creates a normal line with a fixed LINE_TYPE_NORMAL discriminator.
  */
 export const makeEnrichedLineNormal = (init?: Omit<MakeInit<Line>, 'type'>): Line => {
-  return withInit(createEnrichedLine(), {
+  return assignDefinedFields(createEnrichedLine(), {
     id: init?.id,
     type: LineType.NORMAL,
     time: init?.time,
@@ -409,14 +407,14 @@ export const makeEnrichedLineNormal = (init?: Omit<MakeInit<Line>, 'type'>): Lin
  * A present part identifies a source declaration; an absent part identifies a derived interval.
  */
 export const makeEnrichedLineInstrumental = (init?: Pick<MakeInit<Line>, 'id' | 'time' | 'part'>): Line => {
-  return withInit(createEnrichedLine(), { id: init?.id, time: init?.time, part: init?.part, type: LineType.INSTRUMENTAL })
+  return assignDefinedFields(createEnrichedLine(), { id: init?.id, time: init?.time, part: init?.part, type: LineType.INSTRUMENTAL })
 }
 
 /**
  * Creates background vocals attached to a normal line.
  */
 export const makeEnrichedLineBackground = (init?: MakeInit<LineBackground>): LineBackground => {
-  return withInit(createEnrichedLineBackground(), init)
+  return assignDefinedFields(createEnrichedLineBackground(), init)
 }
 
 /**
@@ -477,7 +475,7 @@ export const validateEnrichedLine = (line: Line, path = '', timing = TimingLevel
     diagnostics.push({ path: childPath(path, 'languages'), code: DiagnosticCode.LineLanguagesUnexpected })
   } else if (!instrumental) {
     diagnostics.push(...validateLanguageTags(line.languages, childPath(path, 'languages')))
-    findDuplicates(line.languages, (tag) => lowerTag(tag) ?? '').forEach((i) => {
+    findDuplicateIndices(line.languages, (tag) => lowerNonEmptyTag(tag) ?? '').forEach((i) => {
       diagnostics.push({ path: childPath(path, `languages[${i}]`), code: DiagnosticCode.LineLanguagesDuplicate })
     })
   }
@@ -499,13 +497,17 @@ export const validateEnrichedLine = (line: Line, path = '', timing = TimingLevel
     diagnostics.push({ path: childPath(path, 'backgrounds'), code: DiagnosticCode.LineBackgroundsUnexpected })
   } else {
     // The schema declares the list ordered, so an entry starting before the one it follows is out of place.
-    findUnordered(line.backgrounds, (background) => background.time).forEach((i) => {
+    findUnorderedStartTimeIndices(line.backgrounds, (background) => background.time).forEach((i) => {
       diagnostics.push({ path: childPath(path, `backgrounds[${i}]`), code: DiagnosticCode.LineBackgroundsUnordered })
     })
     line.backgrounds.forEach((background, i) => {
       const backgroundPath = childPath(path, `backgrounds[${i}]`)
       // The parent's end covers a background line, while its start may precede the parent's; a range reported for its own numbers or order never joins this comparison.
-      if (isTimeRangeOrdered(line.time) && isTimeRangeOrdered(background.time) && getTimeRangeEnd(background.time) > getTimeRangeEnd(line.time)) {
+      if (
+        isTimeRangeOrdered(line.time) &&
+        isTimeRangeOrdered(background.time) &&
+        getComparableTimeRangeEnd(background.time) > getComparableTimeRangeEnd(line.time)
+      ) {
         diagnostics.push({ path: childPath(backgroundPath, 'time'), code: DiagnosticCode.LineBackgroundsTimeUncovered })
       }
       diagnostics.push(...validateEnrichedLineBackground(background, backgroundPath, timing))
@@ -536,7 +538,7 @@ export const validateEnrichedLineBackground = (background: LineBackground, path 
     }
   })
   diagnostics.push(...validateLanguageTags(background.languages, childPath(path, 'languages')))
-  findDuplicates(background.languages, (tag) => lowerTag(tag) ?? '').forEach((i) => {
+  findDuplicateIndices(background.languages, (tag) => lowerNonEmptyTag(tag) ?? '').forEach((i) => {
     diagnostics.push({ path: childPath(path, `languages[${i}]`), code: DiagnosticCode.LineLanguagesDuplicate })
   })
   diagnostics.push(...validateEnrichedLineContent(background.content, background.time, childPath(path, 'content'), timing))
@@ -550,8 +552,8 @@ export const validateEnrichedLineBackground = (background: LineBackground, path 
 /**
  * Returns a copy with backgrounds stably ordered by start time.
  */
-export const orderEnrichedLine = (line: Line): Line => {
-  return { ...line, backgrounds: [...line.backgrounds].sort(byTime((background) => background.time)) }
+export const orderEnrichedLineBackgrounds = (line: Line): Line => {
+  return { ...line, backgrounds: [...line.backgrounds].sort(byStartTime((background) => background.time)) }
 }
 
 /**
@@ -560,7 +562,7 @@ export const orderEnrichedLine = (line: Line): Line => {
 export const canonicalizeEnrichedLineBackground = (background: LineBackground): LineBackground => {
   return {
     ...background,
-    time: copyMessage(background.time),
+    time: copyScalarMessage(background.time),
     agentIds: background.agentIds.filter((id) => id !== ''),
     languages: [...new Set(background.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
     content: canonicalizeField(fieldsEnrichedLineContent, background.content, canonicalizeEnrichedLineContent),
@@ -574,12 +576,12 @@ export const canonicalizeEnrichedLineBackground = (background: LineBackground): 
 export const canonicalizeEnrichedLine = (line: Line): Line => {
   return {
     ...line,
-    time: copyMessage(line.time),
-    part: dropDefault(fieldsCommonPart, copyMessage(line.part)),
+    time: copyScalarMessage(line.time),
+    part: unsetIfDefault(fieldsCommonPart, copyScalarMessage(line.part)),
     agentIds: line.agentIds.filter((id) => id !== ''),
     languages: [...new Set(line.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
     backgrounds: canonicalizeList(fieldsEnrichedLineBackground, line.backgrounds, canonicalizeEnrichedLineBackground).sort(
-      byTime((background) => background.time),
+      byStartTime((background) => background.time),
     ),
     content: canonicalizeField(fieldsEnrichedLineContent, line.content, canonicalizeEnrichedLineContent),
     annotation: canonicalizeField(fieldsEnrichedLineAnnotation, line.annotation, canonicalizeEnrichedLineAnnotation),

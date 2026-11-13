@@ -15,6 +15,16 @@ fun pickDocumentItemByLanguage(items: List<LineAnnotationRoman>, wanted: String?
 }
 
 /**
+ * Tries language preferences in order; ties within a preference keep source order.
+ *
+ * Uses an untagged entry after every preference fails, then the first entry only when fallback is enabled.
+ */
+@JvmName("pickDocumentLineAnnotationRomanByLanguagePreferences")
+fun pickDocumentItemByLanguage(items: List<LineAnnotationRoman>, wanted: List<String>, fallback: Boolean = false): LineAnnotationRoman? {
+    return pickByLanguage(items, wanted, fallback) { it.language }
+}
+
+/**
  * Selects the closest language match on subtag boundaries, ignoring case.
  *
  * Without a match, uses an untagged entry, then the first entry only when fallback is enabled.
@@ -29,6 +39,16 @@ fun pickDocumentItemByLanguage(
 }
 
 /**
+ * Tries language preferences in order; ties within a preference keep source order.
+ *
+ * Uses an untagged entry after every preference fails, then the first entry only when fallback is enabled.
+ */
+@JvmName("pickDocumentLineAnnotationTranslationByLanguagePreferences")
+fun pickDocumentItemByLanguage(items: List<LineAnnotationTranslation>, wanted: List<String>, fallback: Boolean = false): LineAnnotationTranslation? {
+    return pickByLanguage(items, wanted, fallback) { it.language }
+}
+
+/**
  * Selects the closest language match on subtag boundaries, ignoring case.
  *
  * Without a match, uses an untagged entry, then the first entry only when fallback is enabled.
@@ -39,12 +59,32 @@ fun pickDocumentItemByLanguage(items: List<WordAnnotationRoman>, wanted: String?
 }
 
 /**
+ * Tries language preferences in order; ties within a preference keep source order.
+ *
+ * Uses an untagged entry after every preference fails, then the first entry only when fallback is enabled.
+ */
+@JvmName("pickDocumentWordAnnotationRomanByLanguagePreferences")
+fun pickDocumentItemByLanguage(items: List<WordAnnotationRoman>, wanted: List<String>, fallback: Boolean = false): WordAnnotationRoman? {
+    return pickByLanguage(items, wanted, fallback) { it.language }
+}
+
+/**
  * Selects the closest language match on subtag boundaries, ignoring case.
  *
  * Without a match, uses an untagged entry, then the first entry only when fallback is enabled.
  */
 @JvmName("pickDocumentWordAnnotationRubyByLanguage")
 fun pickDocumentItemByLanguage(items: List<WordAnnotationRuby>, wanted: String? = null, fallback: Boolean = false): WordAnnotationRuby? {
+    return pickByLanguage(items, wanted, fallback) { it.language }
+}
+
+/**
+ * Tries language preferences in order; ties within a preference keep source order.
+ *
+ * Uses an untagged entry after every preference fails, then the first entry only when fallback is enabled.
+ */
+@JvmName("pickDocumentWordAnnotationRubyByLanguagePreferences")
+fun pickDocumentItemByLanguage(items: List<WordAnnotationRuby>, wanted: List<String>, fallback: Boolean = false): WordAnnotationRuby? {
     return pickByLanguage(items, wanted, fallback) { it.language }
 }
 
@@ -63,11 +103,31 @@ fun pickDocumentItemByLanguage(
 }
 
 /**
+ * Tries language preferences in order; ties within a preference keep source order.
+ *
+ * Uses an untagged entry after every preference fails, then the first entry only when fallback is enabled.
+ */
+@JvmName("pickDocumentWordAnnotationTranslationByLanguagePreferences")
+fun pickDocumentItemByLanguage(items: List<WordAnnotationTranslation>, wanted: List<String>, fallback: Boolean = false): WordAnnotationTranslation? {
+    return pickByLanguage(items, wanted, fallback) { it.language }
+}
+
+/**
  * Selects the closest language match on subtag boundaries, ignoring case.
  *
  * Without a match, uses an untagged entry, then the first entry only when fallback is enabled.
  */
 @JvmName("pickDocumentWordByLanguage")
 fun pickDocumentItemByLanguage(items: List<Word>, wanted: String? = null, fallback: Boolean = false): Word? {
+    return pickByLanguage(items, wanted, fallback) { it.language }
+}
+
+/**
+ * Tries language preferences in order; ties within a preference keep source order.
+ *
+ * Uses an untagged entry after every preference fails, then the first entry only when fallback is enabled.
+ */
+@JvmName("pickDocumentWordByLanguagePreferences")
+fun pickDocumentItemByLanguage(items: List<Word>, wanted: List<String>, fallback: Boolean = false): Word? {
     return pickByLanguage(items, wanted, fallback) { it.language }
 }

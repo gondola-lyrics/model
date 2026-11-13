@@ -4,7 +4,7 @@ import type { Diagnostic } from './diagnostic'
 
 import { AgentType } from '@root/generated/common/index.gen'
 import { createCommonAgent, fieldsCommonText } from '@root/generated/detail.gen'
-import { canonicalizeList, childPath, findDuplicates, isUnresolved, lowerTag, withInit } from '@root/utils'
+import { canonicalizeList, childPath, findDuplicateIndices, isUnresolved, lowerNonEmptyTag, assignDefinedFields } from '@root/utils'
 
 import { DiagnosticCode } from './diagnostic'
 import { canonicalizeText, validateText } from './text'
@@ -13,7 +13,7 @@ import { canonicalizeText, validateText } from './text'
  * Creates an Agent, a performing voice referenced by lines through its id.
  */
 export const makeAgent = (init?: MakeInit<Agent>): Agent => {
-  return withInit(createCommonAgent(), init)
+  return assignDefinedFields(createCommonAgent(), init)
 }
 
 /**
@@ -30,7 +30,7 @@ export const validateAgent = (agent: Agent, path = ''): Diagnostic[] => {
     diagnostics.push({ path, code: DiagnosticCode.AgentRawMissing })
   }
   // The names are one per language rather than one per member, so a language may not repeat; an unset and an empty tag are the same default language.
-  findDuplicates(agent.names, (name) => lowerTag(name.language) ?? '').forEach((i) => {
+  findDuplicateIndices(agent.names, (name) => lowerNonEmptyTag(name.language) ?? '').forEach((i) => {
     diagnostics.push({ path: childPath(path, `names[${i}]`), code: DiagnosticCode.AgentNamesLanguageDuplicate })
   })
   agent.names.forEach((name, i) => diagnostics.push(...validateText(name, childPath(path, `names[${i}]`))))

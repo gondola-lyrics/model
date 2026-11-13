@@ -23,14 +23,14 @@ import {
   canonicalizeField,
   canonicalizeList,
   childPath,
-  copyMessage,
+  copyScalarMessage,
   findDefaultEntries,
-  findDuplicates,
-  getAnnotationKey,
+  findDuplicateIndices,
+  getAnnotationVariantKey,
   isTimeRangeUncovered,
   isUnresolved,
-  lowerTag,
-  withInit,
+  lowerNonEmptyTag,
+  assignDefinedFields,
 } from '@root/utils'
 
 /**
@@ -42,7 +42,7 @@ const ONLY_SEPARATORS = /^\p{White_Space}+$/u
 /**
  * Reports whether word timing constraints apply.
  */
-const ownsWordTimes = (timing: TimingLevel): boolean => {
+const appliesLocalWordTimeConstraint = (timing: TimingLevel): boolean => {
   return timing !== TimingLevel.NONE && timing !== TimingLevel.LINE
 }
 
@@ -50,28 +50,28 @@ const ownsWordTimes = (timing: TimingLevel): boolean => {
  * Creates a word romanization without normalizing its language or scheme.
  */
 export const makeDocumentWordAnnotationRoman = (init?: MakeInit<WordAnnotationRoman>): WordAnnotationRoman => {
-  return withInit(createDocumentWordAnnotationRoman(), init)
+  return assignDefinedFields(createDocumentWordAnnotationRoman(), init)
 }
 
 /**
  * Creates a translation of a whole word.
  */
 export const makeDocumentWordAnnotationTranslation = (init?: MakeInit<WordAnnotationTranslation>): WordAnnotationTranslation => {
-  return withInit(createDocumentWordAnnotationTranslation(), init)
+  return assignDefinedFields(createDocumentWordAnnotationTranslation(), init)
 }
 
 /**
  * Creates a ruby annotation without normalizing its language or scheme.
  */
 export const makeDocumentWordAnnotationRuby = (init?: MakeInit<WordAnnotationRuby>): WordAnnotationRuby => {
-  return withInit(createDocumentWordAnnotationRuby(), init)
+  return assignDefinedFields(createDocumentWordAnnotationRuby(), init)
 }
 
 /**
  * Creates word annotations from the supplied lists.
  */
 export const makeDocumentWordAnnotation = (init?: MakeInit<WordAnnotation>): WordAnnotation => {
-  return withInit(createDocumentWordAnnotation(), init)
+  return assignDefinedFields(createDocumentWordAnnotation(), init)
 }
 
 /**
@@ -106,13 +106,13 @@ export const validateDocumentWordAnnotation = (annotation: WordAnnotation, path 
       })
     })
   }
-  findDuplicates(annotation.rubies, getAnnotationKey).forEach((i) => {
+  findDuplicateIndices(annotation.rubies, getAnnotationVariantKey).forEach((i) => {
     diagnostics.push({ path: childPath(path, `rubies[${i}]`), code: DiagnosticCode.LineWordAnnotationRubiesDuplicate })
   })
-  findDuplicates(annotation.romans, getAnnotationKey).forEach((i) => {
+  findDuplicateIndices(annotation.romans, getAnnotationVariantKey).forEach((i) => {
     diagnostics.push({ path: childPath(path, `romans[${i}]`), code: DiagnosticCode.LineWordAnnotationRomansDuplicate })
   })
-  findDuplicates(annotation.translations, (item) => lowerTag(item.language) ?? '').forEach((i) => {
+  findDuplicateIndices(annotation.translations, (item) => lowerNonEmptyTag(item.language) ?? '').forEach((i) => {
     diagnostics.push({ path: childPath(path, `translations[${i}]`), code: DiagnosticCode.LineWordAnnotationTranslationsLanguageDuplicate })
   })
   validateItems(annotation.rubies, 'rubies')
@@ -170,7 +170,7 @@ export const validateDocumentWord = (word: Word, path = '', timing = TimingLevel
     return diagnostics
   }
   diagnostics.push(...validateLanguageTag(word.language, childPath(path, 'language')))
-  if (ownsWordTimes(timing) && word.type === WordType.NORMAL && word.time === undefined) {
+  if (appliesLocalWordTimeConstraint(timing) && word.type === WordType.NORMAL && word.time === undefined) {
     diagnostics.push({ path, code: DiagnosticCode.LineWordTimeMissing })
   }
   if (word.time) {
@@ -180,7 +180,13 @@ export const validateDocumentWord = (word: Word, path = '', timing = TimingLevel
     diagnostics.push(...validateTimeRange(word.time, childPath(path, 'time')))
   }
   if (word.annotation) {
-    diagnostics.push(...validateDocumentWordAnnotation(word.annotation, childPath(path, 'annotation'), ownsWordTimes(timing) ? word.time : undefined))
+    diagnostics.push(
+      ...validateDocumentWordAnnotation(
+        word.annotation,
+        childPath(path, 'annotation'),
+        appliesLocalWordTimeConstraint(timing) ? word.time : undefined,
+      ),
+    )
   }
   return diagnostics
 }
@@ -192,7 +198,7 @@ export const validateDocumentWord = (word: Word, path = '', timing = TimingLevel
  */
 export const validateDocumentWords = (words: Word[], time: TimeRange | undefined, path = '', timing = TimingLevel.UNSPECIFIED): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
-  const ownTimes = ownsWordTimes(timing)
+  const ownTimes = appliesLocalWordTimeConstraint(timing)
   words.forEach((word, i) => {
     const wordPath = `${path}[${i}]`
     diagnostics.push(...validateDocumentWord(word, wordPath, timing))
@@ -210,9 +216,9 @@ export const validateDocumentWords = (words: Word[], time: TimeRange | undefined
 export const canonicalizeDocumentWordAnnotationRoman = (roman: WordAnnotationRoman): WordAnnotationRoman => {
   return {
     ...roman,
-    time: copyMessage(roman.time),
-    language: lowerTag(roman.language),
-    scheme: lowerTag(roman.scheme),
+    time: copyScalarMessage(roman.time),
+    language: lowerNonEmptyTag(roman.language),
+    scheme: lowerNonEmptyTag(roman.scheme),
     tokens: canonicalizeList(fieldsCommonTextToken, roman.tokens, canonicalizeTextToken),
   }
 }
@@ -223,9 +229,9 @@ export const canonicalizeDocumentWordAnnotationRoman = (roman: WordAnnotationRom
 export const canonicalizeDocumentWordAnnotationRuby = (ruby: WordAnnotationRuby): WordAnnotationRuby => {
   return {
     ...ruby,
-    time: copyMessage(ruby.time),
-    language: lowerTag(ruby.language),
-    scheme: lowerTag(ruby.scheme),
+    time: copyScalarMessage(ruby.time),
+    language: lowerNonEmptyTag(ruby.language),
+    scheme: lowerNonEmptyTag(ruby.scheme),
     tokens: canonicalizeList(fieldsCommonTextToken, ruby.tokens, canonicalizeTextToken),
   }
 }
@@ -234,7 +240,7 @@ export const canonicalizeDocumentWordAnnotationRuby = (ruby: WordAnnotationRuby)
  * Lowercases the translation's language tag.
  */
 export const canonicalizeDocumentWordAnnotationTranslation = (translation: WordAnnotationTranslation): WordAnnotationTranslation => {
-  return { ...translation, language: lowerTag(translation.language) }
+  return { ...translation, language: lowerNonEmptyTag(translation.language) }
 }
 
 /**
@@ -252,19 +258,19 @@ export const canonicalizeDocumentWordAnnotation = (annotation: WordAnnotation): 
 /**
  * Uses the annotation's time, falling back to the annotated word.
  */
-export const resolveDocumentAnnotationItemTime = (item: WordAnnotationRoman | WordAnnotationRuby, word: Word): TimeRange | undefined => {
+export const resolveDocumentWordAnnotationItemTime = (item: WordAnnotationRoman | WordAnnotationRuby, word: Word): TimeRange | undefined => {
   return item.time ?? word.time
 }
 
 /**
  * Uses the token's time, then its annotation's time, then the annotated word.
  */
-export const resolveDocumentAnnotationTokenTime = (
+export const resolveDocumentWordAnnotationTokenTime = (
   token: TextToken,
   item: WordAnnotationRoman | WordAnnotationRuby,
   word: Word,
 ): TimeRange | undefined => {
-  return token.time ?? resolveDocumentAnnotationItemTime(item, word)
+  return token.time ?? resolveDocumentWordAnnotationItemTime(item, word)
 }
 
 /**
@@ -277,15 +283,15 @@ export const getDocumentWordsText = (words: Word[]): string => {
 /**
  * Returns distinct lowercase language tags from normal words in first-appearance order.
  */
-export const getDocumentWordsLanguages = (words: Word[]): string[] => {
+export const collectDocumentWordLanguages = (words: Word[]): string[] => {
   const normal = words.filter((word) => word.type === WordType.NORMAL)
-  return [...new Set(normal.map((word) => lowerTag(word.language)).filter((tag) => tag !== undefined))]
+  return [...new Set(normal.map((word) => lowerNonEmptyTag(word.language)).filter((tag) => tag !== undefined))]
 }
 
 /**
  * Joins annotation tokens in order without adding separators.
  */
-export const getDocumentAnnotationItemText = (item: WordAnnotationRoman | WordAnnotationRuby): string => {
+export const getDocumentWordAnnotationItemText = (item: WordAnnotationRoman | WordAnnotationRuby): string => {
   return item.tokens.map((token) => token.text).join('')
 }
 
@@ -293,7 +299,7 @@ export const getDocumentAnnotationItemText = (item: WordAnnotationRoman | WordAn
  * Creates a normal word with a fixed WORD_TYPE_NORMAL discriminator.
  */
 export const makeDocumentWordNormal = (init?: Omit<MakeInit<Word>, 'type'>): Word => {
-  return withInit(createDocumentWord(), {
+  return assignDefinedFields(createDocumentWord(), {
     type: WordType.NORMAL,
     time: init?.time,
     text: init?.text,
@@ -307,7 +313,7 @@ export const makeDocumentWordNormal = (init?: Omit<MakeInit<Word>, 'type'>): Wor
  * Creates a WORD_TYPE_SPACE word containing only the supplied separator.
  */
 export const makeDocumentWordSpace = (init?: Pick<MakeInit<Word>, 'text'>): Word => {
-  return withInit(createDocumentWord(), { text: init?.text, type: WordType.SPACE })
+  return assignDefinedFields(createDocumentWord(), { text: init?.text, type: WordType.SPACE })
 }
 
 /**
@@ -316,8 +322,8 @@ export const makeDocumentWordSpace = (init?: Pick<MakeInit<Word>, 'text'>): Word
 export const canonicalizeDocumentWord = (word: Word): Word => {
   return {
     ...word,
-    time: copyMessage(word.time),
-    language: lowerTag(word.language),
+    time: copyScalarMessage(word.time),
+    language: lowerNonEmptyTag(word.language),
     annotation: canonicalizeField(fieldsDocumentWordAnnotation, word.annotation, canonicalizeDocumentWordAnnotation),
   }
 }

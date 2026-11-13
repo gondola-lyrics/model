@@ -1,4 +1,4 @@
-import type { Diagnostic } from '@root/common'
+import type { Diagnostic, LineRomanView } from '@root/common'
 import type { MakeInit } from '@root/utils'
 import type { TextToken, TimeRange } from '@root/generated/common/index.gen'
 import type {
@@ -36,28 +36,28 @@ import {
 } from '@root/generated/detail.gen'
 import { LineType, WordType } from '@root/generated/document/index.gen'
 import {
-  byTime,
+  byStartTime,
   canonicalizeField,
   canonicalizeList,
   childPath,
-  copyMessage,
-  dropDefault,
+  copyScalarMessage,
+  unsetIfDefault,
   findDefaultEntries,
-  findDuplicates,
-  findUnordered,
-  getAnnotationKey,
-  getTimeRangeEnd,
+  findDuplicateIndices,
+  findUnorderedStartTimeIndices,
+  getAnnotationVariantKey,
+  getComparableTimeRangeEnd,
   isTimeRangeOrdered,
   isTimeRangeUncovered,
   isUnresolved,
-  lowerTag,
-  withInit,
+  lowerNonEmptyTag,
+  assignDefinedFields,
 } from '@root/utils'
 
 import {
   canonicalizeDocumentWord,
-  getDocumentAnnotationItemText,
-  getDocumentWordsLanguages,
+  getDocumentWordAnnotationItemText,
+  collectDocumentWordLanguages,
   getDocumentWordsText,
   validateDocumentWords,
 } from './word'
@@ -104,41 +104,41 @@ export const getDocumentLineContentText = (content: LineContent | undefined): st
 }
 
 /**
- * Reports whether the line contains words.
+ * Checks for a non-empty words list without inferring the lyric's timing level.
  */
-export const isDocumentWordLevelLine = (line: { content?: LineContent | undefined }): boolean => {
+export const hasDocumentLineWords = (line: { content?: LineContent | undefined }): boolean => {
   return (line.content?.words.length ?? 0) > 0
 }
 
 /**
  * Returns distinct lowercase line languages, using normal-word languages when the line declares none.
  */
-export const deriveDocumentLineLanguages = (line: { languages: string[]; content?: LineContent | undefined }): string[] => {
+export const resolveDocumentLineLanguages = (line: { languages: string[]; content?: LineContent | undefined }): string[] => {
   if (line.languages.length === 0) {
-    return getDocumentWordsLanguages(line.content?.words ?? [])
+    return collectDocumentWordLanguages(line.content?.words ?? [])
   }
-  return [...new Set(line.languages.map((tag) => lowerTag(tag)).filter((tag) => tag !== undefined))]
+  return [...new Set(line.languages.map((tag) => lowerNonEmptyTag(tag)).filter((tag) => tag !== undefined))]
 }
 
 /**
  * Creates annotations explicitly attached to a whole line.
  */
 export const makeDocumentLineAnnotation = (init?: MakeInit<LineAnnotation>): LineAnnotation => {
-  return withInit(createDocumentLineAnnotation(), init)
+  return assignDefinedFields(createDocumentLineAnnotation(), init)
 }
 
 /**
  * Creates roman content from source fragments without adding whole-line text.
  */
 export const makeDocumentLineAnnotationRomanContentTokens = (tokens: TextToken[]): LineAnnotationRomanContent => {
-  return withInit(createDocumentLineAnnotationRomanContent(), { tokens })
+  return assignDefinedFields(createDocumentLineAnnotationRomanContent(), { tokens })
 }
 
 /**
  * Creates whole-line roman text without fragment timing.
  */
 export const makeDocumentLineAnnotationRomanContentText = (text: string): LineAnnotationRomanContent => {
-  return withInit(createDocumentLineAnnotationRomanContent(), { text })
+  return assignDefinedFields(createDocumentLineAnnotationRomanContent(), { text })
 }
 
 /**
@@ -200,10 +200,10 @@ export const validateDocumentLineAnnotationRoman = (roman: LineAnnotationRoman, 
  */
 export const validateDocumentLineAnnotation = (annotation: LineAnnotation, path = ''): Diagnostic[] => {
   const diagnostics: Diagnostic[] = []
-  findDuplicates(annotation.romans, getAnnotationKey).forEach((i) => {
+  findDuplicateIndices(annotation.romans, getAnnotationVariantKey).forEach((i) => {
     diagnostics.push({ path: childPath(path, `romans[${i}]`), code: DiagnosticCode.LineAnnotationRomansDuplicate })
   })
-  findDuplicates(annotation.translations, (item) => lowerTag(item.language) ?? '').forEach((i) => {
+  findDuplicateIndices(annotation.translations, (item) => lowerNonEmptyTag(item.language) ?? '').forEach((i) => {
     diagnostics.push({ path: childPath(path, `translations[${i}]`), code: DiagnosticCode.LineAnnotationTranslationsLanguageDuplicate })
   })
   annotation.romans.forEach((roman, i) => {
@@ -230,12 +230,12 @@ const validateRomanPlacement = (annotation: LineAnnotation, content: LineContent
       continue
     }
     for (const roman of word.annotation?.romans ?? []) {
-      wordKeys.add(getAnnotationKey(roman))
+      wordKeys.add(getAnnotationVariantKey(roman))
     }
   }
   const diagnostics: Diagnostic[] = []
   annotation.romans.forEach((roman, i) => {
-    if (wordKeys.has(getAnnotationKey(roman))) {
+    if (wordKeys.has(getAnnotationVariantKey(roman))) {
       diagnostics.push({ path: childPath(path, `romans[${i}]`), code: DiagnosticCode.LineAnnotationRomansConflict })
     }
   })
@@ -246,14 +246,14 @@ const validateRomanPlacement = (annotation: LineAnnotation, content: LineContent
  * Creates a whole-line romanization without normalizing its language or scheme.
  */
 export const makeDocumentLineAnnotationRoman = (init?: MakeInit<LineAnnotationRoman>): LineAnnotationRoman => {
-  return withInit(createDocumentLineAnnotationRoman(), init)
+  return assignDefinedFields(createDocumentLineAnnotationRoman(), init)
 }
 
 /**
  * Creates a translation of a whole line.
  */
 export const makeDocumentLineAnnotationTranslation = (init?: MakeInit<LineAnnotationTranslation>): LineAnnotationTranslation => {
-  return withInit(createDocumentLineAnnotationTranslation(), init)
+  return assignDefinedFields(createDocumentLineAnnotationTranslation(), init)
 }
 
 /**
@@ -272,9 +272,9 @@ export const canonicalizeDocumentLineAnnotationRomanContent = (content: LineAnno
 export const canonicalizeDocumentLineAnnotationRoman = (roman: LineAnnotationRoman): LineAnnotationRoman => {
   return {
     ...roman,
-    language: lowerTag(roman.language),
-    scheme: lowerTag(roman.scheme),
-    time: copyMessage(roman.time),
+    language: lowerNonEmptyTag(roman.language),
+    scheme: lowerNonEmptyTag(roman.scheme),
+    time: copyScalarMessage(roman.time),
     content: canonicalizeField(fieldsDocumentLineAnnotationRomanContent, roman.content, canonicalizeDocumentLineAnnotationRomanContent),
   }
 }
@@ -308,7 +308,7 @@ export const resolveDocumentLineAnnotationRomanTokenTime = (
  * Lowercases the translation's language tag.
  */
 export const canonicalizeDocumentLineAnnotationTranslation = (translation: LineAnnotationTranslation): LineAnnotationTranslation => {
-  return { ...translation, language: lowerTag(translation.language) }
+  return { ...translation, language: lowerNonEmptyTag(translation.language) }
 }
 
 /**
@@ -323,20 +323,20 @@ export const canonicalizeDocumentLineAnnotation = (annotation: LineAnnotation): 
 }
 
 /**
- * Aggregates romanizations by language and scheme in first-appearance order.
+ * Aggregates word romanizations into display views by language and scheme in first-appearance order.
  *
  * Words without a matching romanization are skipped; separators collapse to one U+0020.
- * The returned annotations are for display and must not be stored on the line.
+ * Source timing and token boundaries remain on the original annotations.
  */
-export const deriveDocumentLineRomans = (content: LineContent | undefined): LineAnnotationRoman[] => {
+export const deriveDocumentLineRomanViews = (content: LineContent | undefined): LineRomanView[] => {
   const words = content?.words ?? []
   const variants = new Map<string, WordAnnotationRoman>()
   for (const word of words) {
     for (const roman of word.annotation?.romans ?? []) {
-      variants.set(getAnnotationKey(roman), roman)
+      variants.set(getAnnotationVariantKey(roman), roman)
     }
   }
-  const romans: LineAnnotationRoman[] = []
+  const views: LineRomanView[] = []
   for (const [key, variant] of variants) {
     let joined = ''
     let spaced = false
@@ -345,38 +345,36 @@ export const deriveDocumentLineRomans = (content: LineContent | undefined): Line
         spaced = true
         continue
       }
-      const roman = word.annotation?.romans.find((item) => getAnnotationKey(item) === key)
-      const text = roman ? getDocumentAnnotationItemText(roman) : ''
+      const roman = word.annotation?.romans.find((item) => getAnnotationVariantKey(item) === key)
+      const text = roman ? getDocumentWordAnnotationItemText(roman) : ''
       if (text !== '') {
         joined += joined !== '' && spaced ? ` ${text}` : text
         spaced = false
       }
     }
     if (joined !== '') {
-      romans.push(
-        makeDocumentLineAnnotationRoman({
-          language: lowerTag(variant.language),
-          scheme: lowerTag(variant.scheme),
-          content: makeDocumentLineAnnotationRomanContentText(joined),
-        }),
-      )
+      views.push({
+        language: lowerNonEmptyTag(variant.language),
+        scheme: lowerNonEmptyTag(variant.scheme),
+        text: joined,
+      })
     }
   }
-  return romans
+  return views
 }
 
 /**
  * Creates content from ordered words.
  */
 export const makeDocumentLineContentWords = (words: Word[]): LineContent => {
-  return withInit(createDocumentLineContent(), { words })
+  return assignDefinedFields(createDocumentLineContent(), { words })
 }
 
 /**
  * Creates content from whole-line text.
  */
 export const makeDocumentLineContentText = (text: string): LineContent => {
-  return withInit(createDocumentLineContent(), { text })
+  return assignDefinedFields(createDocumentLineContent(), { text })
 }
 
 /**
@@ -390,7 +388,7 @@ export const canonicalizeDocumentLineContent = (content: LineContent): LineConte
  * Creates a normal line with a fixed LINE_TYPE_NORMAL discriminator.
  */
 export const makeDocumentLineNormal = (init?: Omit<MakeInit<Line>, 'type'>): Line => {
-  return withInit(createDocumentLine(), {
+  return assignDefinedFields(createDocumentLine(), {
     id: init?.id,
     type: LineType.NORMAL,
     time: init?.time,
@@ -409,14 +407,14 @@ export const makeDocumentLineNormal = (init?: Omit<MakeInit<Line>, 'type'>): Lin
  * A present part identifies a source declaration; an absent part identifies a derived interval.
  */
 export const makeDocumentLineInstrumental = (init?: Pick<MakeInit<Line>, 'id' | 'time' | 'part'>): Line => {
-  return withInit(createDocumentLine(), { id: init?.id, time: init?.time, part: init?.part, type: LineType.INSTRUMENTAL })
+  return assignDefinedFields(createDocumentLine(), { id: init?.id, time: init?.time, part: init?.part, type: LineType.INSTRUMENTAL })
 }
 
 /**
  * Creates background vocals attached to a normal line.
  */
 export const makeDocumentLineBackground = (init?: MakeInit<LineBackground>): LineBackground => {
-  return withInit(createDocumentLineBackground(), init)
+  return assignDefinedFields(createDocumentLineBackground(), init)
 }
 
 /**
@@ -477,7 +475,7 @@ export const validateDocumentLine = (line: Line, path = '', timing = TimingLevel
     diagnostics.push({ path: childPath(path, 'languages'), code: DiagnosticCode.LineLanguagesUnexpected })
   } else if (!instrumental) {
     diagnostics.push(...validateLanguageTags(line.languages, childPath(path, 'languages')))
-    findDuplicates(line.languages, (tag) => lowerTag(tag) ?? '').forEach((i) => {
+    findDuplicateIndices(line.languages, (tag) => lowerNonEmptyTag(tag) ?? '').forEach((i) => {
       diagnostics.push({ path: childPath(path, `languages[${i}]`), code: DiagnosticCode.LineLanguagesDuplicate })
     })
   }
@@ -499,13 +497,17 @@ export const validateDocumentLine = (line: Line, path = '', timing = TimingLevel
     diagnostics.push({ path: childPath(path, 'backgrounds'), code: DiagnosticCode.LineBackgroundsUnexpected })
   } else {
     // The schema declares the list ordered, so an entry starting before the one it follows is out of place.
-    findUnordered(line.backgrounds, (background) => background.time).forEach((i) => {
+    findUnorderedStartTimeIndices(line.backgrounds, (background) => background.time).forEach((i) => {
       diagnostics.push({ path: childPath(path, `backgrounds[${i}]`), code: DiagnosticCode.LineBackgroundsUnordered })
     })
     line.backgrounds.forEach((background, i) => {
       const backgroundPath = childPath(path, `backgrounds[${i}]`)
       // The parent's end covers a background line, while its start may precede the parent's; a range reported for its own numbers or order never joins this comparison.
-      if (isTimeRangeOrdered(line.time) && isTimeRangeOrdered(background.time) && getTimeRangeEnd(background.time) > getTimeRangeEnd(line.time)) {
+      if (
+        isTimeRangeOrdered(line.time) &&
+        isTimeRangeOrdered(background.time) &&
+        getComparableTimeRangeEnd(background.time) > getComparableTimeRangeEnd(line.time)
+      ) {
         diagnostics.push({ path: childPath(backgroundPath, 'time'), code: DiagnosticCode.LineBackgroundsTimeUncovered })
       }
       diagnostics.push(...validateDocumentLineBackground(background, backgroundPath, timing))
@@ -536,7 +538,7 @@ export const validateDocumentLineBackground = (background: LineBackground, path 
     }
   })
   diagnostics.push(...validateLanguageTags(background.languages, childPath(path, 'languages')))
-  findDuplicates(background.languages, (tag) => lowerTag(tag) ?? '').forEach((i) => {
+  findDuplicateIndices(background.languages, (tag) => lowerNonEmptyTag(tag) ?? '').forEach((i) => {
     diagnostics.push({ path: childPath(path, `languages[${i}]`), code: DiagnosticCode.LineLanguagesDuplicate })
   })
   diagnostics.push(...validateDocumentLineContent(background.content, background.time, childPath(path, 'content'), timing))
@@ -550,8 +552,8 @@ export const validateDocumentLineBackground = (background: LineBackground, path 
 /**
  * Returns a copy with backgrounds stably ordered by start time.
  */
-export const orderDocumentLine = (line: Line): Line => {
-  return { ...line, backgrounds: [...line.backgrounds].sort(byTime((background) => background.time)) }
+export const orderDocumentLineBackgrounds = (line: Line): Line => {
+  return { ...line, backgrounds: [...line.backgrounds].sort(byStartTime((background) => background.time)) }
 }
 
 /**
@@ -560,7 +562,7 @@ export const orderDocumentLine = (line: Line): Line => {
 export const canonicalizeDocumentLineBackground = (background: LineBackground): LineBackground => {
   return {
     ...background,
-    time: copyMessage(background.time),
+    time: copyScalarMessage(background.time),
     agentIds: background.agentIds.filter((id) => id !== ''),
     languages: [...new Set(background.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
     content: canonicalizeField(fieldsDocumentLineContent, background.content, canonicalizeDocumentLineContent),
@@ -574,12 +576,12 @@ export const canonicalizeDocumentLineBackground = (background: LineBackground): 
 export const canonicalizeDocumentLine = (line: Line): Line => {
   return {
     ...line,
-    time: copyMessage(line.time),
-    part: dropDefault(fieldsCommonPart, copyMessage(line.part)),
+    time: copyScalarMessage(line.time),
+    part: unsetIfDefault(fieldsCommonPart, copyScalarMessage(line.part)),
     agentIds: line.agentIds.filter((id) => id !== ''),
     languages: [...new Set(line.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
     backgrounds: canonicalizeList(fieldsDocumentLineBackground, line.backgrounds, canonicalizeDocumentLineBackground).sort(
-      byTime((background) => background.time),
+      byStartTime((background) => background.time),
     ),
     content: canonicalizeField(fieldsDocumentLineContent, line.content, canonicalizeDocumentLineContent),
     annotation: canonicalizeField(fieldsDocumentLineAnnotation, line.annotation, canonicalizeDocumentLineAnnotation),

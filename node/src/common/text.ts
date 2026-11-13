@@ -3,7 +3,7 @@ import type { Text, TextToken } from '@root/generated/common/index.gen'
 import type { Diagnostic } from './diagnostic'
 
 import { createCommonText, createCommonTextToken } from '@root/generated/detail.gen'
-import { childPath, copyMessage, lowerTag, withInit } from '@root/utils'
+import { childPath, copyScalarMessage, lowerNonEmptyTag, assignDefinedFields } from '@root/utils'
 
 import { DiagnosticCode } from './diagnostic'
 import { validateLanguageTag } from './tag'
@@ -14,7 +14,7 @@ import { validateTimeRange } from './time'
  * The tag is kept as given, since canonical form is `canonicalizeText`'s to produce and a constructor that quietly rewrote one would make two spellings of the same field.
  */
 export const makeText = (init?: MakeInit<Text>): Text => {
-  return withInit(createCommonText(), init)
+  return assignDefinedFields(createCommonText(), init)
 }
 
 /**
@@ -35,14 +35,14 @@ export const validateText = (text: Text, path = ''): Diagnostic[] => {
  * Returns a copy of the Text with its language tag lowercased, treating an empty tag as unset.
  */
 export const canonicalizeText = (text: Text): Text => {
-  return { ...text, language: lowerTag(text.language) }
+  return { ...text, language: lowerNonEmptyTag(text.language) }
 }
 
 /**
  * Creates a source fragment without normalizing its text or extension attributes.
  */
 export const makeTextToken = (init?: MakeInit<TextToken>): TextToken => {
-  return withInit(createCommonTextToken(), init)
+  return assignDefinedFields(createCommonTextToken(), init)
 }
 
 /**
@@ -60,5 +60,5 @@ export const validateTextToken = (token: TextToken, path = ''): Diagnostic[] => 
  * Copies timing and extensions without changing text, keys, or values.
  */
 export const canonicalizeTextToken = (token: TextToken): TextToken => {
-  return { ...token, time: copyMessage(token.time), extra: { ...token.extra } }
+  return { ...token, time: copyScalarMessage(token.time), extra: { ...token.extra } }
 }

@@ -3,9 +3,9 @@ import { describe, it } from 'node:test'
 
 import {
   AgentType,
-  deriveDocumentLineRomans,
-  deriveEnrichedLineLanguages,
-  deriveEnrichedLineRomans,
+  deriveDocumentLineRomanViews,
+  resolveEnrichedLineLanguages,
+  deriveEnrichedLineRomanViews,
   makeAgent,
   makeDocumentLineAnnotationRoman,
   makeDocumentLineAnnotationRomanContentText,
@@ -150,7 +150,7 @@ describe('derive line languages', () => {
   // Returning the line's own array let a caller mutate the line through the result.
   it('returns a copy, lowercased and without repeats', () => {
     const line = makeEnrichedLineNormal({ languages: ['JA-JP', 'ja-jp', 'EN'] })
-    const languages = deriveEnrichedLineLanguages(line)
+    const languages = resolveEnrichedLineLanguages(line)
 
     deepStrictEqual(languages, ['ja-jp', 'en'])
     languages.push('de')
@@ -165,11 +165,11 @@ describe('derive line languages', () => {
         makeEnrichedWordNormal({ text: 'there', language: 'en' }),
       ]),
     })
-    deepStrictEqual(deriveEnrichedLineLanguages(line), ['en'])
+    deepStrictEqual(resolveEnrichedLineLanguages(line), ['en'])
   })
 })
 
-describe('derive line romans', () => {
+describe('derive line roman views', () => {
   it('preserves schemes and spacing for document annotations', () => {
     const first = makeDocumentWordAnnotation({
       romans: [
@@ -193,10 +193,10 @@ describe('derive line romans', () => {
       makeDocumentWordNormal({ text: 'y', annotation: last }),
       makeDocumentWordSpace({ text: ' ' }),
     ]
-    deepStrictEqual(deriveDocumentLineRomans(makeDocumentLineContentWords(words)), [
-      makeDocumentLineAnnotationRoman({ language: 'ja-latn', scheme: 'hepburn', content: makeDocumentLineAnnotationRomanContentText('shi chi') }),
-      makeDocumentLineAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', content: makeDocumentLineAnnotationRomanContentText('si ti') }),
-      makeDocumentLineAnnotationRoman({ language: 'ja-latn', content: makeDocumentLineAnnotationRomanContentText('default text') }),
+    deepStrictEqual(deriveDocumentLineRomanViews(makeDocumentLineContentWords(words)), [
+      { language: 'ja-latn', scheme: 'hepburn', text: 'shi chi' },
+      { language: 'ja-latn', scheme: 'kunrei', text: 'si ti' },
+      { language: 'ja-latn', scheme: undefined, text: 'default text' },
     ])
     deepStrictEqual(first.romans[0]?.scheme, 'HEPBURN')
   })
@@ -224,10 +224,10 @@ describe('derive line romans', () => {
       makeEnrichedWordNormal({ text: 'y', annotation: last }),
       makeEnrichedWordSpace({ text: ' ' }),
     ]
-    deepStrictEqual(deriveEnrichedLineRomans(makeEnrichedLineContentWords(words)), [
-      makeEnrichedLineAnnotationRoman({ language: 'ja-latn', scheme: 'hepburn', content: makeEnrichedLineAnnotationRomanContentText('shi chi') }),
-      makeEnrichedLineAnnotationRoman({ language: 'ja-latn', scheme: 'kunrei', content: makeEnrichedLineAnnotationRomanContentText('si ti') }),
-      makeEnrichedLineAnnotationRoman({ language: 'ja-latn', content: makeEnrichedLineAnnotationRomanContentText('default text') }),
+    deepStrictEqual(deriveEnrichedLineRomanViews(makeEnrichedLineContentWords(words)), [
+      { language: 'ja-latn', scheme: 'hepburn', text: 'shi chi' },
+      { language: 'ja-latn', scheme: 'kunrei', text: 'si ti' },
+      { language: 'ja-latn', scheme: undefined, text: 'default text' },
     ])
     deepStrictEqual(first.romans[0]?.scheme, 'HEPBURN')
   })

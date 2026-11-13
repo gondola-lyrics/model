@@ -2,7 +2,7 @@
 
 package gondola.lyrics.model.common
 
-import gondola.lyrics.model.utils.lowerTag
+import gondola.lyrics.model.utils.lowerNonEmptyTag
 
 /**
  * Scheme filtering is applied before language preferences and their fallback.
@@ -28,7 +28,7 @@ fun <T> pickItemByScheme(
     languageOf: (T) -> String?,
     schemeOf: (T) -> String?,
 ): T? {
-    val scheme = lowerTag(preference.scheme)
-    val candidates = if (preference.scheme == null) items else items.filter { lowerTag(schemeOf(it)) == scheme }
+    val scheme = lowerNonEmptyTag(preference.scheme)
+    val candidates = if (preference.scheme == null) items else items.filter { lowerNonEmptyTag(schemeOf(it)) == scheme }
     return pickItemByLanguage(candidates, preference.languages, preference.fallback, languageOf)
 }

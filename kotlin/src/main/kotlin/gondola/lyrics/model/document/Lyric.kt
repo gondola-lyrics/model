@@ -15,11 +15,11 @@ import gondola.lyrics.model.common.validateAgent
 import gondola.lyrics.model.common.validateLyricParts
 import gondola.lyrics.model.common.validateMeta
 import gondola.lyrics.model.utils.SEMVER_PATTERN
-import gondola.lyrics.model.utils.byTime
+import gondola.lyrics.model.utils.byStartTime
 import gondola.lyrics.model.utils.canonicalizeField
 import gondola.lyrics.model.utils.canonicalizeList
 import gondola.lyrics.model.utils.childPath
-import gondola.lyrics.model.utils.findUnordered
+import gondola.lyrics.model.utils.findUnorderedStartTimeIndices
 import gondola.lyrics.model.utils.isUnresolved
 import gondola.lyrics.model.utils.read
 import gondola.lyrics.model.utils.write
@@ -156,7 +156,7 @@ public fun validateDocumentLyric(lyric: Lyric): List<Diagnostic> {
     if (lyric.timing == TimingLevel.TIMING_LEVEL_WORD && anyContent && !anyWords) {
         diagnostics += Diagnostic("timing", DiagnosticCode.LyricTimingWordMissing)
     }
-    for (index in findUnordered(lyric.lines) { line -> line.time }) {
+    for (index in findUnorderedStartTimeIndices(lyric.lines) { line -> line.time }) {
         diagnostics += Diagnostic("lines[$index]", DiagnosticCode.LyricLinesUnordered)
     }
     diagnostics += validateLyricParts(lyric.lines.map { it.part }, lyric.lines.indexOfLast { it.type == LineType.LINE_TYPE_NORMAL })
@@ -168,7 +168,7 @@ public fun validateDocumentLyric(lyric: Lyric): List<Diagnostic> {
  */
 public fun orderDocumentLyric(lyric: Lyric): Lyric {
     return lyric.copy(
-        lines = lyric.lines.sortedWith(byTime { line -> line.time }).map(::orderDocumentLine),
+        lines = lyric.lines.sortedWith(byStartTime { line -> line.time }).map(::orderDocumentLineBackgrounds),
     )
 }
 
@@ -181,7 +181,7 @@ public fun canonicalizeDocumentLyric(lyric: Lyric): Lyric {
         profile = lyric.profile.lowercase(),
         meta = canonicalizeField(lyric.meta, ::canonicalizeMeta),
         agents = canonicalizeList(lyric.agents, ::canonicalizeAgent),
-        lines = canonicalizeList(lyric.lines, ::canonicalizeDocumentLine).sortedWith(byTime { line -> line.time }),
+        lines = canonicalizeList(lyric.lines, ::canonicalizeDocumentLine).sortedWith(byStartTime { line -> line.time }),
         extra = lyric.extra.toMap(),
     )
 }

@@ -3,7 +3,7 @@ package gondola.lyrics.model
 import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.DiagnosticCode
 import gondola.lyrics.model.common.TimingLevel
-import gondola.lyrics.model.common.isLanguageTag
+import gondola.lyrics.model.common.isWellFormedLanguageTag
 import gondola.lyrics.model.common.makeMeta
 import gondola.lyrics.model.common.makeText
 import gondola.lyrics.model.document.makeDocumentLyric
@@ -45,7 +45,7 @@ class TagTest {
             "en-u-ca-gregory-ca-buddhist",
         )
         for (tag in tags) {
-            assertEquals(true, isLanguageTag(tag), tag)
+            assertEquals(true, isWellFormedLanguageTag(tag), tag)
         }
     }
 
@@ -67,7 +67,7 @@ class TagTest {
             "en-x-12345678-12345678-12345678-12345678",
         )
         for (tag in tags) {
-            assertEquals(true, isLanguageTag(tag), tag)
+            assertEquals(true, isWellFormedLanguageTag(tag), tag)
         }
     }
 
@@ -102,8 +102,8 @@ class TagTest {
             "zh-xiang",
         )
         for (tag in tags) {
-            assertEquals(true, isLanguageTag(tag), tag)
-            assertEquals(true, isLanguageTag(tag.uppercase()), tag)
+            assertEquals(true, isWellFormedLanguageTag(tag), tag)
+            assertEquals(true, isWellFormedLanguageTag(tag.uppercase()), tag)
         }
     }
 
@@ -155,7 +155,7 @@ class TagTest {
             "en-x-",
         )
         for (tag in tags) {
-            assertEquals(false, isLanguageTag(tag), tag)
+            assertEquals(false, isWellFormedLanguageTag(tag), tag)
         }
     }
 

@@ -12,7 +12,7 @@ export type MakeInit<T> = { [K in keyof T]?: T[K] | undefined }
 /**
  * Assigns the fields init sets to a freshly created structure, skipping undefined and null so an unset field keeps its default and an optional one stays absent.
  */
-export const withInit = <T extends object>(message: T, init: MakeInit<T> | undefined): T => {
+export const assignDefinedFields = <T extends object>(message: T, init: MakeInit<T> | undefined): T => {
   if (init !== undefined) {
     for (const key of Object.keys(init) as (keyof T)[]) {
       const value = init[key]
@@ -53,7 +53,7 @@ export type NumberDomain = 'ok' | 'invalid' | 'overflow'
  * Classifies a number against the inclusive integer bounds a schema field allows.
  * A fraction, NaN or infinity belongs to no field at all, and neither does a negative value in an unsigned one, so those are invalid rather than out of bounds.
  */
-export const checkNumberDomain = (value: number, min: number, max: number): NumberDomain => {
+export const classifyNumberDomain = (value: number, min: number, max: number): NumberDomain => {
   if (!Number.isInteger(value) || (min >= 0 && value < 0)) {
     return 'invalid'
   }
@@ -70,10 +70,10 @@ export type TimeRangeBounds = { start: number; end?: number | undefined }
  * An unknown end holds no number, so it has no domain to fall outside of.
  */
 export const isTimeRangeInDomain = (range: TimeRangeBounds | undefined): range is TimeRangeBounds => {
-  if (range === undefined || checkNumberDomain(range.start, 0, MAX_TIME) !== 'ok') {
+  if (range === undefined || classifyNumberDomain(range.start, 0, MAX_TIME) !== 'ok') {
     return false
   }
-  return range.end === undefined || checkNumberDomain(range.end, 0, MAX_TIME) === 'ok'
+  return range.end === undefined || classifyNumberDomain(range.end, 0, MAX_TIME) === 'ok'
 }
 
 /**
@@ -92,7 +92,7 @@ const OPEN_END = Number.MAX_SAFE_INTEGER
 /**
  * Returns a time range's end as a number two ranges can be compared on, where an unknown end is open above and so ranks past every value a bound may hold.
  */
-export const getTimeRangeEnd = (range: TimeRangeBounds | undefined): number => {
+export const getComparableTimeRangeEnd = (range: TimeRangeBounds | undefined): number => {
   return range?.end ?? OPEN_END
 }
 
@@ -104,13 +104,13 @@ export const isTimeRangeUncovered = (range: TimeRangeBounds | undefined, parent:
   if (!isTimeRangeOrdered(range) || !isTimeRangeOrdered(parent)) {
     return false
   }
-  return range.start < parent.start || getTimeRangeEnd(range) > getTimeRangeEnd(parent)
+  return range.start < parent.start || getComparableTimeRangeEnd(range) > getComparableTimeRangeEnd(parent)
 }
 
 /**
  * Collects the indexes of entries whose key an earlier entry already took, so a list holding one entry per key can report every repeat without reordering or merging anything.
  */
-export const findDuplicates = <T>(items: T[], key: (item: T) => string): number[] => {
+export const findDuplicateIndices = <T>(items: T[], key: (item: T) => string): number[] => {
   const seen = new Set<string>()
   const duplicates: number[] = []
   items.forEach((item, i) => {
@@ -127,7 +127,7 @@ export const findDuplicates = <T>(items: T[], key: (item: T) => string): number[
  * Collects the indexes of entries whose start time falls before the last start seen, so a list the schema declares ordered can report every entry out of place.
  * Entries carrying no usable range are passed over rather than treated as early, since a range that says nothing about when it starts cannot say it starts too soon.
  */
-export const findUnordered = <T>(items: T[], bounds: (item: T) => TimeRangeBounds | undefined): number[] => {
+export const findUnorderedStartTimeIndices = <T>(items: T[], bounds: (item: T) => TimeRangeBounds | undefined): number[] => {
   const unordered: number[] = []
   let last: number | undefined
   items.forEach((item, i) => {
@@ -153,7 +153,7 @@ export const childPath = (parent: string, child: string): string => {
 /**
  * Lowercases a language tag or scheme identifier, treating an empty or unset value as unset.
  */
-export const lowerTag = (tag: string | undefined): string | undefined => {
+export const lowerNonEmptyTag = (tag: string | undefined): string | undefined => {
   return tag ? tag.toLowerCase() : undefined
 }
 
@@ -161,8 +161,8 @@ export const lowerTag = (tag: string | undefined): string | undefined => {
  * Keys an annotation by its language and scheme without case, treating empty and unset values alike.
  * Tuple encoding avoids requiring a reserved separator in scheme identifiers.
  */
-export const getAnnotationKey = (item: { language?: string | undefined; scheme?: string | undefined }): string => {
-  return JSON.stringify([lowerTag(item.language), lowerTag(item.scheme)])
+export const getAnnotationVariantKey = (item: { language?: string | undefined; scheme?: string | undefined }): string => {
+  return JSON.stringify([lowerNonEmptyTag(item.language), lowerNonEmptyTag(item.scheme)])
 }
 
 /**
@@ -195,7 +195,7 @@ export const scoreTag = (tag: string, range: string): number => {
  * Compares usable ranges by start only so stable sorting preserves section boundaries on ties.
  * Unset or invalid ranges follow usable ones and compare equal to each other.
  */
-export const byTime = <T>(bounds: (item: T) => TimeRangeBounds | undefined) => {
+export const byStartTime = <T>(bounds: (item: T) => TimeRangeBounds | undefined) => {
   return (a: T, b: T): number => {
     const x = bounds(a)
     const y = bounds(b)
@@ -239,7 +239,7 @@ const isDefault = <T>(schema: MessageFields<T>, message: T): boolean => {
 /**
  * Drops an all-default submessage to undefined so empty and unset encode alike, keeping a meaningful one as is.
  */
-export const dropDefault = <T>(schema: MessageFields<T>, message: T | undefined): T | undefined => {
+export const unsetIfDefault = <T>(schema: MessageFields<T>, message: T | undefined): T | undefined => {
   return message && !isDefault(schema, message) ? message : undefined
 }
 
@@ -247,7 +247,7 @@ export const dropDefault = <T>(schema: MessageFields<T>, message: T | undefined)
  * Copies an optional submessage a canonicalizing helper carries over unchanged, since handing back the one it was given would share it with the caller's input.
  * Every submessage canonicalization leaves as it is holds scalars alone, so copying its own fields copies all of it.
  */
-export const copyMessage = <T extends object>(message: T | undefined): T | undefined => {
+export const copyScalarMessage = <T extends object>(message: T | undefined): T | undefined => {
   return message === undefined ? undefined : { ...message }
 }
 
@@ -255,7 +255,7 @@ export const copyMessage = <T extends object>(message: T | undefined): T | undef
  * Canonicalizes an optional submessage through a callback, then drops it when the result is all-default.
  */
 export const canonicalizeField = <T>(schema: MessageFields<T>, message: T | undefined, canon: (message: T) => T): T | undefined => {
-  return message ? dropDefault(schema, canon(message)) : undefined
+  return message ? unsetIfDefault(schema, canon(message)) : undefined
 }
 
 /**

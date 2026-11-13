@@ -13,6 +13,6 @@ fun makeUnknownEntry(key: String = "", value: String = ""): UnknownEntry {
  * Collects the values of every entry carrying the key, in order, since one key may appear more than once.
  * Keys compare exactly, as the source wrote them.
  */
-fun getUnknownValues(unknowns: List<UnknownEntry>, key: String): List<String> {
+fun getUnknownEntryValues(unknowns: List<UnknownEntry>, key: String): List<String> {
     return unknowns.filter { it.key == key }.map { it.value }
 }

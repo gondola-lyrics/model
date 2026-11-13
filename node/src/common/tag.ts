@@ -46,7 +46,7 @@ const GRANDFATHERED_TAGS = new Set([
  *
  * Registry validity, uniqueness of variants and extension singletons, and extension semantics are not checked.
  */
-export const isLanguageTag = (tag: string): boolean => {
+export const isWellFormedLanguageTag = (tag: string): boolean => {
   // Check before case conversion, which can map non-ASCII characters into ASCII.
   if (tag === '' || INVALID_TAG_CHARACTER.test(tag)) {
     return false
@@ -104,7 +104,7 @@ export const isLanguageTag = (tag: string): boolean => {
  * Checks a non-empty tag after its owner has established that the field is allowed.
  */
 export const validateLanguageTag = (tag: string | undefined, path = ''): Diagnostic[] => {
-  if (tag !== undefined && tag !== '' && !isLanguageTag(tag)) {
+  if (tag !== undefined && tag !== '' && !isWellFormedLanguageTag(tag)) {
     return [{ path, code: DiagnosticCode.LanguageTagMalformed }]
   }
   return []

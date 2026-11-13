@@ -1,4 +1,4 @@
-import { lowerTag } from '@root/utils'
+import { lowerNonEmptyTag } from '@root/utils'
 
 import { pickItemByLanguage } from './language'
 
@@ -30,7 +30,7 @@ export const pickItemByScheme = <T extends { language?: string | undefined; sche
   items: readonly T[],
   preference: SchemePreference = {},
 ): T | undefined => {
-  const scheme = lowerTag(preference.scheme)
-  const candidates = preference.scheme === undefined ? items : items.filter((item) => lowerTag(item.scheme) === scheme)
+  const scheme = lowerNonEmptyTag(preference.scheme)
+  const candidates = preference.scheme === undefined ? items : items.filter((item) => lowerNonEmptyTag(item.scheme) === scheme)
   return pickItemByLanguage(candidates, preference.languages, preference.fallback ?? false)
 }

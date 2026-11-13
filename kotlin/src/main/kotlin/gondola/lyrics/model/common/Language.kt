@@ -2,7 +2,7 @@
 
 package gondola.lyrics.model.common
 
-import gondola.lyrics.model.utils.lowerTag
+import gondola.lyrics.model.utils.lowerNonEmptyTag
 import gondola.lyrics.model.utils.scoreTag
 
 /**
@@ -25,11 +25,11 @@ fun <T> pickItemByLanguage(items: List<T>, wanted: String? = null, fallback: Boo
 @JvmName("pickItemByLanguagePreferences")
 fun <T> pickItemByLanguage(items: List<T>, wanted: List<String>, fallback: Boolean = false, languageOf: (T) -> String?): T? {
     for (language in wanted) {
-        val range = lowerTag(language) ?: continue
+        val range = lowerNonEmptyTag(language) ?: continue
         var best: T? = null
         var bestScore = 0
         for (item in items) {
-            val tag = lowerTag(languageOf(item))
+            val tag = lowerNonEmptyTag(languageOf(item))
             val score = if (tag != null) scoreTag(tag, range) else 0
             if (score > bestScore) {
                 best = item

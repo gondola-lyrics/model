@@ -8,17 +8,26 @@ import { decodeDocumentLyric as decodeDocumentLyricMessage, encodeDocumentLyric 
 import { TimingLevel } from '@root/generated/common/index.gen'
 import { createDocumentLyric, fieldsCommonAgent, fieldsCommonMeta, fieldsDocumentLine } from '@root/generated/detail.gen'
 import { LineType } from '@root/generated/document/index.gen'
-import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath, findUnordered, isUnresolved, withInit } from '@root/utils'
+import {
+  SEMVER_PATTERN,
+  byStartTime,
+  canonicalizeField,
+  canonicalizeList,
+  childPath,
+  findUnorderedStartTimeIndices,
+  isUnresolved,
+  assignDefinedFields,
+} from '@root/utils'
 import { read, write } from '@root/utils/wire'
 import { SCHEMA_VERSION } from '@root/version'
 
-import { canonicalizeDocumentLine, orderDocumentLine, validateDocumentLine } from './line'
+import { canonicalizeDocumentLine, orderDocumentLineBackgrounds, validateDocumentLine } from './line'
 
 /**
  * Creates a lyric with the current schema version.
  */
 export const makeDocumentLyric = (init?: Omit<MakeInit<Lyric>, 'version'>): Lyric => {
-  return withInit(createDocumentLyric(), {
+  return assignDefinedFields(createDocumentLyric(), {
     version: SCHEMA_VERSION,
     format: init?.format,
     profile: init?.profile,
@@ -125,7 +134,7 @@ export const validateDocumentLyric = (lyric: Lyric): Diagnostic[] => {
     diagnostics.push({ path: 'timing', code: DiagnosticCode.LyricTimingWordMissing })
   }
   // The schema declares the list ordered, so a line starting before the one it follows is out of place.
-  findUnordered(lyric.lines, (line) => line.time).forEach((i) => {
+  findUnorderedStartTimeIndices(lyric.lines, (line) => line.time).forEach((i) => {
     diagnostics.push({ path: `lines[${i}]`, code: DiagnosticCode.LyricLinesUnordered })
   })
   diagnostics.push(
@@ -143,7 +152,7 @@ export const validateDocumentLyric = (lyric: Lyric): Diagnostic[] => {
 export const orderDocumentLyric = (lyric: Lyric): Lyric => {
   return {
     ...lyric,
-    lines: [...lyric.lines].sort(byTime((line) => line.time)).map(orderDocumentLine),
+    lines: [...lyric.lines].sort(byStartTime((line) => line.time)).map(orderDocumentLineBackgrounds),
   }
 }
 
@@ -159,7 +168,7 @@ export const canonicalizeDocumentLyric = (lyric: Lyric): Lyric => {
     profile: lyric.profile.toLowerCase(),
     meta: canonicalizeField(fieldsCommonMeta, lyric.meta, canonicalizeMeta),
     agents: canonicalizeList(fieldsCommonAgent, lyric.agents, canonicalizeAgent),
-    lines: canonicalizeList(fieldsDocumentLine, lyric.lines, canonicalizeDocumentLine).sort(byTime((line) => line.time)),
+    lines: canonicalizeList(fieldsDocumentLine, lyric.lines, canonicalizeDocumentLine).sort(byStartTime((line) => line.time)),
     extra: { ...lyric.extra },
   }
 }

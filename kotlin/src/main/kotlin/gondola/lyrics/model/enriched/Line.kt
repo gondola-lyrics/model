@@ -5,6 +5,7 @@ package gondola.lyrics.model.enriched
 import gondola.lyrics.model.common.Agent
 import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.DiagnosticCode
+import gondola.lyrics.model.common.LineRomanView
 import gondola.lyrics.model.common.Part
 import gondola.lyrics.model.common.PartType
 import gondola.lyrics.model.common.TextToken
@@ -17,20 +18,20 @@ import gondola.lyrics.model.common.validateLanguageTags
 import gondola.lyrics.model.common.validatePart
 import gondola.lyrics.model.common.validateTextToken
 import gondola.lyrics.model.common.validateTimeRange
-import gondola.lyrics.model.utils.byTime
+import gondola.lyrics.model.utils.byStartTime
 import gondola.lyrics.model.utils.canonicalizeField
 import gondola.lyrics.model.utils.canonicalizeList
 import gondola.lyrics.model.utils.childPath
-import gondola.lyrics.model.utils.dropDefault
 import gondola.lyrics.model.utils.findDefaultEntries
-import gondola.lyrics.model.utils.findDuplicates
-import gondola.lyrics.model.utils.findUnordered
-import gondola.lyrics.model.utils.getAnnotationKey
-import gondola.lyrics.model.utils.getTimeRangeEnd
+import gondola.lyrics.model.utils.findDuplicateIndices
+import gondola.lyrics.model.utils.findUnorderedStartTimeIndices
+import gondola.lyrics.model.utils.getAnnotationVariantKey
+import gondola.lyrics.model.utils.getComparableTimeRangeEnd
 import gondola.lyrics.model.utils.isTimeRangeOrdered
 import gondola.lyrics.model.utils.isTimeRangeUncovered
 import gondola.lyrics.model.utils.isUnresolved
-import gondola.lyrics.model.utils.lowerTag
+import gondola.lyrics.model.utils.lowerNonEmptyTag
+import gondola.lyrics.model.utils.unsetIfDefault
 
 private fun validateContentFields(hasWords: Boolean, text: String?, path: String, required: Boolean): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
@@ -79,42 +80,42 @@ public fun getEnrichedLineContentText(content: LineContent?): String {
 }
 
 /**
- * Reports whether the line contains words.
+ * Checks for a non-empty words list without inferring the lyric's timing level.
  */
-public fun isEnrichedWordLevelLine(line: Line): Boolean {
+public fun hasEnrichedLineWords(line: Line): Boolean {
     return !line.content?.words.isNullOrEmpty()
 }
 
 /**
- * Reports whether the line contains words.
+ * Checks for a non-empty words list without inferring the lyric's timing level.
  */
-public fun isEnrichedWordLevelLine(line: LineBackground): Boolean {
+public fun hasEnrichedLineWords(line: LineBackground): Boolean {
     return !line.content?.words.isNullOrEmpty()
 }
 
 /**
  * Returns distinct lowercase line languages, using normal-word languages when the line declares none.
  */
-public fun deriveEnrichedLineLanguages(line: Line): List<String> {
+public fun resolveEnrichedLineLanguages(line: Line): List<String> {
     return if (line.languages.isEmpty()) {
-        getEnrichedWordsLanguages(
+        collectEnrichedWordLanguages(
             line.content?.words.orEmpty(),
         )
     } else {
-        line.languages.mapNotNull(::lowerTag).distinct()
+        line.languages.mapNotNull(::lowerNonEmptyTag).distinct()
     }
 }
 
 /**
  * Returns distinct lowercase line languages, using normal-word languages when the line declares none.
  */
-public fun deriveEnrichedLineLanguages(line: LineBackground): List<String> {
+public fun resolveEnrichedLineLanguages(line: LineBackground): List<String> {
     return if (line.languages.isEmpty()) {
-        getEnrichedWordsLanguages(
+        collectEnrichedWordLanguages(
             line.content?.words.orEmpty(),
         )
     } else {
-        line.languages.mapNotNull(::lowerTag).distinct()
+        line.languages.mapNotNull(::lowerNonEmptyTag).distinct()
     }
 }
 
@@ -201,10 +202,10 @@ public fun validateEnrichedLineAnnotationRoman(roman: LineAnnotationRoman, path:
  */
 public fun validateEnrichedLineAnnotation(annotation: LineAnnotation, path: String = ""): List<Diagnostic> {
     val diagnostics = mutableListOf<Diagnostic>()
-    findDuplicates(annotation.romans) { getAnnotationKey(it.language, it.scheme) }.forEach { index ->
+    findDuplicateIndices(annotation.romans) { getAnnotationVariantKey(it.language, it.scheme) }.forEach { index ->
         diagnostics.add(Diagnostic(childPath(path, "romans[$index]"), DiagnosticCode.LineAnnotationRomansDuplicate))
     }
-    findDuplicates(annotation.translations) { lowerTag(it.language) ?: "" }.forEach { index ->
+    findDuplicateIndices(annotation.translations) { lowerNonEmptyTag(it.language) ?: "" }.forEach { index ->
         diagnostics.add(Diagnostic(childPath(path, "translations[$index]"), DiagnosticCode.LineAnnotationTranslationsLanguageDuplicate))
     }
     annotation.romans.forEachIndexed { index, roman ->
@@ -226,12 +227,12 @@ private fun validateRomanPlacement(annotation: LineAnnotation, content: LineCont
             continue
         }
         for (roman in word.annotation?.romans.orEmpty()) {
-            wordKeys.add(getAnnotationKey(roman.language, roman.scheme))
+            wordKeys.add(getAnnotationVariantKey(roman.language, roman.scheme))
         }
     }
     val diagnostics = mutableListOf<Diagnostic>()
     annotation.romans.forEachIndexed { index, roman ->
-        if (getAnnotationKey(roman.language, roman.scheme) in wordKeys) {
+        if (getAnnotationVariantKey(roman.language, roman.scheme) in wordKeys) {
             diagnostics.add(Diagnostic(childPath(path, "romans[$index]"), DiagnosticCode.LineAnnotationRomansConflict))
         }
     }
@@ -269,8 +270,8 @@ public fun canonicalizeEnrichedLineAnnotationRomanContent(content: LineAnnotatio
  */
 public fun canonicalizeEnrichedLineAnnotationRoman(roman: LineAnnotationRoman): LineAnnotationRoman {
     return roman.copy(
-        language = lowerTag(roman.language),
-        scheme = lowerTag(roman.scheme),
+        language = lowerNonEmptyTag(roman.language),
+        scheme = lowerNonEmptyTag(roman.scheme),
         time = roman.time?.copy(),
         content = canonicalizeField(roman.content, ::canonicalizeEnrichedLineAnnotationRomanContent),
     )
@@ -315,7 +316,7 @@ public fun resolveEnrichedLineAnnotationRomanTokenTime(token: TextToken, roman: 
  * Lowercases the translation's language tag.
  */
 public fun canonicalizeEnrichedLineAnnotationTranslation(translation: LineAnnotationTranslation): LineAnnotationTranslation {
-    return translation.copy(language = lowerTag(translation.language))
+    return translation.copy(language = lowerNonEmptyTag(translation.language))
 }
 
 /**
@@ -328,9 +329,9 @@ public fun canonicalizeEnrichedLineAnnotation(annotation: LineAnnotation): LineA
     )
 }
 
-private fun deriveWordRomans(words: List<Word>): List<LineAnnotationRoman> {
-    val keys = words.flatMap { word -> word.annotation?.romans?.map { getAnnotationKey(it.language, it.scheme) } ?: emptyList() }.distinct()
-    val romans = mutableListOf<LineAnnotationRoman>()
+private fun deriveWordRomans(words: List<Word>): List<LineRomanView> {
+    val keys = words.flatMap { word -> word.annotation?.romans?.map { getAnnotationVariantKey(it.language, it.scheme) } ?: emptyList() }.distinct()
+    val views = mutableListOf<LineRomanView>()
     for ((language, scheme) in keys) {
         val joined = StringBuilder()
         var spaced = false
@@ -339,8 +340,8 @@ private fun deriveWordRomans(words: List<Word>): List<LineAnnotationRoman> {
                 spaced = true
                 continue
             }
-            val roman = word.annotation?.romans?.firstOrNull { lowerTag(it.language) == language && lowerTag(it.scheme) == scheme }
-            val text = roman?.let(::getEnrichedAnnotationItemText) ?: ""
+            val roman = word.annotation?.romans?.firstOrNull { lowerNonEmptyTag(it.language) == language && lowerNonEmptyTag(it.scheme) == scheme }
+            val text = roman?.let(::getEnrichedWordAnnotationItemText) ?: ""
             if (text.isNotEmpty()) {
                 if (joined.isNotEmpty() && spaced) {
                     joined.append(' ')
@@ -350,25 +351,25 @@ private fun deriveWordRomans(words: List<Word>): List<LineAnnotationRoman> {
             }
         }
         if (joined.isNotEmpty()) {
-            romans.add(
-                makeEnrichedLineAnnotationRoman(
+            views.add(
+                LineRomanView(
                     language = language,
                     scheme = scheme,
-                    content = makeEnrichedLineAnnotationRomanContentText(joined.toString()),
+                    text = joined.toString(),
                 ),
             )
         }
     }
-    return romans
+    return views
 }
 
 /**
- * Aggregates display-only romanizations by language and scheme in first-appearance order.
+ * Aggregates word romanizations into display views by language and scheme in first-appearance order.
  *
  * Words without a matching romanization are skipped; separators collapse to one U+0020.
- * The returned annotations must not be stored on the line.
+ * Source timing and token boundaries remain on the original annotations.
  */
-public fun deriveEnrichedLineRomans(content: LineContent?): List<LineAnnotationRoman> {
+public fun deriveEnrichedLineRomanViews(content: LineContent?): List<LineRomanView> {
     return deriveWordRomans(content?.words.orEmpty())
 }
 
@@ -495,7 +496,7 @@ public fun validateEnrichedLine(line: Line, path: String = "", timing: TimingLev
         diagnostics += Diagnostic(childPath(path, "languages"), DiagnosticCode.LineLanguagesUnexpected)
     } else if (!instrumental) {
         diagnostics += validateLanguageTags(line.languages, childPath(path, "languages"))
-        for (index in findDuplicates(line.languages) { lowerTag(it) ?: "" }) {
+        for (index in findDuplicateIndices(line.languages) { lowerNonEmptyTag(it) ?: "" }) {
             diagnostics += Diagnostic(childPath(path, "languages[$index]"), DiagnosticCode.LineLanguagesDuplicate)
         }
     }
@@ -516,14 +517,16 @@ public fun validateEnrichedLine(line: Line, path: String = "", timing: TimingLev
     if (instrumental && line.backgrounds.size > 0) {
         diagnostics += Diagnostic(childPath(path, "backgrounds"), DiagnosticCode.LineBackgroundsUnexpected)
     } else {
-        for (index in findUnordered(line.backgrounds) { it.time }) {
+        for (index in findUnorderedStartTimeIndices(line.backgrounds) { it.time }) {
             diagnostics += Diagnostic(childPath(path, "backgrounds[$index]"), DiagnosticCode.LineBackgroundsUnordered)
         }
         line.backgrounds.forEachIndexed { index, background ->
             val backgroundPath = childPath(path, "backgrounds[$index]")
             val backgroundTime = background.time
             // Backgrounds may start earlier than their parent but must end within it.
-            if (isTimeRangeOrdered(time) && isTimeRangeOrdered(backgroundTime) && getTimeRangeEnd(backgroundTime) > getTimeRangeEnd(time)) {
+            if (isTimeRangeOrdered(time) && isTimeRangeOrdered(backgroundTime) &&
+                getComparableTimeRangeEnd(backgroundTime) > getComparableTimeRangeEnd(time)
+            ) {
                 diagnostics += Diagnostic(childPath(backgroundPath, "time"), DiagnosticCode.LineBackgroundsTimeUncovered)
             }
             diagnostics += validateEnrichedLineBackground(background, backgroundPath, timing)
@@ -558,7 +561,7 @@ public fun validateEnrichedLineBackground(
         }
     }
     diagnostics += validateLanguageTags(background.languages, childPath(path, "languages"))
-    for (index in findDuplicates(background.languages) { lowerTag(it) ?: "" }) {
+    for (index in findDuplicateIndices(background.languages) { lowerNonEmptyTag(it) ?: "" }) {
         diagnostics += Diagnostic(childPath(path, "languages[$index]"), DiagnosticCode.LineLanguagesDuplicate)
     }
     diagnostics += validateEnrichedLineContent(background.content, time, childPath(path, "content"), timing)
@@ -572,8 +575,8 @@ public fun validateEnrichedLineBackground(
 /**
  * Returns a copy with backgrounds stably ordered by start time.
  */
-public fun orderEnrichedLine(line: Line): Line {
-    return line.copy(backgrounds = line.backgrounds.sortedWith(byTime { it.time }))
+public fun orderEnrichedLineBackgrounds(line: Line): Line {
+    return line.copy(backgrounds = line.backgrounds.sortedWith(byStartTime { it.time }))
 }
 
 /**
@@ -582,7 +585,7 @@ public fun orderEnrichedLine(line: Line): Line {
 public fun canonicalizeEnrichedLineBackground(background: LineBackground): LineBackground {
     return background.copy(
         agentIds = background.agentIds.filter { it.isNotEmpty() },
-        languages = background.languages.mapNotNull(::lowerTag).distinct(),
+        languages = background.languages.mapNotNull(::lowerNonEmptyTag).distinct(),
         content = canonicalizeField(background.content, ::canonicalizeEnrichedLineContent),
         annotation = canonicalizeField(background.annotation, ::canonicalizeEnrichedLineAnnotation),
     )
@@ -593,10 +596,10 @@ public fun canonicalizeEnrichedLineBackground(background: LineBackground): LineB
  */
 public fun canonicalizeEnrichedLine(line: Line): Line {
     return line.copy(
-        part = dropDefault(line.part),
+        part = unsetIfDefault(line.part),
         agentIds = line.agentIds.filter { it.isNotEmpty() },
-        languages = line.languages.mapNotNull(::lowerTag).distinct(),
-        backgrounds = canonicalizeList(line.backgrounds, ::canonicalizeEnrichedLineBackground).sortedWith(byTime { it.time }),
+        languages = line.languages.mapNotNull(::lowerNonEmptyTag).distinct(),
+        backgrounds = canonicalizeList(line.backgrounds, ::canonicalizeEnrichedLineBackground).sortedWith(byStartTime { it.time }),
         content = canonicalizeField(line.content, ::canonicalizeEnrichedLineContent),
         annotation = canonicalizeField(line.annotation, ::canonicalizeEnrichedLineAnnotation),
     )

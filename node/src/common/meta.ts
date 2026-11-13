@@ -13,7 +13,16 @@ import {
   createCommonMetaCredit,
   createCommonMetaReference,
 } from '@root/generated/detail.gen'
-import { canonicalizeList, checkNumberDomain, childPath, findDefaultEntries, findDuplicates, isUnresolved, lowerTag, withInit } from '@root/utils'
+import {
+  canonicalizeList,
+  classifyNumberDomain,
+  childPath,
+  findDefaultEntries,
+  findDuplicateIndices,
+  isUnresolved,
+  lowerNonEmptyTag,
+  assignDefinedFields,
+} from '@root/utils'
 
 import { DiagnosticCode } from './diagnostic'
 import { validateLanguageTag } from './tag'
@@ -31,15 +40,14 @@ const MIN_OFFSET = -(2 ** 31)
 const MAX_OFFSET = 2 ** 31 - 1
 
 /**
- * An ISRC names a recording as two letters for the country, three for the registrant, then seven digits for the year and the designation.
- * It is read without case or separators, since those are the canonical form rather than part of the identifier, and a string outside this shape names no recording at all.
+ * Country, registrant, year, and designation make up the ISRC shape; assignment is not checked.
  */
 const ISRC_PATTERN = /^[A-Z]{2}[0-9A-Z]{3}[0-9]{7}$/
 
 /**
- * Reports whether a string names a recording, reading it without case or separators.
+ * Ignores case and separators when checking the ISRC shape.
  */
-const isIsrc = (isrc: string): boolean => {
+const hasIsrcShape = (isrc: string): boolean => {
   return ISRC_PATTERN.test(isrc.replace(/[^0-9a-zA-Z]/g, '').toUpperCase())
 }
 
@@ -47,21 +55,21 @@ const isIsrc = (isrc: string): boolean => {
  * Creates a Meta, the lyric's metadata.
  */
 export const makeMeta = (init?: MakeInit<Meta>): Meta => {
-  return withInit(createCommonMeta(), init)
+  return assignDefinedFields(createCommonMeta(), init)
 }
 
 /**
  * Creates a MetaCredit, one credited role and the names filling it.
  */
 export const makeMetaCredit = (init?: MakeInit<MetaCredit>): MetaCredit => {
-  return withInit(createCommonMetaCredit(), init)
+  return assignDefinedFields(createCommonMetaCredit(), init)
 }
 
 /**
  * Creates a MetaReference, an external platform id for the lyric.
  */
 export const makeMetaReference = (init?: MakeInit<MetaReference>): MetaReference => {
-  return withInit(createCommonMetaReference(), init)
+  return assignDefinedFields(createCommonMetaReference(), init)
 }
 
 /**
@@ -114,19 +122,21 @@ export const validateMeta = (meta: Meta, path = ''): Diagnostic[] => {
    * Reports every entry of one list whose key an earlier entry already took, locating the later one.
    */
   const checkDuplicates = <T>(items: T[], key: (item: T) => string, field: string, code: DiagnosticCode): void => {
-    findDuplicates(items, key).forEach((i) => {
+    findDuplicateIndices(items, key).forEach((i) => {
       diagnostics.push({ path: childPath(path, `${field}[${i}]`), code })
     })
   }
-  const byLanguage = (text: { language?: string | undefined }): string => lowerTag(text.language) ?? ''
-  const offset = checkNumberDomain(meta.offset, MIN_OFFSET, MAX_OFFSET)
+  const byLanguage = (text: { language?: string | undefined }): string => {
+    return lowerNonEmptyTag(text.language) ?? ''
+  }
+  const offset = classifyNumberDomain(meta.offset, MIN_OFFSET, MAX_OFFSET)
   if (offset === 'invalid') {
     diagnostics.push({ path: childPath(path, 'offset'), code: DiagnosticCode.MetaOffsetInvalid })
   } else if (offset === 'overflow') {
     diagnostics.push({ path: childPath(path, 'offset'), code: DiagnosticCode.MetaOffsetOverflow })
   }
   if (meta.duration !== undefined) {
-    const duration = checkNumberDomain(meta.duration, 0, MAX_DURATION)
+    const duration = classifyNumberDomain(meta.duration, 0, MAX_DURATION)
     if (duration === 'invalid') {
       diagnostics.push({ path: childPath(path, 'duration'), code: DiagnosticCode.MetaDurationInvalid })
     } else if (duration === 'overflow') {
@@ -142,7 +152,7 @@ export const validateMeta = (meta: Meta, path = ''): Diagnostic[] => {
   }
   // An ISRC is read by other catalogues, so one outside the shape they read names no recording; which case and separators it is written with is canonical form rather than shape.
   meta.isrcs.forEach((isrc, i) => {
-    if (isrc !== '' && !isIsrc(isrc)) {
+    if (isrc !== '' && !hasIsrcShape(isrc)) {
       diagnostics.push({ path: childPath(path, `isrcs[${i}]`), code: DiagnosticCode.MetaIsrcsMalformed })
     }
   })
@@ -181,7 +191,7 @@ export const canonicalizeMeta = (meta: Meta): Meta => {
   return {
     ...meta,
     unknowns: canonicalizeList(fieldsCommonUnknownEntry, meta.unknowns, (entry) => ({ ...entry })),
-    language: lowerTag(meta.language),
+    language: lowerNonEmptyTag(meta.language),
     titles: canonicalizeList(fieldsCommonText, meta.titles, canonicalizeText),
     artists: canonicalizeList(fieldsCommonText, meta.artists, canonicalizeText),
     albums: canonicalizeList(fieldsCommonText, meta.albums, canonicalizeText),
@@ -197,15 +207,15 @@ export const canonicalizeMeta = (meta: Meta): Meta => {
  * A positive offset makes the lyric appear earlier.
  * Compute in signed 64-bit, since a uint32 clock plus a sint32 offset overflows unsigned arithmetic.
  */
-export const applyOffset = (clock: number, offset: number): number => {
+export const applyTimeOffset = (clock: number, offset: number): number => {
   return clock + offset
 }
 
 /**
  * Removes a timeline offset from a stored time, yielding the playback clock at which it is reached.
- * This inverts applyOffset.
+ * This inverts applyTimeOffset.
  * The result may be negative, meaning before playback starts.
  */
-export const removeOffset = (time: number, offset: number): number => {
+export const removeTimeOffset = (time: number, offset: number): number => {
   return time - offset
 }

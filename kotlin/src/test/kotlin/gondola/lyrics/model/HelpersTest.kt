@@ -3,6 +3,7 @@ package gondola.lyrics.model
 import gondola.lyrics.model.common.AgentType
 import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.DiagnosticCode
+import gondola.lyrics.model.common.LineRomanView
 import gondola.lyrics.model.common.Meta
 import gondola.lyrics.model.common.SchemePreference
 import gondola.lyrics.model.common.Text
@@ -19,10 +20,13 @@ import gondola.lyrics.model.common.resolveDiagnosticPath
 import gondola.lyrics.model.common.validateTimeRange
 import gondola.lyrics.model.document.makeDocumentLineAnnotationRoman
 import gondola.lyrics.model.document.makeDocumentLineAnnotationRomanContentText
+import gondola.lyrics.model.document.makeDocumentLineAnnotationTranslation
 import gondola.lyrics.model.document.makeDocumentLineContentText
 import gondola.lyrics.model.document.makeDocumentWordAnnotationRoman
 import gondola.lyrics.model.document.makeDocumentWordAnnotationRuby
+import gondola.lyrics.model.document.makeDocumentWordAnnotationTranslation
 import gondola.lyrics.model.document.makeDocumentWordNormal
+import gondola.lyrics.model.document.pickDocumentItemByLanguage
 import gondola.lyrics.model.document.validateDocumentLineContent
 import gondola.lyrics.model.document.validateDocumentWords
 import gondola.lyrics.model.enriched.Line
@@ -30,19 +34,22 @@ import gondola.lyrics.model.enriched.LineContent
 import gondola.lyrics.model.enriched.Lyric
 import gondola.lyrics.model.enriched.Word
 import gondola.lyrics.model.enriched.WordType
-import gondola.lyrics.model.enriched.deriveEnrichedLineLanguages
-import gondola.lyrics.model.enriched.deriveEnrichedLineRomans
+import gondola.lyrics.model.enriched.deriveEnrichedLineRomanViews
 import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRoman
 import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationRomanContentText
+import gondola.lyrics.model.enriched.makeEnrichedLineAnnotationTranslation
 import gondola.lyrics.model.enriched.makeEnrichedLineContentText
 import gondola.lyrics.model.enriched.makeEnrichedLineContentWords
 import gondola.lyrics.model.enriched.makeEnrichedLineNormal
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotation
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRoman
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRuby
+import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationTranslation
 import gondola.lyrics.model.enriched.makeEnrichedWordNormal
 import gondola.lyrics.model.enriched.makeEnrichedWordSpace
+import gondola.lyrics.model.enriched.pickEnrichedItemByLanguage
 import gondola.lyrics.model.enriched.resolveEnrichedLineAgents
+import gondola.lyrics.model.enriched.resolveEnrichedLineLanguages
 import gondola.lyrics.model.enriched.validateEnrichedLineContent
 import gondola.lyrics.model.enriched.validateEnrichedWord
 import gondola.lyrics.model.enriched.validateEnrichedWords
@@ -168,6 +175,70 @@ class HelpersTest {
     }
 
     @Test
+    fun appliesOrderedLanguagePreferencesToEveryTypedWrapperInBothLayers() {
+        val preferences = listOf("", "zh", "EN")
+        val earlyPreference = listOf("en", "fr")
+        val unmatched = listOf("zh", "de")
+        fun <T> check(make: (String?) -> T, select: (List<T>, List<String>, Boolean) -> T?, selectSingle: (List<T>, String?) -> T?) {
+            val untagged = make(null)
+            val regional = make("en-US")
+            val exact = make("EN")
+            val tied = make("en")
+            val french = make("fr")
+            val emptyLanguage = make("")
+            val items = listOf(untagged, regional, exact, tied, french)
+
+            assertSame(exact, select(items, preferences, false))
+            assertSame(exact, select(items, listOf("en"), false))
+            assertSame(exact, selectSingle(items, "en"))
+            assertSame(regional, select(listOf(regional, french), earlyPreference, false))
+            assertSame(untagged, select(items, unmatched, true))
+            assertSame(emptyLanguage, select(listOf(exact, emptyLanguage), emptyList(), false))
+            assertNull(select(listOf(exact), unmatched, false))
+            assertSame(exact, select(listOf(exact), unmatched, true))
+            assertNull(select(emptyList(), preferences, true))
+            assertSame(untagged, selectSingle(items, null))
+            assertEquals(listOf(untagged, regional, exact, tied, french), items)
+        }
+        check({ makeDocumentLineAnnotationRoman(language = it) }, ::pickDocumentItemByLanguage) { items, wanted ->
+            pickDocumentItemByLanguage(items, wanted)
+        }
+        check({ makeDocumentLineAnnotationTranslation(language = it) }, ::pickDocumentItemByLanguage) { items, wanted ->
+            pickDocumentItemByLanguage(items, wanted)
+        }
+        check({ makeDocumentWordAnnotationRoman(language = it) }, ::pickDocumentItemByLanguage) { items, wanted ->
+            pickDocumentItemByLanguage(items, wanted)
+        }
+        check({ makeDocumentWordAnnotationRuby(language = it) }, ::pickDocumentItemByLanguage) { items, wanted ->
+            pickDocumentItemByLanguage(items, wanted)
+        }
+        check({ makeDocumentWordAnnotationTranslation(language = it) }, ::pickDocumentItemByLanguage) { items, wanted ->
+            pickDocumentItemByLanguage(items, wanted)
+        }
+        check({ makeDocumentWordNormal(language = it) }, ::pickDocumentItemByLanguage) { items, wanted ->
+            pickDocumentItemByLanguage(items, wanted)
+        }
+        check({ makeEnrichedLineAnnotationRoman(language = it) }, ::pickEnrichedItemByLanguage) { items, wanted ->
+            pickEnrichedItemByLanguage(items, wanted)
+        }
+        check({ makeEnrichedLineAnnotationTranslation(language = it) }, ::pickEnrichedItemByLanguage) { items, wanted ->
+            pickEnrichedItemByLanguage(items, wanted)
+        }
+        check({ makeEnrichedWordAnnotationRoman(language = it) }, ::pickEnrichedItemByLanguage) { items, wanted ->
+            pickEnrichedItemByLanguage(items, wanted)
+        }
+        check({ makeEnrichedWordAnnotationRuby(language = it) }, ::pickEnrichedItemByLanguage) { items, wanted ->
+            pickEnrichedItemByLanguage(items, wanted)
+        }
+        check({ makeEnrichedWordAnnotationTranslation(language = it) }, ::pickEnrichedItemByLanguage) { items, wanted ->
+            pickEnrichedItemByLanguage(items, wanted)
+        }
+        check({ makeEnrichedWordNormal(language = it) }, ::pickEnrichedItemByLanguage) { items, wanted ->
+            pickEnrichedItemByLanguage(items, wanted)
+        }
+    }
+
+    @Test
     fun preservesSingleLanguageRankingBoundariesAndSourceOrderOnTies() {
         val english = makeText(language = "en", text = "English")
         val extended = makeText(language = "en-US-x-demo", text = "Extended")
@@ -244,7 +315,7 @@ class HelpersTest {
     }
 
     @Test
-    fun derivesRomansSeparatelyBySchemeInFirstAppearanceOrder() {
+    fun derivesRomanViewsSeparatelyBySchemeInFirstAppearanceOrder() {
         val first = makeEnrichedWordAnnotation(
             romans = listOf(
                 makeEnrichedWordAnnotationRoman(
@@ -284,15 +355,15 @@ class HelpersTest {
             makeEnrichedWordSpace(text = " "),
         )
         val expected = listOf(
-            makeEnrichedLineAnnotationRoman(
+            LineRomanView(
                 language = "ja-latn",
                 scheme = "hepburn",
-                content = makeEnrichedLineAnnotationRomanContentText("shi chi"),
+                text = "shi chi",
             ),
-            makeEnrichedLineAnnotationRoman(language = "ja-latn", scheme = "kunrei", content = makeEnrichedLineAnnotationRomanContentText("si ti")),
-            makeEnrichedLineAnnotationRoman(language = "ja-latn", content = makeEnrichedLineAnnotationRomanContentText("default text")),
+            LineRomanView(language = "ja-latn", scheme = "kunrei", text = "si ti"),
+            LineRomanView(language = "ja-latn", text = "default text"),
         )
-        assertEquals(expected, deriveEnrichedLineRomans(makeEnrichedLineContentWords(words)))
+        assertEquals(expected, deriveEnrichedLineRomanViews(makeEnrichedLineContentWords(words)))
         val stored = gondola.lyrics.model.document.makeDocumentLineContentWords(
             words.map { word ->
                 val annotation = word.annotation?.let { source ->
@@ -314,14 +385,8 @@ class HelpersTest {
             },
         )
         assertEquals(
-            listOf(
-                Triple("ja-latn", "hepburn", "shi chi"),
-                Triple("ja-latn", "kunrei", "si ti"),
-                Triple("ja-latn", null, "default text"),
-            ),
-            gondola.lyrics.model.document.deriveDocumentLineRomans(stored).map {
-                Triple(it.language, it.scheme, gondola.lyrics.model.document.getDocumentLineAnnotationRomanText(it))
-            },
+            expected,
+            gondola.lyrics.model.document.deriveDocumentLineRomanViews(stored),
         )
         assertEquals("HEPBURN", first.romans[0].scheme)
     }
@@ -329,7 +394,7 @@ class HelpersTest {
     @Test
     fun derivesLowercasedLineLanguagesWithoutRepeats() {
         val line = makeEnrichedLineNormal(languages = listOf("JA-JP", "ja-jp", "EN"))
-        val languages = deriveEnrichedLineLanguages(line)
+        val languages = resolveEnrichedLineLanguages(line)
 
         assertEquals(listOf("ja-jp", "en"), languages)
         assertEquals(listOf("JA-JP", "ja-jp", "EN"), line.languages)
@@ -346,7 +411,7 @@ class HelpersTest {
                 ),
             ),
         )
-        assertEquals(listOf("en"), deriveEnrichedLineLanguages(line))
+        assertEquals(listOf("en"), resolveEnrichedLineLanguages(line))
     }
 
     // Resolving has to agree with what validate reports about a duplicate and an empty id, or the two tell different stories.

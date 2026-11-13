@@ -3,7 +3,7 @@
 package gondola.lyrics.model.common
 
 import gondola.lyrics.model.utils.childPath
-import gondola.lyrics.model.utils.lowerTag
+import gondola.lyrics.model.utils.lowerNonEmptyTag
 
 /**
  * Creates a Text, text with an optional BCP 47 language tag.
@@ -31,7 +31,7 @@ fun validateText(text: Text, path: String = ""): List<Diagnostic> {
  * Returns a copy of the Text with its language tag lowercased, treating an empty tag as unset.
  */
 fun canonicalizeText(text: Text): Text {
-    return text.copy(language = lowerTag(text.language))
+    return text.copy(language = lowerNonEmptyTag(text.language))
 }
 
 /**

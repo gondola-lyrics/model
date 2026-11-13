@@ -42,7 +42,7 @@ import {
   makePart,
   makeTimeRange,
   orderEnrichedLanguageUsages,
-  resolveDocumentAnnotationTokenTime,
+  resolveDocumentWordAnnotationTokenTime,
   validateDocumentWord,
   validateEnrichedLyric,
 } from '@root/index'
@@ -267,7 +267,7 @@ describe('canonicalize', () => {
       { language: 'ja-latn', scheme: 'hepburn', tokens: [token] },
     )
     deepStrictEqual(canonical.emphasis, false)
-    deepStrictEqual(resolveDocumentAnnotationTokenTime(token, canonical.annotation!.romans[0]!, canonical), time)
+    deepStrictEqual(resolveDocumentWordAnnotationTokenTime(token, canonical.annotation!.romans[0]!, canonical), time)
     deepStrictEqual(validateDocumentWord(canonical, '', TimingLevel.WORD), [])
     const originalNodes = collectNodes(word)
     deepStrictEqual(

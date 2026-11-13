@@ -8,7 +8,16 @@ import { decodeEnrichedLyric as decodeEnrichedLyricMessage, encodeEnrichedLyric 
 import { TimingLevel } from '@root/generated/common/index.gen'
 import { createEnrichedLyric, fieldsCommonAgent, fieldsCommonMeta, fieldsEnrichedLine } from '@root/generated/detail.gen'
 import { LineType, LyricStatus } from '@root/generated/enriched/index.gen'
-import { SEMVER_PATTERN, byTime, canonicalizeField, canonicalizeList, childPath, findUnordered, isUnresolved, withInit } from '@root/utils'
+import {
+  SEMVER_PATTERN,
+  byStartTime,
+  canonicalizeField,
+  canonicalizeList,
+  childPath,
+  findUnorderedStartTimeIndices,
+  isUnresolved,
+  assignDefinedFields,
+} from '@root/utils'
 import { read, write } from '@root/utils/wire'
 import { SCHEMA_VERSION } from '@root/version'
 
@@ -18,7 +27,7 @@ import {
   orderEnrichedLanguageUsages,
   validateEnrichedLanguageUsage,
 } from './language'
-import { canonicalizeEnrichedLine, orderEnrichedLine, validateEnrichedLine } from './line'
+import { canonicalizeEnrichedLine, orderEnrichedLineBackgrounds, validateEnrichedLine } from './line'
 
 /**
  * Creates a lyric with the current schema version.
@@ -28,7 +37,7 @@ export const makeEnrichedLyric = (
     status: LyricStatus.VALID | LyricStatus.INVALID
   },
 ): Lyric => {
-  return withInit(createEnrichedLyric(), {
+  return assignDefinedFields(createEnrichedLyric(), {
     status: init.status,
     version: SCHEMA_VERSION,
     format: init.format,
@@ -164,7 +173,7 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
     diagnostics.push({ path: 'timing', code: DiagnosticCode.LyricTimingWordMissing })
   }
   // The schema declares the list ordered, so a line starting before the one it follows is out of place.
-  findUnordered(lyric.lines, (line) => line.time).forEach((i) => {
+  findUnorderedStartTimeIndices(lyric.lines, (line) => line.time).forEach((i) => {
     diagnostics.push({ path: `lines[${i}]`, code: DiagnosticCode.LyricLinesUnordered })
   })
   diagnostics.push(
@@ -182,7 +191,7 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
 export const orderEnrichedLyric = (lyric: Lyric): Lyric => {
   return {
     ...lyric,
-    lines: [...lyric.lines].sort(byTime((line) => line.time)).map(orderEnrichedLine),
+    lines: [...lyric.lines].sort(byStartTime((line) => line.time)).map(orderEnrichedLineBackgrounds),
     languageUsages: orderEnrichedLanguageUsages(lyric.languageUsages),
   }
 }
@@ -199,7 +208,7 @@ export const canonicalizeEnrichedLyric = (lyric: Lyric): Lyric => {
     profile: lyric.profile.toLowerCase(),
     meta: canonicalizeField(fieldsCommonMeta, lyric.meta, canonicalizeMeta),
     agents: canonicalizeList(fieldsCommonAgent, lyric.agents, canonicalizeAgent),
-    lines: canonicalizeList(fieldsEnrichedLine, lyric.lines, canonicalizeEnrichedLine).sort(byTime((line) => line.time)),
+    lines: canonicalizeList(fieldsEnrichedLine, lyric.lines, canonicalizeEnrichedLine).sort(byStartTime((line) => line.time)),
     languageUsages: canonicalizeEnrichedLanguageUsages(lyric.languageUsages),
     extra: { ...lyric.extra },
   }

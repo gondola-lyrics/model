@@ -6,14 +6,13 @@ import gondola.lyrics.model.utils.MAX_TIME
 import gondola.lyrics.model.utils.canonicalizeList
 import gondola.lyrics.model.utils.childPath
 import gondola.lyrics.model.utils.findDefaultEntries
-import gondola.lyrics.model.utils.findDuplicates
+import gondola.lyrics.model.utils.findDuplicateIndices
 import gondola.lyrics.model.utils.isUnresolved
-import gondola.lyrics.model.utils.lowerTag
-import gondola.lyrics.model.utils.uint32
+import gondola.lyrics.model.utils.lowerNonEmptyTag
+import gondola.lyrics.model.utils.requireUInt32
 
 /**
- * An ISRC names a recording as two letters for the country, three for the registrant, then seven digits for the year and the designation.
- * It is read without case or separators, since those are the canonical form rather than part of the identifier, and a string outside this shape names no recording at all.
+ * Country, registrant, year, and designation make up the ISRC shape; assignment is not checked.
  */
 private val ISRC_PATTERN = Regex("^[A-Z]{2}[0-9A-Z]{3}[0-9]{7}$")
 private val ISRC_SEPARATORS = Regex("[^0-9a-zA-Z]")
@@ -40,7 +39,7 @@ fun makeMeta(
     return Meta(
         unknowns = unknowns,
         offset = offset.toInt(),
-        duration = duration?.let(::uint32),
+        duration = duration?.let(::requireUInt32),
         language = language,
         titles = titles,
         artists = artists,
@@ -118,10 +117,10 @@ fun validateMeta(meta: Meta, path: String = ""): List<Diagnostic> {
         }
     }
     // Titles and albums are one per language, while artists, authors and credited names are one per person, so only the first two are checked.
-    findDuplicates(meta.titles) { lowerTag(it.language) ?: "" }.forEach { index ->
+    findDuplicateIndices(meta.titles) { lowerNonEmptyTag(it.language) ?: "" }.forEach { index ->
         diagnostics.add(Diagnostic(childPath(path, "titles[$index]"), DiagnosticCode.MetaTitlesLanguageDuplicate))
     }
-    findDuplicates(meta.albums) { lowerTag(it.language) ?: "" }.forEach { index ->
+    findDuplicateIndices(meta.albums) { lowerNonEmptyTag(it.language) ?: "" }.forEach { index ->
         diagnostics.add(Diagnostic(childPath(path, "albums[$index]"), DiagnosticCode.MetaAlbumsLanguageDuplicate))
     }
     // Every list of text names something, whatever it is keyed by, so each entry is asked for its own text.
@@ -136,7 +135,7 @@ fun validateMeta(meta: Meta, path: String = ""): List<Diagnostic> {
         }
     }
     meta.credits.forEachIndexed { index, credit -> diagnostics.addAll(validateMetaCredit(credit, childPath(path, "credits[$index]"))) }
-    findDuplicates(meta.references) { it.platform.lowercase() }.forEach { index ->
+    findDuplicateIndices(meta.references) { it.platform.lowercase() }.forEach { index ->
         diagnostics.add(Diagnostic(childPath(path, "references[$index]"), DiagnosticCode.MetaReferencesPlatformDuplicate))
     }
     meta.references.forEachIndexed { index, reference ->
@@ -168,7 +167,7 @@ fun canonicalizeMetaReference(reference: MetaReference): MetaReference {
 fun canonicalizeMeta(meta: Meta): Meta {
     return meta.copy(
         unknowns = canonicalizeList(meta.unknowns) { it },
-        language = lowerTag(meta.language),
+        language = lowerNonEmptyTag(meta.language),
         titles = canonicalizeList(meta.titles, ::canonicalizeText),
         artists = canonicalizeList(meta.artists, ::canonicalizeText),
         albums = canonicalizeList(meta.albums, ::canonicalizeText),
@@ -184,15 +183,15 @@ fun canonicalizeMeta(meta: Meta): Meta {
  * A positive offset makes the lyric appear earlier.
  * Compute in signed 64-bit, since a uint32 clock plus a sint32 offset overflows unsigned arithmetic.
  */
-fun applyOffset(clock: Long, offset: Long): Long {
+fun applyTimeOffset(clock: Long, offset: Long): Long {
     return clock + offset
 }
 
 /**
  * Removes a timeline offset from a stored time, yielding the playback clock at which it is reached.
- * This inverts applyOffset.
+ * This inverts applyTimeOffset.
  * The result may be negative, meaning before playback starts.
  */
-fun removeOffset(time: Long, offset: Long): Long {
+fun removeTimeOffset(time: Long, offset: Long): Long {
     return time - offset
 }
