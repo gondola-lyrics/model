@@ -4,6 +4,7 @@ import gondola.lyrics.model.common.AgentType
 import gondola.lyrics.model.common.Diagnostic
 import gondola.lyrics.model.common.DiagnosticCode
 import gondola.lyrics.model.common.Meta
+import gondola.lyrics.model.common.SchemePreference
 import gondola.lyrics.model.common.Text
 import gondola.lyrics.model.common.TimeRange
 import gondola.lyrics.model.common.TimingLevel
@@ -13,9 +14,14 @@ import gondola.lyrics.model.common.makeText
 import gondola.lyrics.model.common.makeTextToken
 import gondola.lyrics.model.common.makeTimeRange
 import gondola.lyrics.model.common.pickItemByLanguage
+import gondola.lyrics.model.common.pickItemByScheme
 import gondola.lyrics.model.common.resolveDiagnosticPath
 import gondola.lyrics.model.common.validateTimeRange
+import gondola.lyrics.model.document.makeDocumentLineAnnotationRoman
+import gondola.lyrics.model.document.makeDocumentLineAnnotationRomanContentText
 import gondola.lyrics.model.document.makeDocumentLineContentText
+import gondola.lyrics.model.document.makeDocumentWordAnnotationRoman
+import gondola.lyrics.model.document.makeDocumentWordAnnotationRuby
 import gondola.lyrics.model.document.makeDocumentWordNormal
 import gondola.lyrics.model.document.validateDocumentLineContent
 import gondola.lyrics.model.document.validateDocumentWords
@@ -33,6 +39,7 @@ import gondola.lyrics.model.enriched.makeEnrichedLineContentWords
 import gondola.lyrics.model.enriched.makeEnrichedLineNormal
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotation
 import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRoman
+import gondola.lyrics.model.enriched.makeEnrichedWordAnnotationRuby
 import gondola.lyrics.model.enriched.makeEnrichedWordNormal
 import gondola.lyrics.model.enriched.makeEnrichedWordSpace
 import gondola.lyrics.model.enriched.resolveEnrichedLineAgents
@@ -46,6 +53,98 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 
 class HelpersTest {
+    @Test
+    fun selectsCaseInsensitiveSchemesAndKeepsOriginalRomanOrRubyItemsInBothLayers() {
+        val time = makeTimeRange(start = 1000, end = 2000)
+        val tokens = listOf(makeTextToken(text = "shi", time = time, extra = mapOf("source" to "kept")))
+        val language = "ja-Latn"
+        fun <T> check(make: (String) -> T, languageOf: (T) -> String?, schemeOf: (T) -> String?) {
+            val items = listOf(make("kunrei"), make("HePbUrN"), make("hepburn"))
+            val preference = SchemePreference(scheme = "HEPBURN", languages = listOf("ja-Latn"))
+            assertSame(items[1], pickItemByScheme(items, preference, languageOf, schemeOf))
+            assertSame(items[1], pickItemByScheme(items, SchemePreference(scheme = "hepburn", languages = "JA-latn"), languageOf, schemeOf))
+        }
+        check(
+            {
+                makeDocumentLineAnnotationRoman(
+                    language = language,
+                    scheme = it,
+                    time = time,
+                    content = makeDocumentLineAnnotationRomanContentText("shi"),
+                )
+            },
+            { it.language },
+            { it.scheme },
+        )
+        check(
+            {
+                makeEnrichedLineAnnotationRoman(
+                    language = language,
+                    scheme = it,
+                    time = time,
+                    content = makeEnrichedLineAnnotationRomanContentText("shi"),
+                )
+            },
+            { it.language },
+            { it.scheme },
+        )
+        check({ makeDocumentWordAnnotationRoman(language = language, scheme = it, time = time, tokens = tokens) }, { it.language }, { it.scheme })
+        check({ makeEnrichedWordAnnotationRoman(language = language, scheme = it, time = time, tokens = tokens) }, { it.language }, { it.scheme })
+        check({ makeDocumentWordAnnotationRuby(language = language, scheme = it, time = time, tokens = tokens) }, { it.language }, { it.scheme })
+        check({ makeEnrichedWordAnnotationRuby(language = language, scheme = it, time = time, tokens = tokens) }, { it.language }, { it.scheme })
+    }
+
+    @Test
+    fun distinguishesUnrestrictedAndEmptySchemesWithOrderedLanguagePreferences() {
+        val other = makeDocumentWordAnnotationRoman(language = "ja-Latn", scheme = "kunrei")
+        val unspecified = makeDocumentWordAnnotationRoman(language = "ja-Latn")
+        val empty = makeDocumentWordAnnotationRoman(language = "ja-Latn", scheme = "")
+        val japanese = makeDocumentWordAnnotationRoman(language = "ja-Latn", scheme = "hepburn")
+        val english = makeDocumentWordAnnotationRoman(language = "en", scheme = "hepburn")
+        val defaultItem = makeDocumentWordAnnotationRoman(scheme = "hepburn")
+        val items = listOf(other, unspecified, empty, japanese, english, defaultItem)
+        fun select(preference: SchemePreference) = pickItemByScheme(items, preference, { it.language }, { it.scheme })
+
+        assertSame(other, select(SchemePreference(languages = "ja-Latn")))
+        assertSame(other, select(SchemePreference(scheme = null, languages = "ja-Latn")))
+        assertSame(unspecified, select(SchemePreference(scheme = "", languages = "ja-Latn")))
+        assertSame(
+            empty,
+            pickItemByScheme(listOf(empty, unspecified), SchemePreference(scheme = "", languages = "ja-Latn"), {
+                it.language
+            }, { it.scheme }),
+        )
+        assertSame(english, select(SchemePreference(scheme = "hepburn", languages = listOf("zh", "en"))))
+        assertSame(japanese, select(SchemePreference(scheme = "hepburn", languages = listOf("ja", "en"))))
+        assertSame(english, select(SchemePreference(scheme = "hepburn", languages = listOf("", "en"))))
+        assertSame(defaultItem, select(SchemePreference(scheme = "hepburn")))
+        assertSame(defaultItem, pickItemByScheme(items, languageOf = { it.language }, schemeOf = { it.scheme }))
+    }
+
+    @Test
+    fun keepsDefaultAndFirstItemFallbackInsideTheExactSchemeFilter() {
+        val other = makeDocumentWordAnnotationRoman(language = "fr", scheme = "kunrei")
+        val selected = makeDocumentWordAnnotationRoman(language = "en", scheme = "hepburn")
+        val defaultItem = makeDocumentWordAnnotationRoman(scheme = "hepburn")
+        val items = listOf(other, selected)
+        fun select(preference: SchemePreference) = pickItemByScheme(items, preference, { it.language }, { it.scheme })
+
+        assertNull(select(SchemePreference(scheme = "hepburn", languages = "fr")))
+        assertSame(selected, select(SchemePreference(scheme = "hepburn", languages = "fr", fallback = true)))
+        assertSame(
+            defaultItem,
+            pickItemByScheme(items + defaultItem, SchemePreference(scheme = "hepburn", languages = "fr", fallback = true), {
+                it.language
+            }, { it.scheme }),
+        )
+        for (scheme in listOf("missing", "hepb", " hepburn ", "")) {
+            assertNull(select(SchemePreference(scheme = scheme, languages = "en", fallback = true)))
+        }
+        assertNull(select(SchemePreference(scheme = "hepburn")))
+        assertSame(selected, select(SchemePreference(scheme = "hepburn", fallback = true)))
+        assertNull(pickItemByScheme(emptyList<Text>(), SchemePreference(scheme = "hepburn", fallback = true), { it.language }, { null }))
+    }
+
     @Test
     fun triesOrderedLanguagePreferencesBeforeFallingBackToAnUntaggedEntry() {
         val defaultItem = makeText(text = "Default")

@@ -12,6 +12,7 @@ import {
   makeDocumentLineContentWords,
   makeDocumentWordAnnotation,
   makeDocumentWordAnnotationRoman,
+  makeDocumentWordAnnotationRuby,
   makeDocumentWordNormal,
   makeDocumentWordSpace,
   makeEnrichedLineAnnotationRoman,
@@ -20,13 +21,77 @@ import {
   makeEnrichedLineNormal,
   makeEnrichedWordAnnotation,
   makeEnrichedWordAnnotationRoman,
+  makeEnrichedWordAnnotationRuby,
   makeTextToken,
   makeEnrichedWordNormal,
   makeEnrichedWordSpace,
   makeText,
+  makeTimeRange,
   pickItemByLanguage,
+  pickItemByScheme,
   resolveLineAgents,
 } from '@root/index'
+
+describe('pick by scheme', () => {
+  it('selects case-insensitive schemes and keeps the original roman or ruby item in both layers', () => {
+    const time = makeTimeRange({ start: 1000, end: 2000 })
+    const tokens = [makeTextToken({ text: 'shi', time, extra: { source: 'kept' } })]
+    const language = 'ja-Latn'
+    const factories = [
+      (scheme: string) => makeDocumentLineAnnotationRoman({ language, scheme, time, content: makeDocumentLineAnnotationRomanContentText('shi') }),
+      (scheme: string) => makeEnrichedLineAnnotationRoman({ language, scheme, time, content: makeEnrichedLineAnnotationRomanContentText('shi') }),
+      (scheme: string) => makeDocumentWordAnnotationRoman({ language, scheme, time, tokens }),
+      (scheme: string) => makeEnrichedWordAnnotationRoman({ language, scheme, time, tokens }),
+      (scheme: string) => makeDocumentWordAnnotationRuby({ language, scheme, time, tokens }),
+      (scheme: string) => makeEnrichedWordAnnotationRuby({ language, scheme, time, tokens }),
+    ]
+    for (const make of factories) {
+      const items = [make('kunrei'), make('HePbUrN'), make('hepburn')] as const
+      const preference = { scheme: 'HEPBURN', languages: ['ja-Latn'] as const }
+      const snapshot = structuredClone({ items, preference })
+      strictEqual(pickItemByScheme(items, preference), items[1])
+      strictEqual(pickItemByScheme(items, { scheme: 'hepburn', languages: 'JA-latn' }), items[1])
+      deepStrictEqual({ items, preference }, snapshot)
+    }
+  })
+
+  it('distinguishes unrestricted and empty schemes while applying ordered language preferences', () => {
+    const other = makeDocumentWordAnnotationRoman({ language: 'ja-Latn', scheme: 'kunrei' })
+    const unspecified = makeDocumentWordAnnotationRoman({ language: 'ja-Latn' })
+    const empty = makeDocumentWordAnnotationRoman({ language: 'ja-Latn', scheme: '' })
+    const japanese = makeDocumentWordAnnotationRoman({ language: 'ja-Latn', scheme: 'hepburn' })
+    const english = makeDocumentWordAnnotationRoman({ language: 'en', scheme: 'hepburn' })
+    const defaultItem = makeDocumentWordAnnotationRoman({ scheme: 'hepburn' })
+    const items = [other, unspecified, empty, japanese, english, defaultItem] as const
+
+    strictEqual(pickItemByScheme(items, { languages: 'ja-Latn' }), other)
+    strictEqual(pickItemByScheme(items, { scheme: undefined, languages: 'ja-Latn' }), other)
+    strictEqual(pickItemByScheme(items, { scheme: '', languages: 'ja-Latn' }), unspecified)
+    strictEqual(pickItemByScheme([empty, unspecified], { scheme: '', languages: 'ja-Latn' }), empty)
+    strictEqual(pickItemByScheme(items, { scheme: 'hepburn', languages: ['zh', 'en'] }), english)
+    strictEqual(pickItemByScheme(items, { scheme: 'hepburn', languages: ['ja', 'en'] }), japanese)
+    strictEqual(pickItemByScheme(items, { scheme: 'hepburn', languages: ['', 'en'] }), english)
+    strictEqual(pickItemByScheme(items, { scheme: 'hepburn' }), defaultItem)
+    strictEqual(pickItemByScheme(items), defaultItem)
+  })
+
+  it('keeps default and first-item fallback inside the exact scheme filter', () => {
+    const other = makeDocumentWordAnnotationRoman({ language: 'fr', scheme: 'kunrei' })
+    const selected = makeDocumentWordAnnotationRoman({ language: 'en', scheme: 'hepburn' })
+    const defaultItem = makeDocumentWordAnnotationRoman({ scheme: 'hepburn' })
+    const items = [other, selected] as const
+
+    strictEqual(pickItemByScheme(items, { scheme: 'hepburn', languages: 'fr' }), undefined)
+    strictEqual(pickItemByScheme(items, { scheme: 'hepburn', languages: 'fr', fallback: true }), selected)
+    strictEqual(pickItemByScheme([...items, defaultItem], { scheme: 'hepburn', languages: 'fr', fallback: true }), defaultItem)
+    for (const scheme of ['missing', 'hepb', ' hepburn ', '']) {
+      strictEqual(pickItemByScheme(items, { scheme, languages: 'en', fallback: true }), undefined)
+    }
+    strictEqual(pickItemByScheme(items, { scheme: 'hepburn' }), undefined)
+    strictEqual(pickItemByScheme(items, { scheme: 'hepburn', fallback: true }), selected)
+    strictEqual(pickItemByScheme([], { scheme: 'hepburn', fallback: true }), undefined)
+  })
+})
 
 describe('pick by language', () => {
   it('tries ordered preferences before falling back to an untagged entry', () => {
