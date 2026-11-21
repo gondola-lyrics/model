@@ -45,7 +45,7 @@ BINDINGS = {
         ("package=gondola.lyrics.model",),
     ),
     "go": Binding(("go",), ("**", "*.gen.go"), ("module=github.com/gondola-lyrics/model/go",)),
-    "cpp": Binding(("cpp", "include"), ("**", "*.gen.hpp")),
+    "cpp": Binding(("cpp", "generated"), ("**", "*.gen.*")),
 }
 
 

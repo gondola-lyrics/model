@@ -1,16 +1,21 @@
 """
-Renders the C++ models and schema version into cpp/include.
+Renders C++ model headers and private wire codecs.
 """
 
 import posixpath
 
 from schema import Enum, Field, Message, ProtoFile, Schema
 
-from .common import HEADER, option, pascal, slashes
+from .common import HEADER, function_name, option, pascal, slashes
 
 SCALARS = {"string": "std::string", "bool": "bool", "uint32": "std::uint32_t", "sint32": "std::int32_t"}
 NAMESPACE = "gondola::lyrics::model"
 INCLUDE_DIR = posixpath.join(NAMESPACE.replace("::", "/"), "generated")
+CODEC_DIR = "src/utils"
+UTILS_NAMESPACE = f"{NAMESPACE}::utils"
+GENERATED_NAMESPACE = f"{UTILS_NAMESPACE}::generated"
+WIRE_METHODS = {"string": "string", "bool": "boolean", "uint32": "uint32", "sint32": "sint32"}
+WIRE_ROOTS = {("document", "Lyric"), ("enriched", "Lyric")}
 
 
 def header_name(path: str) -> str:
@@ -89,24 +94,128 @@ def render_model(proto_file: ProtoFile, messages: list[Message]) -> tuple[str, s
         out += f"inline bool operator=={signature} {{\n  return {compare};\n}}\n\n"
         out += f"inline bool operator!={signature} {{ return !(a == b); }}\n\n"
     out += f"}}  // namespace {namespace}\n"
-    return (header_name(proto_file.name), out)
+    return (posixpath.join("include", header_name(proto_file.name)), out)
 
 
 def render_version(version: str) -> tuple[str, str]:
     out = f"// {HEADER}\n#pragma once\n\nnamespace {NAMESPACE} {{\n\n"
     out += f'inline constexpr const char* SCHEMA_VERSION = "{version}";\n\n'
     out += f"}}  // namespace {NAMESPACE}\n"
-    return (header_name("version"), out)
+    return (posixpath.join("include", header_name("version")), out)
+
+
+def checked(call: str, indent: str, condition: str = "") -> str:
+    test = f"{condition} && !{call}" if condition else f"!{call}"
+    return f"{indent}if ({test}) {{\n{indent}  return false;\n{indent}}}\n"
+
+
+def render_encode(item: Field) -> str:
+    name = f"value.{item.name}"
+    tag = item.tag
+    if item.shape == "map":
+        return checked(f"w.string_map({tag}, {name})", "  ")
+    if item.shape == "enum":
+        number = f"static_cast<std::int32_t>({name})"
+        return checked(f"w.int32({tag}, {number})", "  ", f"{number} != 0")
+    if item.shape in ("message", "list-message"):
+        encode = function_name("encode", item.ref)
+        if item.shape == "message":
+            return checked(f"w.message({tag}, *{name}, {encode})", "  ", name)
+        call = f"w.message({tag}, element, {encode})"
+    else:
+        method = WIRE_METHODS[item.scalar]
+        if item.shape == "scalar":
+            condition = {
+                "string": f"!{name}.empty()",
+                "bool": name,
+                "uint32": f"{name} != 0",
+                "sint32": f"{name} != 0",
+            }[item.scalar]
+            return checked(f"w.{method}({tag}, {name})", "  ", condition)
+        if item.shape == "optional":
+            return checked(f"w.{method}({tag}, *{name})", "  ", name)
+        call = f"w.{method}({tag}, element)"
+    return f"  for (const auto& element : {name}) {{\n{checked(call, '    ')}  }}\n"
+
+
+def render_decode(item: Field) -> str:
+    name = f"value.{item.name}"
+    tag = item.tag
+    if item.shape == "map":
+        call = f"r.string_map_entry({name})"
+    elif item.shape == "enum":
+        call = f"r.enum_value({name})"
+    elif item.shape in ("message", "list-message"):
+        decode = function_name("decode", item.ref)
+        target = f"{name}.emplace_back()" if item.shape == "list-message" else name
+        call = f"r.message({target}, {decode})"
+    else:
+        method = WIRE_METHODS[item.scalar]
+        if item.shape == "list-scalar":
+            out = f"    case {tag}: {{\n      {SCALARS[item.scalar]} element;\n"
+            out += checked(f"r.{method}(element)", "      ")
+            return out + f"      {name}.push_back(std::move(element));\n      break;\n    }}\n"
+        target = f"{name}.emplace()" if item.shape == "optional" else name
+        call = f"r.{method}({target})"
+    return f"    case {tag}:\n{checked(call, '      ')}      break;\n"
+
+
+def codec_signatures(message: Message) -> tuple[str, str]:
+    type_name = f"{message.pkg}::{message.name}"
+    encode = function_name("encode", message)
+    decode = function_name("decode", message)
+    return (
+        f"bool {encode}(Writer& w, const {type_name}& value)",
+        f"bool {decode}(Reader& r, {type_name}& value)",
+    )
+
+
+def render_codec(model: Schema) -> tuple[str, str]:
+    out = f"// {HEADER}\n\n#include <cstdint>\n#include <utility>\n\n"
+    out += "".join(f"#include <{header_name(file.name)}>\n" for file in sorted(model.files, key=lambda file: file.name))
+    out += f'\n#include "detail.gen.hpp"\n#include "utils/wire.hpp"\n\nnamespace {GENERATED_NAMESPACE} {{\n\n'
+    for message in model.messages:
+        linkage = "" if (message.pkg, message.name) in WIRE_ROOTS else "static "
+        encode, decode = codec_signatures(message)
+
+        out += f"{linkage}{encode} {{\n"
+        out += "".join(render_encode(item) for item in message.by_number)
+        out += "  return true;\n}\n\n"
+
+        out += f"{linkage}{decode} {{\n"
+        out += "  while (!r.empty()) {\n    std::uint32_t tag;\n"
+        out += checked("r.tag(tag)", "    ")
+        out += "    switch (tag) {\n"
+        out += "".join(render_decode(item) for item in message.by_number)
+        out += f"    default:\n{checked('r.skip(tag)', '      ')}"
+        out += "    }\n  }\n  return true;\n}\n\n"
+    out += f"}} // namespace {GENERATED_NAMESPACE}\n"
+    return (posixpath.join(CODEC_DIR, "codec.gen.cpp"), out)
+
+
+def render_detail(model: Schema) -> tuple[str, str]:
+    roots = [message for message in model.messages if (message.pkg, message.name) in WIRE_ROOTS]
+    out = f"// {HEADER}\n#pragma once\n\n"
+    for message in roots:
+        namespace = f"{NAMESPACE}::{message.pkg}"
+        out += f"namespace {namespace} {{\nstruct {message.name};\n}} // namespace {namespace}\n\n"
+    out += f"namespace {UTILS_NAMESPACE} {{\n\nclass Reader;\nclass Writer;\n\n"
+    out += f"}} // namespace {UTILS_NAMESPACE}\n\n"
+    out += f"namespace {GENERATED_NAMESPACE} {{\n\n"
+    for message in roots:
+        encode, decode = codec_signatures(message)
+        out += f"{encode};\n{decode};\n\n"
+    out += f"}} // namespace {GENERATED_NAMESPACE}\n"
+    return (posixpath.join(CODEC_DIR, "detail.gen.hpp"), out)
 
 
 def generate(model: Schema, options: dict[str, str]) -> list[tuple[str, str]]:
     messages_by_file: dict[str, list[Message]] = {}
     for message in model.messages:
         messages_by_file.setdefault(message.file, []).append(message)
-    # The codec and detail headers are populated during the C++ binding migration.
-    internal = [(header_name(name), f"// {HEADER}\n#pragma once\n") for name in ("codec", "detail")]
     return [
         *(render_model(proto_file, messages_by_file.get(proto_file.name, [])) for proto_file in model.files),
         render_version(option(options, "version")),
-        *internal,
+        render_codec(model),
+        render_detail(model),
     ]
