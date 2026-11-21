@@ -3,6 +3,14 @@ project(gondola_lyrics_model LANGUAGES CXX)
 
 add_library(gondola_lyrics_model STATIC
   src/codec.cpp
+  src/common/agent.cpp
+  src/common/diagnostic.cpp
+  src/common/language.cpp
+  src/common/meta.cpp
+  src/common/part.cpp
+  src/common/text.cpp
+  src/common/time.cpp
+  src/common/unknown.cpp
   src/utils/wire.cpp
   generated/src/utils/codec.gen.cpp
 )
