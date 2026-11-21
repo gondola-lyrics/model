@@ -1,29 +1,7 @@
 #pragma once
 
-#include <optional>
-#include <string>
-#include <string_view>
-
 #include <gondola/lyrics/model/common.hpp>
-#include <gondola/lyrics/model/generated/enriched/language.gen.hpp>
-#include <gondola/lyrics/model/generated/enriched/line.gen.hpp>
-#include <gondola/lyrics/model/generated/enriched/lyric.gen.hpp>
-#include <gondola/lyrics/model/generated/enriched/word.gen.hpp>
-
-namespace gondola::lyrics::model::enriched {
-
-	/**
- * Encodes a lyric as Protobuf bytes.
- *
- * Returns no value for invalid UTF-8 or a message larger than the Protobuf size limit.
- */
-	[[nodiscard]] std::optional<std::string> encode(const Lyric& lyric);
-
-	/**
- * Decodes Protobuf bytes into an owned lyric model.
- *
- * Returns no value for malformed wire data. Semantic validation is separate.
- */
-	[[nodiscard]] std::optional<Lyric> decode(std::string_view bytes);
-
-} // namespace gondola::lyrics::model::enriched
+#include <gondola/lyrics/model/enriched/language.hpp>
+#include <gondola/lyrics/model/enriched/line.hpp>
+#include <gondola/lyrics/model/enriched/lyric.hpp>
+#include <gondola/lyrics/model/enriched/word.hpp>
