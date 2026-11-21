@@ -21,5 +21,4 @@
 *.sh text eol=lf
 
 # Generated bindings
-node/src/generated/** linguist-generated=true
-kotlin/src/generated/** linguist-generated=true
+*.gen.* linguist-generated=true

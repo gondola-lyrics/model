@@ -4,22 +4,44 @@ Renders the C++ models and schema version into cpp/include.
 
 import posixpath
 
-from schema import Field, Message, Package, Schema
+from schema import Enum, Field, Message, ProtoFile, Schema
 
-from .common import HEADER, option, outside_refs, pascal, slashes
+from .common import HEADER, option, pascal, slashes
 
 SCALARS = {"string": "std::string", "bool": "bool", "uint32": "std::uint32_t", "sint32": "std::int32_t"}
 NAMESPACE = "gondola::lyrics::model"
-INCLUDE_DIR = posixpath.join("gondola", "model")
+INCLUDE_DIR = posixpath.join(NAMESPACE.replace("::", "/"), "generated")
 
 
-def header_name(pkg: str) -> str:
-    return posixpath.join(INCLUDE_DIR, f"{pkg}.gen.hpp")
+def header_name(path: str) -> str:
+    stem = posixpath.splitext(path)[0]
+    return posixpath.join(INCLUDE_DIR, f"{stem}.gen.hpp")
 
 
-def render_model(group: Package, version: str) -> tuple[str, str]:
-    def ref(item: Message) -> str:
-        return item.name if item.pkg == group.name else f"{item.pkg}::{item.name}"
+def render_includes(proto_file: ProtoFile) -> str:
+    standard = {"cstdint"} if proto_file.enums else set()
+    dependencies = set()
+    for message in proto_file.messages:
+        for item in message.fields:
+            if item.scalar in ("uint32", "sint32"):
+                standard.add("cstdint")
+            if item.scalar == "string":
+                standard.add("string")
+            if item.shape in ("optional", "message"):
+                standard.add("optional")
+            if item.shape in ("list-scalar", "list-message"):
+                standard.add("vector")
+            if item.shape == "map":
+                standard.update(("map", "string"))
+            if item.ref is not None and item.ref.file != proto_file.name:
+                dependencies.add(header_name(item.ref.file))
+    blocks = ["".join(f"#include <{name}>\n" for name in sorted(group)) for group in (standard, dependencies) if group]
+    return "\n".join(blocks)
+
+
+def render_model(proto_file: ProtoFile, messages: list[Message]) -> tuple[str, str]:
+    def ref(item: Message | Enum) -> str:
+        return item.name if item.pkg == proto_file.pkg else f"{item.pkg}::{item.name}"
 
     def field_type(item: Field) -> str:
         if item.shape == "scalar":
@@ -46,25 +68,17 @@ def render_model(group: Package, version: str) -> tuple[str, str]:
         return ""
 
     out = f"// {HEADER}\n#pragma once\n\n"
-    out += "".join(f"#include <{name}>\n" for name in ("cstdint", "map", "optional", "string", "vector"))
-    outside = list(outside_refs(group))
-    if outside:
-        out += "\n" + "".join(f"#include <{header_name(pkg)}>\n" for pkg in outside)
-    out += "\n"
-    if group.name == "common":
-        out += (
-            f"namespace {NAMESPACE} {{\n\n"
-            f'inline constexpr const char* SCHEMA_VERSION = "{version}";\n\n'
-            f"}}  // namespace {NAMESPACE}\n\n"
-        )
-
-    out += f"namespace {NAMESPACE}::{group.name} {{\n\n"
-    for item in group.enums:
+    includes = render_includes(proto_file)
+    if includes:
+        out += f"{includes}\n"
+    namespace = f"{NAMESPACE}::{proto_file.pkg}"
+    out += f"namespace {namespace} {{\n\n"
+    for item in proto_file.enums:
         out += f"{slashes(item.comment)}enum class {item.name} : std::int32_t {{\n"
         for value in item.values:
             out += f"{slashes(value.comment, '  ')}  k{pascal(value.short)} = {value.number},\n"
         out += "};\n\n"
-    for message in group.messages:
+    for message in messages:
         out += f"{slashes(message.comment)}struct {message.name} {{\n"
         for item in message.fields:
             out += f"{slashes(item.comment, '  ')}  {field_type(item)} {item.name}{initializer(item)};\n"
@@ -74,12 +88,25 @@ def render_model(group: Package, version: str) -> tuple[str, str]:
         signature = f"(const {message.name}& a, const {message.name}& b)"
         out += f"inline bool operator=={signature} {{\n  return {compare};\n}}\n\n"
         out += f"inline bool operator!={signature} {{ return !(a == b); }}\n\n"
-    out += f"}}  // namespace {NAMESPACE}::{group.name}\n"
-    return (header_name(group.name), out)
+    out += f"}}  // namespace {namespace}\n"
+    return (header_name(proto_file.name), out)
+
+
+def render_version(version: str) -> tuple[str, str]:
+    out = f"// {HEADER}\n#pragma once\n\nnamespace {NAMESPACE} {{\n\n"
+    out += f'inline constexpr const char* SCHEMA_VERSION = "{version}";\n\n'
+    out += f"}}  // namespace {NAMESPACE}\n"
+    return (header_name("version"), out)
 
 
 def generate(model: Schema, options: dict[str, str]) -> list[tuple[str, str]]:
-    version = option(options, "version")
+    messages_by_file: dict[str, list[Message]] = {}
+    for message in model.messages:
+        messages_by_file.setdefault(message.file, []).append(message)
     # The codec and detail headers are populated during the C++ binding migration.
     internal = [(header_name(name), f"// {HEADER}\n#pragma once\n") for name in ("codec", "detail")]
-    return [*(render_model(group, version) for group in model.packages), *internal]
+    return [
+        *(render_model(proto_file, messages_by_file.get(proto_file.name, [])) for proto_file in model.files),
+        render_version(option(options, "version")),
+        *internal,
+    ]

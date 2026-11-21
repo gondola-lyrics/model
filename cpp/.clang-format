@@ -1,0 +1,108 @@
+BasedOnStyle: Google
+Language: Cpp
+Standard: c++17
+
+# Tab for indent, spaces for alignment so columns stay tab-width independent.
+UseTab: AlignWithSpaces
+TabWidth: 8
+IndentWidth: 8
+ContinuationIndentWidth: 8
+# Indent each namespace body one level.
+NamespaceIndentation: All
+IndentExternBlock: Indent
+# Pull public:/private: back to class alignment.
+AccessModifierOffset: -8
+
+BreakBeforeBraces: Attach
+BraceWrapping:
+  AfterFunction: false
+  AfterClass: false
+  AfterStruct: false
+  AfterEnum: false
+  AfterUnion: false
+  AfterNamespace: false
+  AfterControlStatement: Never
+  BeforeElse: false
+  BeforeCatch: false
+  BeforeLambdaBody: false
+# Always brace if/for/while.
+InsertBraces: true
+
+# Space after if/for keywords, none for calls.
+SpaceBeforeParens: ControlStatements
+SpacesInParens: Never
+SpacesInSquareBrackets: false
+SpaceBeforeCpp11BracedList: false
+Cpp11BracedListStyle: true
+SpacesBeforeTrailingComments: 1
+
+# Must stay off, otherwise Google base infers and overrides the two below.
+DerivePointerAlignment: false
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# Wrapped calls place each argument on its own line, one continuation tab in (not under the open bracket), so indentation remains tab-width independent.
+ColumnLimit: 180
+AlignAfterOpenBracket: DontAlign
+# Comments are written one sentence per line and must never be re-split, so the limit does not apply to them.
+ReflowComments: Never
+BinPackArguments: false
+BinPackParameters: false
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+BreakBeforeBinaryOperators: None
+AlignOperands: DontAlign
+
+AlignConsecutiveAssignments:
+  Enabled: true
+  # Blank lines/comments break the alignment group.
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 0
+# Don't column-pad cells in array literals — it's noisy in numeric tables and breaks clang-format indentation when the last item has no comma.
+AlignArrayOfStructures: None
+
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+
+IndentCaseLabels: false
+IndentCaseBlocks: false
+
+MaxEmptyLinesToKeep: 1
+KeepEmptyLines:
+  AtEndOfFile: false
+  AtStartOfBlock: false
+  AtStartOfFile: false
+# Don't force blank lines between definitions.
+SeparateDefinitionBlocks: Leave
+
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  # System headers, both the extensionless C++ ones and the C ones that keep their suffix.
+  - Regex: '^<[^./]+>'
+    Priority: 1
+  - Regex: '^<[^/]+\.h>'
+    Priority: 1
+  - Regex: '^<.*/.*>'
+    Priority: 2
+  - Regex: '^".*"'
+    Priority: 3
+  - Regex: '.*'
+    Priority: 4
+
+IndentPPDirectives: None
