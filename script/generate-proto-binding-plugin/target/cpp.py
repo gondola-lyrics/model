@@ -113,7 +113,7 @@ def render_encode(item: Field) -> str:
     name = f"value.{item.name}"
     tag = item.tag
     if item.shape == "map":
-        return checked(f"w.string_map({tag}, {name})", "  ")
+        return checked(f"w.stringMap({tag}, {name})", "  ")
     if item.shape == "enum":
         number = f"static_cast<std::int32_t>({name})"
         return checked(f"w.int32({tag}, {number})", "  ", f"{number} != 0")
@@ -142,9 +142,9 @@ def render_decode(item: Field) -> str:
     name = f"value.{item.name}"
     tag = item.tag
     if item.shape == "map":
-        call = f"r.string_map_entry({name})"
+        call = f"r.stringMapEntry({name})"
     elif item.shape == "enum":
-        call = f"r.enum_value({name})"
+        call = f"r.enumValue({name})"
     elif item.shape in ("message", "list-message"):
         decode = function_name("decode", item.ref)
         target = f"{name}.emplace_back()" if item.shape == "list-message" else name

@@ -9,7 +9,7 @@
 namespace gondola::lyrics::model::common {
 	namespace {
 
-		bool is_resolved(AgentType type) noexcept {
+		bool isResolved(AgentType type) noexcept {
 			switch (type) {
 			case AgentType::kOther:
 			case AgentType::kPerson:
@@ -31,19 +31,19 @@ namespace gondola::lyrics::model::common {
 		if (agent.id.empty()) {
 			diagnostics.push_back({std::string(path), DiagnosticCode::kAgentIdEmpty});
 		}
-		if (!is_resolved(agent.type)) {
-			diagnostics.push_back({utils::child_path(path, "type"), DiagnosticCode::kAgentTypeUnspecified});
+		if (!isResolved(agent.type)) {
+			diagnostics.push_back({utils::childPath(path, "type"), DiagnosticCode::kAgentTypeUnspecified});
 		} else if (agent.type == AgentType::kOther && !agent.raw) {
 			diagnostics.push_back({std::string(path), DiagnosticCode::kAgentRawMissing});
 		}
-		const auto language_key = [](const Text& value) { return utils::language_key(value.language); };
-		utils::report_duplicates(agent.names, language_key, path, "names", DiagnosticCode::kAgentNamesLanguageDuplicate, diagnostics);
-		utils::validate_entries(agent.names, validateText, path, "names", diagnostics);
+		const auto languageKey = [](const Text& value) { return utils::languageKey(value.language); };
+		utils::reportDuplicates(agent.names, languageKey, path, "names", DiagnosticCode::kAgentNamesLanguageDuplicate, diagnostics);
+		utils::validateEntries(agent.names, validateText, path, "names", diagnostics);
 		return diagnostics;
 	}
 
 	Agent canonicalizeAgent(Agent agent) {
-		utils::canonicalize_entries(agent.names, canonicalizeText);
+		utils::canonicalizeEntries(agent.names, canonicalizeText);
 		return agent;
 	}
 

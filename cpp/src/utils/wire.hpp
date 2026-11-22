@@ -20,7 +20,7 @@ namespace gondola::lyrics::model::utils {
 		bool sint32(std::uint32_t tag, std::int32_t value);
 		bool boolean(std::uint32_t tag, bool value);
 		bool string(std::uint32_t tag, std::string_view value);
-		bool string_map(std::uint32_t tag, const std::map<std::string, std::string>& entries);
+		bool stringMap(std::uint32_t tag, const std::map<std::string, std::string>& entries);
 
 		template <typename T>
 		bool message(std::uint32_t tag, const T& value, bool (*encode)(Writer&, const T&)) {
@@ -50,11 +50,11 @@ namespace gondola::lyrics::model::utils {
 		bool sint32(std::int32_t& value);
 		bool boolean(bool& value);
 		bool string(std::string& value);
-		bool string_map_entry(std::map<std::string, std::string>& entries);
+		bool stringMapEntry(std::map<std::string, std::string>& entries);
 		bool skip(std::uint32_t tag);
 
 		template <typename T>
-		bool enum_value(T& value) {
+		bool enumValue(T& value) {
 			std::int32_t number;
 			if (!int32(number)) {
 				return false;
@@ -86,7 +86,7 @@ namespace gondola::lyrics::model::utils {
 		bool varint(std::uint64_t& value);
 		bool delimited(std::string_view& bytes);
 		bool int32(std::int32_t& value);
-		bool skip_value(std::uint32_t wire_type);
+		bool skipValue(std::uint32_t wire_type);
 
 		std::string_view bytes_;
 	};

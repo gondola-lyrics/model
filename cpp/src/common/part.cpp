@@ -7,7 +7,7 @@
 namespace gondola::lyrics::model::common {
 	namespace {
 
-		bool is_resolved(PartType type) noexcept {
+		bool isResolved(PartType type) noexcept {
 			switch (type) {
 			case PartType::kOther:
 			case PartType::kIntro:
@@ -33,8 +33,8 @@ namespace gondola::lyrics::model::common {
 	}
 
 	std::vector<Diagnostic> validatePart(const Part& part, std::string_view path) {
-		if (!is_resolved(part.type)) {
-			return {{utils::child_path(path, "type"), DiagnosticCode::kPartTypeUnspecified}};
+		if (!isResolved(part.type)) {
+			return {{utils::childPath(path, "type"), DiagnosticCode::kPartTypeUnspecified}};
 		}
 		if (part.type == PartType::kOther && !part.raw) {
 			return {{std::string(path), DiagnosticCode::kPartRawMissing}};

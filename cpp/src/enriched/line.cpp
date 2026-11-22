@@ -22,22 +22,22 @@ namespace gondola::lyrics::model::enriched {
 		using common::TimeRange;
 		using common::TimingLevel;
 
-		bool has_words(const std::optional<LineContent>& content) noexcept {
+		bool hasContentWords(const std::optional<LineContent>& content) noexcept {
 			return content && !content->words.empty();
 		}
 
 		template <typename T>
-		std::vector<std::string> resolve_languages(const T& line) {
+		std::vector<std::string> resolveLanguages(const T& line) {
 			if (!line.languages.empty()) {
-				return utils::normalized_languages(line.languages);
+				return utils::normalizedLanguages(line.languages);
 			}
 			return line.content ? collectWordLanguages(line.content->words) : std::vector<std::string>{};
 		}
 
-		void validate_roman_placement(const LineAnnotation& annotation,
-			const std::optional<LineContent>&           content,
-			std::string_view                            path,
-			std::vector<Diagnostic>&                    diagnostics) {
+		void validateRomanPlacement(const LineAnnotation& annotation,
+			const std::optional<LineContent>&         content,
+			std::string_view                          path,
+			std::vector<Diagnostic>&                  diagnostics) {
 			if (!content || annotation.romans.empty()) {
 				return;
 			}
@@ -45,72 +45,72 @@ namespace gondola::lyrics::model::enriched {
 			for (const auto& word : content->words) {
 				if (word.type != WordType::kSpace && word.annotation) {
 					for (const auto& roman : word.annotation->romans) {
-						wordVariants.insert(utils::annotation_variant_key(roman));
+						wordVariants.insert(utils::annotationVariantKey(roman));
 					}
 				}
 			}
 			for (std::size_t index = 0; index < annotation.romans.size(); ++index) {
-				if (wordVariants.count(utils::annotation_variant_key(annotation.romans[index])) != 0) {
-					diagnostics.push_back({utils::indexed_path(path, "romans", index), DiagnosticCode::kLineAnnotationRomansConflict});
+				if (wordVariants.count(utils::annotationVariantKey(annotation.romans[index])) != 0) {
+					diagnostics.push_back({utils::indexedPath(path, "romans", index), DiagnosticCode::kLineAnnotationRomansConflict});
 				}
 			}
 		}
 
-		void validate_line_time(const std::optional<TimeRange>& time,
-			std::string_view                                path,
-			TimingLevel                                     timing,
-			bool                                            instrumental,
-			bool                                            sung,
-			std::vector<Diagnostic>&                        diagnostics) {
+		void validateLineTime(const std::optional<TimeRange>& time,
+			std::string_view                              path,
+			TimingLevel                                   timing,
+			bool                                          instrumental,
+			bool                                          sung,
+			std::vector<Diagnostic>&                      diagnostics) {
 			const bool needsRange = instrumental && timing != TimingLevel::kNone;
 			if (time) {
-				const auto timePath = utils::child_path(path, "time");
+				const auto timePath = utils::childPath(path, "time");
 				if (timing == TimingLevel::kNone) {
 					diagnostics.push_back({timePath, DiagnosticCode::kLyricTimingNonePresent});
 				}
-				utils::append_diagnostics(diagnostics, common::validateTimeRange(*time, timePath));
+				utils::appendDiagnostics(diagnostics, common::validateTimeRange(*time, timePath));
 				if (needsRange && !time->end) {
-					diagnostics.push_back({utils::child_path(timePath, "end"), DiagnosticCode::kLineTimeEndMissing});
-				} else if (needsRange && utils::is_time_ordered(time) && time->end == time->start) {
+					diagnostics.push_back({utils::childPath(timePath, "end"), DiagnosticCode::kLineTimeEndMissing});
+				} else if (needsRange && utils::isTimeOrdered(time) && time->end == time->start) {
 					diagnostics.push_back({timePath, DiagnosticCode::kLineTimeEmpty});
 				}
 			} else if (needsRange) {
-				diagnostics.push_back({utils::child_path(path, "time"), DiagnosticCode::kLineTimeMissing});
-			} else if (sung && utils::is_timed_content(timing)) {
-				diagnostics.push_back({utils::child_path(path, "time"), DiagnosticCode::kLyricTimingLineTimeMissing});
+				diagnostics.push_back({utils::childPath(path, "time"), DiagnosticCode::kLineTimeMissing});
+			} else if (sung && utils::isTimedContent(timing)) {
+				diagnostics.push_back({utils::childPath(path, "time"), DiagnosticCode::kLyricTimingLineTimeMissing});
 			}
 		}
 
 		template <typename T>
-		void validate_sung_fields(const T& line, std::string_view path, TimingLevel timing, bool required, std::vector<Diagnostic>& diagnostics) {
+		void validateSungFields(const T& line, std::string_view path, TimingLevel timing, bool required, std::vector<Diagnostic>& diagnostics) {
 			for (std::size_t index = 0; index < line.agent_ids.size(); ++index) {
 				if (line.agent_ids[index].empty()) {
-					diagnostics.push_back({utils::indexed_path(path, "agentIds", index), DiagnosticCode::kLyricListEntryEmpty});
+					diagnostics.push_back({utils::indexedPath(path, "agentIds", index), DiagnosticCode::kLyricListEntryEmpty});
 				}
 			}
 			for (std::size_t index = 0; index < line.languages.size(); ++index) {
 				const auto& language = line.languages[index];
 				if (language.empty()) {
-					diagnostics.push_back({utils::indexed_path(path, "languages", index), DiagnosticCode::kLyricListEntryEmpty});
+					diagnostics.push_back({utils::indexedPath(path, "languages", index), DiagnosticCode::kLyricListEntryEmpty});
 				} else if (!common::isWellFormedLanguageTag(language)) {
-					diagnostics.push_back({utils::indexed_path(path, "languages", index), DiagnosticCode::kLanguageTagMalformed});
+					diagnostics.push_back({utils::indexedPath(path, "languages", index), DiagnosticCode::kLanguageTagMalformed});
 				}
 			}
-			utils::report_duplicates(line.languages, utils::lowercase_ascii, path, "languages", DiagnosticCode::kLineLanguagesDuplicate, diagnostics);
-			utils::append_diagnostics(diagnostics, validateLineContent(line.content, line.time, utils::child_path(path, "content"), timing, required));
+			utils::reportDuplicates(line.languages, utils::lowercaseAscii, path, "languages", DiagnosticCode::kLineLanguagesDuplicate, diagnostics);
+			utils::appendDiagnostics(diagnostics, validateLineContent(line.content, line.time, utils::childPath(path, "content"), timing, required));
 			if (line.annotation) {
-				const auto annotationPath = utils::child_path(path, "annotation");
-				utils::append_diagnostics(diagnostics, validateLineAnnotation(*line.annotation, annotationPath));
-				validate_roman_placement(*line.annotation, line.content, annotationPath, diagnostics);
+				const auto annotationPath = utils::childPath(path, "annotation");
+				utils::appendDiagnostics(diagnostics, validateLineAnnotation(*line.annotation, annotationPath));
+				validateRomanPlacement(*line.annotation, line.content, annotationPath, diagnostics);
 			}
 		}
 
 		template <typename T>
-		void canonicalize_sung_fields(T& line) {
-			utils::erase_defaults(line.agent_ids);
-			line.languages = utils::normalized_languages(line.languages);
-			utils::canonicalize_field(line.content, canonicalizeLineContent);
-			utils::canonicalize_field(line.annotation, canonicalizeLineAnnotation);
+		void canonicalizeSungFields(T& line) {
+			utils::eraseDefaults(line.agent_ids);
+			line.languages = utils::normalizedLanguages(line.languages);
+			utils::canonicalizeField(line.content, canonicalizeLineContent);
+			utils::canonicalizeField(line.annotation, canonicalizeLineAnnotation);
 		}
 
 	} // namespace
@@ -187,19 +187,19 @@ namespace gondola::lyrics::model::enriched {
 	}
 
 	bool hasLineWords(const Line& line) noexcept {
-		return has_words(line.content);
+		return hasContentWords(line.content);
 	}
 
 	bool hasLineWords(const LineBackground& line) noexcept {
-		return has_words(line.content);
+		return hasContentWords(line.content);
 	}
 
 	std::vector<std::string> resolveLineLanguages(const Line& line) {
-		return resolve_languages(line);
+		return resolveLanguages(line);
 	}
 
 	std::vector<std::string> resolveLineLanguages(const LineBackground& line) {
-		return resolve_languages(line);
+		return resolveLanguages(line);
 	}
 
 	std::vector<const common::Agent*> resolveLineAgents(const Line& line, const std::vector<common::Agent>& agents) {
@@ -214,7 +214,7 @@ namespace gondola::lyrics::model::enriched {
 		if (!roman.content) {
 			return {};
 		}
-		return roman.content->text ? *roman.content->text : utils::join_text(roman.content->tokens);
+		return roman.content->text ? *roman.content->text : utils::joinText(roman.content->tokens);
 	}
 
 	std::optional<TimeRange> resolveLineAnnotationRomanTime(const LineAnnotationRoman& roman, const Line& line) noexcept {
@@ -252,11 +252,11 @@ namespace gondola::lyrics::model::enriched {
 				continue;
 			}
 			for (const auto& roman : word.annotation->romans) {
-				const auto [position, inserted] = positions.try_emplace(utils::annotation_variant_key(roman), variants.size());
+				const auto [position, inserted] = positions.try_emplace(utils::annotationVariantKey(roman), variants.size());
 				if (inserted) {
 					LineRomanView view{roman.language, roman.scheme, {}};
-					utils::normalize_language(view.language);
-					utils::normalize_language(view.scheme);
+					utils::normalizeLanguage(view.language);
+					utils::normalizeLanguage(view.scheme);
 					variants.push_back({std::move(view), std::nullopt, 0});
 				}
 				auto& variant = variants[position->second];
@@ -299,21 +299,21 @@ namespace gondola::lyrics::model::enriched {
 			diagnostics.push_back({std::string(path), DiagnosticCode::kLineAnnotationRomanContentAmbiguous});
 		}
 		if (hasText && content->text->empty()) {
-			diagnostics.push_back({utils::child_path(path, "text"), DiagnosticCode::kLineAnnotationRomanContentTextEmpty});
+			diagnostics.push_back({utils::childPath(path, "text"), DiagnosticCode::kLineAnnotationRomanContentTextEmpty});
 		}
 		if (hasTokens) {
 			if (std::none_of(content->tokens.begin(), content->tokens.end(), [](const common::TextToken& token) { return token.time.has_value(); })) {
-				diagnostics.push_back({utils::child_path(path, "tokens"), DiagnosticCode::kLineAnnotationRomanContentTokensTimeMissing});
+				diagnostics.push_back({utils::childPath(path, "tokens"), DiagnosticCode::kLineAnnotationRomanContentTokensTimeMissing});
 			}
 			for (std::size_t index = 0; index < content->tokens.size(); ++index) {
 				const auto& token     = content->tokens[index];
-				const auto  tokenPath = utils::indexed_path(path, "tokens", index);
+				const auto  tokenPath = utils::indexedPath(path, "tokens", index);
 				if (token.text.empty()) {
-					diagnostics.push_back({utils::child_path(tokenPath, "text"), DiagnosticCode::kLineAnnotationRomanTokenTextEmpty});
+					diagnostics.push_back({utils::childPath(tokenPath, "text"), DiagnosticCode::kLineAnnotationRomanTokenTextEmpty});
 				}
-				utils::append_diagnostics(diagnostics, common::validateTextToken(token, tokenPath));
-				if (utils::is_time_uncovered(token.time, time)) {
-					diagnostics.push_back({utils::child_path(tokenPath, "time"), DiagnosticCode::kLineAnnotationRomanTimeUncovered});
+				utils::appendDiagnostics(diagnostics, common::validateTextToken(token, tokenPath));
+				if (utils::isTimeUncovered(token.time, time)) {
+					diagnostics.push_back({utils::childPath(tokenPath, "time"), DiagnosticCode::kLineAnnotationRomanTimeUncovered});
 				}
 			}
 		}
@@ -321,35 +321,35 @@ namespace gondola::lyrics::model::enriched {
 	}
 
 	std::vector<Diagnostic> validateLineAnnotationRoman(const LineAnnotationRoman& roman, std::string_view path) {
-		auto diagnostics = validateLineAnnotationRomanContent(roman.content, utils::child_path(path, "content"), roman.time);
-		utils::validate_language(roman.language, path, diagnostics);
+		auto diagnostics = validateLineAnnotationRomanContent(roman.content, utils::childPath(path, "content"), roman.time);
+		utils::validateLanguage(roman.language, path, diagnostics);
 		if (roman.time) {
-			utils::append_diagnostics(diagnostics, common::validateTimeRange(*roman.time, utils::child_path(path, "time")));
+			utils::appendDiagnostics(diagnostics, common::validateTimeRange(*roman.time, utils::childPath(path, "time")));
 		}
 		return diagnostics;
 	}
 
 	std::vector<Diagnostic> validateLineAnnotation(const LineAnnotation& annotation, std::string_view path) {
 		std::vector<Diagnostic> diagnostics;
-		utils::report_duplicates(annotation.romans,
-			utils::annotation_variant_key<LineAnnotationRoman>,
+		utils::reportDuplicates(annotation.romans,
+			utils::annotationVariantKey<LineAnnotationRoman>,
 			path,
 			"romans",
 			DiagnosticCode::kLineAnnotationRomansDuplicate,
 			diagnostics);
-		utils::report_duplicates(
+		utils::reportDuplicates(
 			annotation.translations,
-			[](const LineAnnotationTranslation& item) { return utils::language_key(item.language); },
+			[](const LineAnnotationTranslation& item) { return utils::languageKey(item.language); },
 			path,
 			"translations",
 			DiagnosticCode::kLineAnnotationTranslationsLanguageDuplicate,
 			diagnostics);
-		utils::validate_entries(annotation.romans, validateLineAnnotationRoman, path, "romans", diagnostics);
+		utils::validateEntries(annotation.romans, validateLineAnnotationRoman, path, "romans", diagnostics);
 		for (std::size_t index = 0; index < annotation.translations.size(); ++index) {
-			utils::validate_language(annotation.translations[index].language, utils::indexed_path(path, "translations", index), diagnostics);
+			utils::validateLanguage(annotation.translations[index].language, utils::indexedPath(path, "translations", index), diagnostics);
 		}
 		for (std::size_t index = 0; index < annotation.translations.size(); ++index) {
-			utils::report_default_entry(annotation.translations[index], utils::indexed_path(path, "translations", index), diagnostics);
+			utils::reportDefaultEntry(annotation.translations[index], utils::indexedPath(path, "translations", index), diagnostics);
 		}
 		return diagnostics;
 	}
@@ -360,7 +360,7 @@ namespace gondola::lyrics::model::enriched {
 		TimingLevel                                                           timing,
 		bool                                                                  required) {
 		std::vector<Diagnostic> diagnostics;
-		const bool              hasWords = has_words(content);
+		const bool              hasWords = hasContentWords(content);
 		const bool              hasText  = content && content->text.has_value();
 		if (required && !hasWords && !hasText) {
 			diagnostics.push_back({std::string(path), DiagnosticCode::kLineContentMissing});
@@ -368,24 +368,24 @@ namespace gondola::lyrics::model::enriched {
 			diagnostics.push_back({std::string(path), DiagnosticCode::kLineContentAmbiguous});
 		}
 		if (hasText && content->text->empty()) {
-			diagnostics.push_back({utils::child_path(path, "text"), DiagnosticCode::kLineContentTextEmpty});
+			diagnostics.push_back({utils::childPath(path, "text"), DiagnosticCode::kLineContentTextEmpty});
 		}
 		if (hasWords) {
-			const auto wordsPath = utils::child_path(path, "words");
+			const auto wordsPath = utils::childPath(path, "words");
 			if (timing == TimingLevel::kNone) {
 				diagnostics.push_back({wordsPath, DiagnosticCode::kLyricTimingNoneWords});
 			} else if (timing == TimingLevel::kLine) {
 				diagnostics.push_back({wordsPath, DiagnosticCode::kLyricTimingLineWords});
 			}
-			utils::append_diagnostics(diagnostics, validateWords(content->words, time, wordsPath, timing));
+			utils::appendDiagnostics(diagnostics, validateWords(content->words, time, wordsPath, timing));
 		}
 		return diagnostics;
 	}
 
 	std::vector<Diagnostic> validateLineBackground(const LineBackground& background, std::string_view path, TimingLevel timing) {
 		std::vector<Diagnostic> diagnostics;
-		validate_line_time(background.time, path, timing, false, true, diagnostics);
-		validate_sung_fields(background, path, timing, true, diagnostics);
+		validateLineTime(background.time, path, timing, false, true, diagnostics);
+		validateSungFields(background, path, timing, true, diagnostics);
 		return diagnostics;
 	}
 
@@ -394,93 +394,92 @@ namespace gondola::lyrics::model::enriched {
 		const bool              instrumental = line.type == LineType::kInstrumental;
 		const bool              sung         = line.type == LineType::kNormal;
 		if (!instrumental && !sung) {
-			diagnostics.push_back({utils::child_path(path, "type"), DiagnosticCode::kLineTypeUnspecified});
+			diagnostics.push_back({utils::childPath(path, "type"), DiagnosticCode::kLineTypeUnspecified});
 		}
 		if (instrumental && timing == TimingLevel::kNone) {
-			diagnostics.push_back({utils::child_path(path, "type"), DiagnosticCode::kLyricTimingNoneInstrumental});
+			diagnostics.push_back({utils::childPath(path, "type"), DiagnosticCode::kLyricTimingNoneInstrumental});
 		}
-		validate_line_time(line.time, path, timing, instrumental, sung, diagnostics);
+		validateLineTime(line.time, path, timing, instrumental, sung, diagnostics);
 		if (line.part) {
-			utils::append_diagnostics(diagnostics, common::validatePart(*line.part, utils::child_path(path, "part")));
+			utils::appendDiagnostics(diagnostics, common::validatePart(*line.part, utils::childPath(path, "part")));
 			if (sung && line.part->type == common::PartType::kInterlude) {
-				diagnostics.push_back({utils::child_path(path, "part.type"), DiagnosticCode::kLinePartInterludeNotInstrumental});
+				diagnostics.push_back({utils::childPath(path, "part.type"), DiagnosticCode::kLinePartInterludeNotInstrumental});
 			}
 		}
 		if (instrumental) {
 			if (!line.agent_ids.empty()) {
-				diagnostics.push_back({utils::child_path(path, "agentIds"), DiagnosticCode::kLineAgentIdsUnexpected});
+				diagnostics.push_back({utils::childPath(path, "agentIds"), DiagnosticCode::kLineAgentIdsUnexpected});
 			}
 			if (!line.languages.empty()) {
-				diagnostics.push_back({utils::child_path(path, "languages"), DiagnosticCode::kLineLanguagesUnexpected});
+				diagnostics.push_back({utils::childPath(path, "languages"), DiagnosticCode::kLineLanguagesUnexpected});
 			}
 			if (line.content) {
-				diagnostics.push_back({utils::child_path(path, "content"), DiagnosticCode::kLineContentUnexpected});
+				diagnostics.push_back({utils::childPath(path, "content"), DiagnosticCode::kLineContentUnexpected});
 			}
 			if (line.annotation) {
-				diagnostics.push_back({utils::child_path(path, "annotation"), DiagnosticCode::kLineAnnotationUnexpected});
+				diagnostics.push_back({utils::childPath(path, "annotation"), DiagnosticCode::kLineAnnotationUnexpected});
 			}
 			if (!line.backgrounds.empty()) {
-				diagnostics.push_back({utils::child_path(path, "backgrounds"), DiagnosticCode::kLineBackgroundsUnexpected});
+				diagnostics.push_back({utils::childPath(path, "backgrounds"), DiagnosticCode::kLineBackgroundsUnexpected});
 			}
 			return diagnostics;
 		}
-		validate_sung_fields(line, path, timing, sung, diagnostics);
-		utils::report_unordered(line.backgrounds, path, "backgrounds", DiagnosticCode::kLineBackgroundsUnordered, diagnostics);
+		validateSungFields(line, path, timing, sung, diagnostics);
+		utils::reportUnordered(line.backgrounds, path, "backgrounds", DiagnosticCode::kLineBackgroundsUnordered, diagnostics);
 		for (std::size_t index = 0; index < line.backgrounds.size(); ++index) {
 			const auto& background     = line.backgrounds[index];
-			const auto  backgroundPath = utils::indexed_path(path, "backgrounds", index);
+			const auto  backgroundPath = utils::indexedPath(path, "backgrounds", index);
 			// A background may begin before the owning line, so only the ends constrain each other.
-			if (utils::is_time_ordered(line.time) && utils::is_time_ordered(background.time) &&
-				utils::comparable_end(*background.time) > utils::comparable_end(*line.time)) {
-				diagnostics.push_back({utils::child_path(backgroundPath, "time"), DiagnosticCode::kLineBackgroundsTimeUncovered});
+			if (utils::isTimeOrdered(line.time) && utils::isTimeOrdered(background.time) && utils::comparableEnd(*background.time) > utils::comparableEnd(*line.time)) {
+				diagnostics.push_back({utils::childPath(backgroundPath, "time"), DiagnosticCode::kLineBackgroundsTimeUncovered});
 			}
-			utils::append_diagnostics(diagnostics, validateLineBackground(background, backgroundPath, timing));
+			utils::appendDiagnostics(diagnostics, validateLineBackground(background, backgroundPath, timing));
 		}
 		return diagnostics;
 	}
 
 	LineAnnotationRomanContent canonicalizeLineAnnotationRomanContent(LineAnnotationRomanContent content) {
-		utils::canonicalize_entries(content.tokens, common::canonicalizeTextToken);
+		utils::canonicalizeEntries(content.tokens, common::canonicalizeTextToken);
 		return content;
 	}
 
 	LineAnnotationRoman canonicalizeLineAnnotationRoman(LineAnnotationRoman roman) {
-		utils::normalize_language(roman.language);
-		utils::normalize_language(roman.scheme);
-		utils::canonicalize_field(roman.content, canonicalizeLineAnnotationRomanContent);
+		utils::normalizeLanguage(roman.language);
+		utils::normalizeLanguage(roman.scheme);
+		utils::canonicalizeField(roman.content, canonicalizeLineAnnotationRomanContent);
 		return roman;
 	}
 
 	LineAnnotationTranslation canonicalizeLineAnnotationTranslation(LineAnnotationTranslation translation) {
-		utils::normalize_language(translation.language);
+		utils::normalizeLanguage(translation.language);
 		return translation;
 	}
 
 	LineAnnotation canonicalizeLineAnnotation(LineAnnotation annotation) {
-		utils::canonicalize_entries(annotation.romans, canonicalizeLineAnnotationRoman);
-		utils::canonicalize_entries(annotation.translations, canonicalizeLineAnnotationTranslation);
+		utils::canonicalizeEntries(annotation.romans, canonicalizeLineAnnotationRoman);
+		utils::canonicalizeEntries(annotation.translations, canonicalizeLineAnnotationTranslation);
 		return annotation;
 	}
 
 	LineContent canonicalizeLineContent(LineContent content) {
-		utils::canonicalize_entries(content.words, canonicalizeWord);
+		utils::canonicalizeEntries(content.words, canonicalizeWord);
 		return content;
 	}
 
 	LineBackground canonicalizeLineBackground(LineBackground background) {
-		canonicalize_sung_fields(background);
+		canonicalizeSungFields(background);
 		return background;
 	}
 
 	Line canonicalizeLine(Line line) {
-		utils::unset_if_default(line.part);
-		canonicalize_sung_fields(line);
-		utils::canonicalize_entries(line.backgrounds, canonicalizeLineBackground);
+		utils::unsetIfDefault(line.part);
+		canonicalizeSungFields(line);
+		utils::canonicalizeEntries(line.backgrounds, canonicalizeLineBackground);
 		return orderLineBackgrounds(std::move(line));
 	}
 
 	Line orderLineBackgrounds(Line line) {
-		utils::sort_by_start(line.backgrounds);
+		utils::sortByStart(line.backgrounds);
 		return line;
 	}
 

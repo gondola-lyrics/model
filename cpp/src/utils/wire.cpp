@@ -18,7 +18,7 @@ namespace gondola::lyrics::model::utils {
 		// Count nested groups inside the outermost skipped group, as the Go reader does.
 		constexpr std::size_t kMaxGroupDepth = 10000;
 
-		bool valid_utf8(std::string_view bytes) {
+		bool isValidUtf8(std::string_view bytes) {
 			for (std::size_t offset = 0; offset < bytes.size();) {
 				const auto first = static_cast<unsigned char>(bytes[offset]);
 				if (first < 0x80) {
@@ -119,10 +119,10 @@ namespace gondola::lyrics::model::utils {
 	}
 
 	bool Writer::string(std::uint32_t tag, std::string_view value) {
-		return value.size() <= kMaxMessageSize && valid_utf8(value) && delimited(tag, value);
+		return value.size() <= kMaxMessageSize && isValidUtf8(value) && delimited(tag, value);
 	}
 
-	bool Writer::string_map(std::uint32_t tag, const std::map<std::string, std::string>& entries) {
+	bool Writer::stringMap(std::uint32_t tag, const std::map<std::string, std::string>& entries) {
 		for (const auto& [key, value] : entries) {
 			auto& entry = child();
 			if (!entry.string(kMapKeyTag, key) || !entry.string(kMapValueTag, value) || !delimited(tag, entry.buffer_)) {
@@ -230,14 +230,14 @@ namespace gondola::lyrics::model::utils {
 
 	bool Reader::string(std::string& value) {
 		std::string_view bytes;
-		if (!delimited(bytes) || !valid_utf8(bytes)) {
+		if (!delimited(bytes) || !isValidUtf8(bytes)) {
 			return false;
 		}
 		value.assign(bytes);
 		return true;
 	}
 
-	bool Reader::string_map_entry(std::map<std::string, std::string>& entries) {
+	bool Reader::stringMapEntry(std::map<std::string, std::string>& entries) {
 		std::string_view bytes;
 		if (!delimited(bytes)) {
 			return false;
@@ -273,7 +273,7 @@ namespace gondola::lyrics::model::utils {
 
 	bool Reader::skip(std::uint32_t tag_value) {
 		if ((tag_value & 7) != kGroupStart) {
-			return skip_value(tag_value & 7);
+			return skipValue(tag_value & 7);
 		}
 
 		std::vector<std::uint32_t> groups{tag_value >> 3};
@@ -296,7 +296,7 @@ namespace gondola::lyrics::model::utils {
 				groups.pop_back();
 				break;
 			default:
-				if (!skip_value(inner & 7)) {
+				if (!skipValue(inner & 7)) {
 					return false;
 				}
 			}
@@ -304,7 +304,7 @@ namespace gondola::lyrics::model::utils {
 		return true;
 	}
 
-	bool Reader::skip_value(std::uint32_t wire_type) {
+	bool Reader::skipValue(std::uint32_t wire_type) {
 		switch (wire_type) {
 		case kVarint: {
 			std::uint64_t value;

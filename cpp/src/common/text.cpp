@@ -16,12 +16,12 @@ namespace gondola::lyrics::model::common {
 		if (text.text.empty()) {
 			diagnostics.push_back({std::string(path), DiagnosticCode::kTextTextEmpty});
 		}
-		utils::validate_language(text.language, path, diagnostics);
+		utils::validateLanguage(text.language, path, diagnostics);
 		return diagnostics;
 	}
 
 	Text canonicalizeText(Text text) {
-		utils::normalize_language(text.language);
+		utils::normalizeLanguage(text.language);
 		return text;
 	}
 
@@ -32,10 +32,10 @@ namespace gondola::lyrics::model::common {
 	std::vector<Diagnostic> validateTextToken(const TextToken& token, std::string_view path) {
 		std::vector<Diagnostic> diagnostics;
 		if (token.time) {
-			diagnostics = validateTimeRange(*token.time, utils::child_path(path, "time"));
+			diagnostics = validateTimeRange(*token.time, utils::childPath(path, "time"));
 		}
 		if (token.extra.find("") != token.extra.end()) {
-			diagnostics.push_back({utils::child_path(path, "extra"), DiagnosticCode::kTextTokenExtraKeyEmpty});
+			diagnostics.push_back({utils::childPath(path, "extra"), DiagnosticCode::kTextTokenExtraKeyEmpty});
 		}
 		return diagnostics;
 	}

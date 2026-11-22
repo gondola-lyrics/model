@@ -10,22 +10,22 @@ namespace gondola::lyrics::model {
 	namespace {
 
 		template <typename T>
-		std::optional<std::string> encode_lyric(const T& lyric, bool (*encode_fields)(utils::Writer&, const T&)) {
+		std::optional<std::string> encodeLyric(const T& lyric, bool (*encodeFields)(utils::Writer&, const T&)) {
 			utils::Writer writer;
-			if (!encode_fields(writer, lyric)) {
+			if (!encodeFields(writer, lyric)) {
 				return std::nullopt;
 			}
 			return std::move(writer).finish();
 		}
 
 		template <typename T>
-		std::optional<T> decode_lyric(std::string_view bytes, bool (*decode_fields)(utils::Reader&, T&)) {
+		std::optional<T> decodeLyric(std::string_view bytes, bool (*decodeFields)(utils::Reader&, T&)) {
 			if (bytes.size() > utils::kMaxMessageSize) {
 				return std::nullopt;
 			}
 			utils::Reader reader(bytes);
 			T             lyric;
-			if (!decode_fields(reader, lyric)) {
+			if (!decodeFields(reader, lyric)) {
 				return std::nullopt;
 			}
 			return lyric;
@@ -36,11 +36,11 @@ namespace gondola::lyrics::model {
 	namespace document {
 
 		std::optional<std::string> encode(const Lyric& lyric) {
-			return encode_lyric(lyric, utils::generated::encodeDocumentLyric);
+			return encodeLyric(lyric, utils::generated::encodeDocumentLyric);
 		}
 
 		std::optional<Lyric> decode(std::string_view bytes) {
-			return decode_lyric(bytes, utils::generated::decodeDocumentLyric);
+			return decodeLyric(bytes, utils::generated::decodeDocumentLyric);
 		}
 
 	} // namespace document
@@ -48,11 +48,11 @@ namespace gondola::lyrics::model {
 	namespace enriched {
 
 		std::optional<std::string> encode(const Lyric& lyric) {
-			return encode_lyric(lyric, utils::generated::encodeEnrichedLyric);
+			return encodeLyric(lyric, utils::generated::encodeEnrichedLyric);
 		}
 
 		std::optional<Lyric> decode(std::string_view bytes) {
-			return decode_lyric(bytes, utils::generated::decodeEnrichedLyric);
+			return decodeLyric(bytes, utils::generated::decodeEnrichedLyric);
 		}
 
 	} // namespace enriched

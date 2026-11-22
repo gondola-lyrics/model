@@ -5,7 +5,7 @@
 namespace gondola::lyrics::model::common {
 
 	TimeRange makeTimeRange(std::int64_t start, std::optional<std::int64_t> end) {
-		return {utils::require_uint32(start), end ? std::optional{utils::require_uint32(*end)} : std::nullopt};
+		return {utils::requireUint32(start), end ? std::optional{utils::requireUint32(*end)} : std::nullopt};
 	}
 
 	std::vector<Diagnostic> validateTimeRange(const TimeRange& range, std::string_view path) {

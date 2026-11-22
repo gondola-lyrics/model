@@ -6,7 +6,7 @@
 namespace gondola::lyrics::model::utils {
 
 	// Match Unicode White_Space on UTF-8 bytes independently of the process locale.
-	inline std::size_t separator_width(std::string_view text) noexcept {
+	inline std::size_t separatorWidth(std::string_view text) noexcept {
 		if (text.empty()) {
 			return 0;
 		}
@@ -30,9 +30,9 @@ namespace gondola::lyrics::model::utils {
 		return 0;
 	}
 
-	inline bool has_separator(std::string_view text) noexcept {
+	inline bool hasSeparator(std::string_view text) noexcept {
 		while (!text.empty()) {
-			if (separator_width(text) != 0) {
+			if (separatorWidth(text) != 0) {
 				return true;
 			}
 			text.remove_prefix(1);
@@ -40,12 +40,12 @@ namespace gondola::lyrics::model::utils {
 		return false;
 	}
 
-	inline bool is_separator_text(std::string_view text) noexcept {
+	inline bool isSeparatorText(std::string_view text) noexcept {
 		if (text.empty()) {
 			return false;
 		}
 		while (!text.empty()) {
-			const auto width = separator_width(text);
+			const auto width = separatorWidth(text);
 			if (width == 0) {
 				return false;
 			}

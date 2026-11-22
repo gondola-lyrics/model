@@ -15,11 +15,11 @@ namespace gondola::lyrics::model::enriched {
 
 		using Counts = std::unordered_map<std::string, std::uint32_t>;
 
-		void add_count(std::uint32_t& total, std::uint32_t count) noexcept {
+		void addCount(std::uint32_t& total, std::uint32_t count) noexcept {
 			total += std::min(std::numeric_limits<std::uint32_t>::max() - total, count);
 		}
 
-		std::vector<LanguageUsage> finish_counts(const Counts& counts) {
+		std::vector<LanguageUsage> finishCounts(const Counts& counts) {
 			std::vector<LanguageUsage> usages;
 			usages.reserve(counts.size());
 			for (const auto& [tag, count] : counts) {
@@ -29,7 +29,7 @@ namespace gondola::lyrics::model::enriched {
 		}
 
 		template <typename T>
-		std::vector<LanguageUsage> derive_language_usages(const std::vector<T>& lines) {
+		std::vector<LanguageUsage> deriveUsagesFromLines(const std::vector<T>& lines) {
 			Counts counts;
 			for (const auto& line : lines) {
 				if (line.type != decltype(line.type)::kNormal) {
@@ -38,50 +38,50 @@ namespace gondola::lyrics::model::enriched {
 				std::unordered_set<std::string> tags;
 				for (const auto& language : line.languages) {
 					if (!language.empty()) {
-						tags.insert(utils::lowercase_ascii(language));
+						tags.insert(utils::lowercaseAscii(language));
 					}
 				}
 				if (line.content) {
 					for (const auto& word : line.content->words) {
 						if (word.type == decltype(word.type)::kNormal && word.language && !word.language->empty()) {
-							tags.insert(utils::lowercase_ascii(*word.language));
+							tags.insert(utils::lowercaseAscii(*word.language));
 						}
 					}
 				}
 				for (const auto& tag : tags) {
-					add_count(counts[tag], 1);
+					addCount(counts[tag], 1);
 				}
 			}
-			return finish_counts(counts);
+			return finishCounts(counts);
 		}
 
 	} // namespace
 
 	LanguageUsage makeLanguageUsage(std::string tag, std::int64_t lineCount) {
-		return {std::move(tag), utils::require_uint32(lineCount)};
+		return {std::move(tag), utils::requireUint32(lineCount)};
 	}
 
 	std::vector<common::Diagnostic> validateLanguageUsage(const LanguageUsage& usage, std::string_view path) {
 		if (usage.tag.empty()) {
-			return {{utils::child_path(path, "tag"), common::DiagnosticCode::kLanguageUsageTagEmpty}};
+			return {{utils::childPath(path, "tag"), common::DiagnosticCode::kLanguageUsageTagEmpty}};
 		}
 		if (!common::isWellFormedLanguageTag(usage.tag)) {
-			return {{utils::child_path(path, "tag"), common::DiagnosticCode::kLanguageTagMalformed}};
+			return {{utils::childPath(path, "tag"), common::DiagnosticCode::kLanguageTagMalformed}};
 		}
 		return {};
 	}
 
 	std::vector<LanguageUsage> deriveLanguageUsages(const std::vector<Line>& lines) {
-		return derive_language_usages(lines);
+		return deriveUsagesFromLines(lines);
 	}
 
 	std::vector<LanguageUsage> deriveLanguageUsages(const std::vector<document::Line>& lines) {
-		return derive_language_usages(lines);
+		return deriveUsagesFromLines(lines);
 	}
 
 	std::vector<LanguageUsage> orderLanguageUsages(std::vector<LanguageUsage> usages) {
 		std::stable_sort(usages.begin(), usages.end(), [](const LanguageUsage& a, const LanguageUsage& b) {
-			return a.line_count != b.line_count ? a.line_count > b.line_count : utils::lowercase_ascii(a.tag) < utils::lowercase_ascii(b.tag);
+			return a.line_count != b.line_count ? a.line_count > b.line_count : utils::lowercaseAscii(a.tag) < utils::lowercaseAscii(b.tag);
 		});
 		return usages;
 	}
@@ -90,10 +90,10 @@ namespace gondola::lyrics::model::enriched {
 		Counts counts;
 		for (const auto& usage : usages) {
 			if (!usage.tag.empty()) {
-				add_count(counts[utils::lowercase_ascii(usage.tag)], usage.line_count);
+				addCount(counts[utils::lowercaseAscii(usage.tag)], usage.line_count);
 			}
 		}
-		return finish_counts(counts);
+		return finishCounts(counts);
 	}
 
 } // namespace gondola::lyrics::model::enriched

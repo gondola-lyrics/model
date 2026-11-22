@@ -101,7 +101,7 @@ namespace gondola::lyrics::model::utils::generated {
 		if (!value.text.empty() && !w.string(18, value.text)) {
 			return false;
 		}
-		if (!w.string_map(26, value.extra)) {
+		if (!w.stringMap(26, value.extra)) {
 			return false;
 		}
 		return true;
@@ -125,7 +125,7 @@ namespace gondola::lyrics::model::utils::generated {
 				}
 				break;
 			case 26:
-				if (!r.string_map_entry(value.extra)) {
+				if (!r.stringMapEntry(value.extra)) {
 					return false;
 				}
 				break;
@@ -169,7 +169,7 @@ namespace gondola::lyrics::model::utils::generated {
 				}
 				break;
 			case 16:
-				if (!r.enum_value(value.type)) {
+				if (!r.enumValue(value.type)) {
 					return false;
 				}
 				break;
@@ -251,7 +251,7 @@ namespace gondola::lyrics::model::utils::generated {
 			}
 			switch (tag) {
 			case 8:
-				if (!r.enum_value(value.role)) {
+				if (!r.enumValue(value.role)) {
 					return false;
 				}
 				break;
@@ -463,7 +463,7 @@ namespace gondola::lyrics::model::utils::generated {
 			}
 			switch (tag) {
 			case 8:
-				if (!r.enum_value(value.type)) {
+				if (!r.enumValue(value.type)) {
 					return false;
 				}
 				break;
@@ -710,7 +710,7 @@ namespace gondola::lyrics::model::utils::generated {
 			}
 			switch (tag) {
 			case 8:
-				if (!r.enum_value(value.type)) {
+				if (!r.enumValue(value.type)) {
 					return false;
 				}
 				break;
@@ -1080,7 +1080,7 @@ namespace gondola::lyrics::model::utils::generated {
 				}
 				break;
 			case 16:
-				if (!r.enum_value(value.type)) {
+				if (!r.enumValue(value.type)) {
 					return false;
 				}
 				break;
@@ -1160,7 +1160,7 @@ namespace gondola::lyrics::model::utils::generated {
 				return false;
 			}
 		}
-		if (!w.string_map(66, value.extra)) {
+		if (!w.stringMap(66, value.extra)) {
 			return false;
 		}
 		return true;
@@ -1189,7 +1189,7 @@ namespace gondola::lyrics::model::utils::generated {
 				}
 				break;
 			case 32:
-				if (!r.enum_value(value.timing)) {
+				if (!r.enumValue(value.timing)) {
 					return false;
 				}
 				break;
@@ -1209,7 +1209,7 @@ namespace gondola::lyrics::model::utils::generated {
 				}
 				break;
 			case 66:
-				if (!r.string_map_entry(value.extra)) {
+				if (!r.stringMapEntry(value.extra)) {
 					return false;
 				}
 				break;
@@ -1518,7 +1518,7 @@ namespace gondola::lyrics::model::utils::generated {
 			}
 			switch (tag) {
 			case 8:
-				if (!r.enum_value(value.type)) {
+				if (!r.enumValue(value.type)) {
 					return false;
 				}
 				break;
@@ -1888,7 +1888,7 @@ namespace gondola::lyrics::model::utils::generated {
 				}
 				break;
 			case 16:
-				if (!r.enum_value(value.type)) {
+				if (!r.enumValue(value.type)) {
 					return false;
 				}
 				break;
@@ -1976,7 +1976,7 @@ namespace gondola::lyrics::model::utils::generated {
 				return false;
 			}
 		}
-		if (!w.string_map(82, value.extra)) {
+		if (!w.stringMap(82, value.extra)) {
 			return false;
 		}
 		return true;
@@ -1990,7 +1990,7 @@ namespace gondola::lyrics::model::utils::generated {
 			}
 			switch (tag) {
 			case 8:
-				if (!r.enum_value(value.status)) {
+				if (!r.enumValue(value.status)) {
 					return false;
 				}
 				break;
@@ -2010,7 +2010,7 @@ namespace gondola::lyrics::model::utils::generated {
 				}
 				break;
 			case 40:
-				if (!r.enum_value(value.timing)) {
+				if (!r.enumValue(value.timing)) {
 					return false;
 				}
 				break;
@@ -2035,7 +2035,7 @@ namespace gondola::lyrics::model::utils::generated {
 				}
 				break;
 			case 82:
-				if (!r.string_map_entry(value.extra)) {
+				if (!r.stringMapEntry(value.extra)) {
 					return false;
 				}
 				break;
