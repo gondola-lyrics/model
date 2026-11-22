@@ -2,9 +2,9 @@
 Builds the changelog section of one module release.
 
 Usage:
-    python script/generate-change-log.py <proto|node|kotlin> <version> [--dry-run]
-    python script/generate-change-log.py <proto|node|kotlin> <version> --extract
-    python script/generate-change-log.py <proto|node|kotlin> <version> --check-bump
+    python script/generate-change-log.py <proto|node|kotlin|cpp> <version> [--dry-run]
+    python script/generate-change-log.py <proto|node|kotlin|cpp> <version> --extract
+    python script/generate-change-log.py <proto|node|kotlin|cpp> <version> --check-bump
 """
 
 import os
@@ -22,7 +22,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SCHEMA = "proto"
 
-BINDINGS = ("node", "kotlin")
+BINDINGS = ("node", "kotlin", "cpp")
 
 TARGETS = (SCHEMA, *BINDINGS)
 
