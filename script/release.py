@@ -2,7 +2,7 @@
 Records a release, optionally updates its version, then commits and tags it locally.
 
 Usage:
-    python script/release.py <proto|node|kotlin> <version> [--update-version] [--dry-run]
+    python script/release.py <proto|node|kotlin|cpp> <version> [--update-version] [--dry-run]
 """
 
 import argparse
@@ -19,12 +19,13 @@ CHANGE_LOG_GENERATOR = os.path.join(ROOT, "script", "generate-change-log.py")
 BINDING_GENERATOR = os.path.join(ROOT, "script", "generate-proto-binding.py")
 
 # The scopes whose generated files are committed, so a tag has to carry exactly what the generator writes from proto/.
-GENERATED_SCOPES = ("node", "kotlin")
+GENERATED_SCOPES = ("node", "kotlin", "cpp")
 
 VERSION_FILES = {
     "proto": "proto/VERSION.txt",
     "node": "node/package.json",
     "kotlin": "kotlin/build.gradle.kts",
+    "cpp": "cpp/CMakeLists.txt",
 }
 NODE_LOCK_FILE = "node/package-lock.json"
 
@@ -35,6 +36,9 @@ SEMVER_PATTERN = re.compile(
     re.ASCII,
 )
 KOTLIN_VERSION_PATTERN = re.compile(r'^version\s*=\s*"([^"\r\n]+)"\s*$', re.MULTILINE)
+CPP_VERSION_PATTERN = re.compile(
+    r'^set\([ \t]*GONDOLA_LYRICS_MODEL_VERSION[ \t]+"([^"\r\n]+)"[ \t]*\)[ \t]*$', re.MULTILINE
+)
 
 
 def fail(message: str) -> None:
@@ -73,11 +77,17 @@ def version_fields(path: str, text: str) -> tuple[list[str], object]:
             fail(f"{path} must contain a semantic version")
         return [version], None
 
-    if path == VERSION_FILES["kotlin"]:
-        matches = list(KOTLIN_VERSION_PATTERN.finditer(text))
+    if path in (VERSION_FILES["kotlin"], VERSION_FILES["cpp"]):
+        pattern = CPP_VERSION_PATTERN if path == VERSION_FILES["cpp"] else KOTLIN_VERSION_PATTERN
+        matches = list(pattern.finditer(text))
         if len(matches) != 1:
-            fail(f'{path} must contain exactly one top-level version = "..." declaration')
+            declaration = (
+                'set(GONDOLA_LYRICS_MODEL_VERSION "...")' if path == VERSION_FILES["cpp"] else 'version = "..."'
+            )
+            fail(f"{path} must contain exactly one top-level {declaration} declaration")
         match = matches[0]
+        if path == VERSION_FILES["cpp"] and not SEMVER_PATTERN.fullmatch(match[1]):
+            fail(f"{path} must declare a semantic version in GONDOLA_LYRICS_MODEL_VERSION")
         return [match[1]], text[: match.start(1)] + text[match.end(1) :]
 
     try:
@@ -100,8 +110,9 @@ def render_version(path: str, text: str, version: str) -> str:
     version_fields(path, text)
     if path == VERSION_FILES["proto"]:
         return f"{version}\n"
-    if path == VERSION_FILES["kotlin"]:
-        match = KOTLIN_VERSION_PATTERN.search(text)
+    if path in (VERSION_FILES["kotlin"], VERSION_FILES["cpp"]):
+        pattern = CPP_VERSION_PATTERN if path == VERSION_FILES["cpp"] else KOTLIN_VERSION_PATTERN
+        match = pattern.search(text)
         return text[: match.start(1)] + version + text[match.end(1) :]
     data = json.loads(text)
     data["version"] = version

@@ -1,5 +1,14 @@
 cmake_minimum_required(VERSION 3.21)
-project(gondola_lyrics_model LANGUAGES CXX)
+
+set(GONDOLA_LYRICS_MODEL_VERSION "1.0.0")
+string(REGEX REPLACE "[-+].*$" ""
+  GONDOLA_LYRICS_MODEL_VERSION_CORE "${GONDOLA_LYRICS_MODEL_VERSION}"
+)
+
+project(gondola_lyrics_model
+  VERSION "${GONDOLA_LYRICS_MODEL_VERSION_CORE}"
+  LANGUAGES CXX
+)
 
 add_library(gondola_lyrics_model STATIC
   src/codec.cpp
