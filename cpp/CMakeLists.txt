@@ -11,6 +11,9 @@ add_library(gondola_lyrics_model STATIC
   src/common/text.cpp
   src/common/time.cpp
   src/common/unknown.cpp
+  src/document/line.cpp
+  src/document/lyric.cpp
+  src/document/word.cpp
   src/enriched/language.cpp
   src/enriched/line.cpp
   src/enriched/lyric.cpp
