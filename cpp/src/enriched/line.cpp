@@ -15,7 +15,6 @@
 
 namespace gondola::lyrics::model::enriched {
 	namespace {
-
 		using common::Diagnostic;
 		using common::DiagnosticCode;
 		using common::LineRomanView;
@@ -112,7 +111,6 @@ namespace gondola::lyrics::model::enriched {
 			utils::canonicalizeField(line.content, canonicalizeLineContent);
 			utils::canonicalizeField(line.annotation, canonicalizeLineAnnotation);
 		}
-
 	} // namespace
 
 	LineAnnotationRomanContent makeLineAnnotationRomanContentTokens(std::vector<common::TextToken> tokens) {
@@ -482,5 +480,4 @@ namespace gondola::lyrics::model::enriched {
 		utils::sortByStart(line.backgrounds);
 		return line;
 	}
-
 } // namespace gondola::lyrics::model::enriched

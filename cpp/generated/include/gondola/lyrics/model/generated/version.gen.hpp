@@ -2,7 +2,5 @@
 #pragma once
 
 namespace gondola::lyrics::model {
-
 	inline constexpr const char* SCHEMA_VERSION = "2.0.0";
-
 } // namespace gondola::lyrics::model

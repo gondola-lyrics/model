@@ -6,7 +6,6 @@
 
 namespace gondola::lyrics::model::common {
 	namespace {
-
 		bool isResolved(PartType type) noexcept {
 			switch (type) {
 			case PartType::kOther:
@@ -25,7 +24,6 @@ namespace gondola::lyrics::model::common {
 				return false;
 			}
 		}
-
 	} // namespace
 
 	Part makePart(PartType type, std::optional<std::string> id, std::optional<std::string> raw) {
@@ -41,5 +39,4 @@ namespace gondola::lyrics::model::common {
 		}
 		return {};
 	}
-
 } // namespace gondola::lyrics::model::common

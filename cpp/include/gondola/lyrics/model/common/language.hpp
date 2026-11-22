@@ -9,7 +9,6 @@
 #include <vector>
 
 namespace gondola::lyrics::model::common {
-
 	/**
 	 * Checks RFC 5646 syntax, including private use and grandfathered tags.
 	 *
@@ -32,7 +31,6 @@ namespace gondola::lyrics::model::common {
 	};
 
 	namespace internal {
-
 		bool        equalAsciiCaseInsensitive(std::string_view a, std::string_view b) noexcept;
 		std::size_t scoreLanguageTag(std::string_view tag, std::string_view wanted) noexcept;
 
@@ -76,7 +74,6 @@ namespace gondola::lyrics::model::common {
 			}
 			return fallback ? first : nullptr;
 		}
-
 	} // namespace internal
 
 	/**
@@ -137,5 +134,4 @@ namespace gondola::lyrics::model::common {
 
 	template <typename T>
 	const T* pickItemByScheme(const std::vector<T>&&, const SchemePreference& = {}) = delete;
-
 } // namespace gondola::lyrics::model::common

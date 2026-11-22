@@ -9,22 +9,12 @@ IndentWidth: 8
 ContinuationIndentWidth: 8
 # Indent each namespace body one level.
 NamespaceIndentation: All
+WrapNamespaceBodyWithEmptyLines: Never
 IndentExternBlock: Indent
 # Pull public:/private: back to class alignment.
 AccessModifierOffset: -8
 
 BreakBeforeBraces: Attach
-BraceWrapping:
-  AfterFunction: false
-  AfterClass: false
-  AfterStruct: false
-  AfterEnum: false
-  AfterUnion: false
-  AfterNamespace: false
-  AfterControlStatement: Never
-  BeforeElse: false
-  BeforeCatch: false
-  BeforeLambdaBody: false
 # Always brace if/for/while.
 InsertBraces: true
 
@@ -45,7 +35,7 @@ ReferenceAlignment: Left
 ColumnLimit: 180
 AlignAfterOpenBracket: DontAlign
 # Comments are written one sentence per line and must never be re-split, so the limit does not apply to them.
-ReflowComments: Never
+ReflowComments: IndentOnly
 BinPackArguments: false
 BinPackParameters: false
 AllowAllArgumentsOnNextLine: false

@@ -11,7 +11,6 @@
 #include <gondola/lyrics/model/generated/enriched/line.gen.hpp>
 
 namespace gondola::lyrics::model::enriched {
-
 	[[nodiscard]] LineAnnotationRomanContent makeLineAnnotationRomanContentTokens(std::vector<common::TextToken> tokens);
 	[[nodiscard]] LineAnnotationRomanContent makeLineAnnotationRomanContentText(std::string text);
 	[[nodiscard]] LineAnnotationRoman        makeLineAnnotationRoman(std::optional<std::string> language = std::nullopt,
@@ -95,5 +94,4 @@ namespace gondola::lyrics::model::enriched {
 
 	// Orders usable start times stably, leaving unset and invalid ranges at the end.
 	[[nodiscard]] Line orderLineBackgrounds(Line line);
-
 } // namespace gondola::lyrics::model::enriched

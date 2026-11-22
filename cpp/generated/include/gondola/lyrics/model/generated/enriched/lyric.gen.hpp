@@ -14,7 +14,6 @@
 #include <gondola/lyrics/model/generated/enriched/line.gen.hpp>
 
 namespace gondola::lyrics::model::enriched {
-
 	// Status records whether parsing succeeded.
 	enum class LyricStatus : std::int32_t {
 		// The parse result is unresolved; unrecognized values have the same meaning.
@@ -64,5 +63,4 @@ namespace gondola::lyrics::model::enriched {
 	inline bool operator!=(const Lyric& a, const Lyric& b) {
 		return !(a == b);
 	}
-
 } // namespace gondola::lyrics::model::enriched

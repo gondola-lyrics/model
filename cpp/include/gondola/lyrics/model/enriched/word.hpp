@@ -9,7 +9,6 @@
 #include <gondola/lyrics/model/generated/enriched/word.gen.hpp>
 
 namespace gondola::lyrics::model::enriched {
-
 	// Creates a timed annotation without normalizing its identifiers.
 	[[nodiscard]] WordAnnotationRuby        makeWordAnnotationRuby(std::optional<common::TimeRange> time = std::nullopt,
 		std::optional<std::string>                                                       language    = std::nullopt,
@@ -62,5 +61,4 @@ namespace gondola::lyrics::model::enriched {
 	[[nodiscard]] std::optional<common::TimeRange> resolveWordAnnotationItemTime(const WordAnnotationRoman& item, const Word& word) noexcept;
 	[[nodiscard]] std::optional<common::TimeRange> resolveWordAnnotationTokenTime(const common::TextToken& token, const WordAnnotationRuby& item, const Word& word) noexcept;
 	[[nodiscard]] std::optional<common::TimeRange> resolveWordAnnotationTokenTime(const common::TextToken& token, const WordAnnotationRoman& item, const Word& word) noexcept;
-
 } // namespace gondola::lyrics::model::enriched

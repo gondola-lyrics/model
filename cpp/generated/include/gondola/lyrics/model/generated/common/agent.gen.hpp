@@ -9,7 +9,6 @@
 #include <gondola/lyrics/model/generated/common/text.gen.hpp>
 
 namespace gondola::lyrics::model::common {
-
 	// Agent types classify the form of a performing voice.
 	enum class AgentType : std::int32_t {
 		// The type is unresolved; unrecognized values have the same meaning.
@@ -42,5 +41,4 @@ namespace gondola::lyrics::model::common {
 	inline bool operator!=(const Agent& a, const Agent& b) {
 		return !(a == b);
 	}
-
 } // namespace gondola::lyrics::model::common

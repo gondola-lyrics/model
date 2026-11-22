@@ -5,7 +5,6 @@
 
 namespace gondola::lyrics::model::common {
 	namespace {
-
 		// RFC 5646 fixes these additional tags separately from the ordinary tag grammar.
 		constexpr std::string_view kGrandfatheredTags[] = {
 			"en-gb-oed",
@@ -75,11 +74,9 @@ namespace gondola::lyrics::model::common {
 		bool isVariant(std::string_view subtag) {
 			return subtag.size() >= 5 || (subtag.size() == 4 && isDigit(subtag.front()));
 		}
-
 	} // namespace
 
 	namespace internal {
-
 		bool equalAsciiCaseInsensitive(std::string_view a, std::string_view b) noexcept {
 			return std::equal(a.begin(), a.end(), b.begin(), b.end(), [](char left, char right) { return asciiLower(left) == asciiLower(right); });
 		}
@@ -95,7 +92,6 @@ namespace gondola::lyrics::model::common {
 			const auto longer = tag.size() > wanted.size() ? tag : wanted;
 			return longer[shared] == '-' ? shared : 0;
 		}
-
 	} // namespace internal
 
 	bool isWellFormedLanguageTag(std::string_view tag) noexcept {
@@ -153,5 +149,4 @@ namespace gondola::lyrics::model::common {
 		}
 		return subtag.empty();
 	}
-
 } // namespace gondola::lyrics::model::common

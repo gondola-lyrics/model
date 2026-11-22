@@ -3,7 +3,6 @@
 #include <gondola/lyrics/model/common/unknown.hpp>
 
 namespace gondola::lyrics::model::common {
-
 	UnknownEntry makeUnknownEntry(std::string key, std::string value) {
 		return {std::move(key), std::move(value)};
 	}
@@ -17,5 +16,4 @@ namespace gondola::lyrics::model::common {
 		}
 		return found;
 	}
-
 } // namespace gondola::lyrics::model::common

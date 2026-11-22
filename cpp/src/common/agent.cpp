@@ -8,7 +8,6 @@
 
 namespace gondola::lyrics::model::common {
 	namespace {
-
 		bool isResolved(AgentType type) noexcept {
 			switch (type) {
 			case AgentType::kOther:
@@ -19,7 +18,6 @@ namespace gondola::lyrics::model::common {
 				return false;
 			}
 		}
-
 	} // namespace
 
 	Agent makeAgent(std::string id, AgentType type, std::optional<std::string> raw, std::vector<Text> names) {
@@ -65,5 +63,4 @@ namespace gondola::lyrics::model::common {
 		}
 		return result;
 	}
-
 } // namespace gondola::lyrics::model::common

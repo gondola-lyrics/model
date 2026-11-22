@@ -4,7 +4,6 @@
 #include <string>
 
 namespace gondola::lyrics::model::common {
-
 	// Unrecognized source metadata retains entry order and allows repeated keys.
 	struct UnknownEntry {
 		// The key preserves its original source spelling.
@@ -20,5 +19,4 @@ namespace gondola::lyrics::model::common {
 	inline bool operator!=(const UnknownEntry& a, const UnknownEntry& b) {
 		return !(a == b);
 	}
-
 } // namespace gondola::lyrics::model::common

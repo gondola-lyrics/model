@@ -10,7 +10,6 @@ import glob
 import json
 import os
 import posixpath
-import re
 import shutil
 import subprocess
 import sys
@@ -23,11 +22,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PLUGIN = os.path.join(ROOT, "script", "generate-proto-binding-plugin", "main.py")
 PROTO = os.path.join(ROOT, "proto")
 VERSION_FILE = os.path.join(ROOT, "proto", "VERSION.txt")
-CLANG_FORMAT_STYLE = os.path.join(ROOT, "cpp", ".clang-format")
 
 # Pinned so that regenerating on another machine yields the same files.
 BUF_VERSION = "1.72.0"
-CLANG_FORMAT_MAJOR = 22
 
 
 @dataclass(frozen=True)
@@ -81,14 +78,6 @@ def check_buf() -> None:
         fail(f"buf {BUF_VERSION} is required, found {version}")
 
 
-def check_clang_format() -> None:
-    match = re.search(r"version (\d+)\.", command("clang-format", "--version", capture=True))
-    if not match or int(match[1]) != CLANG_FORMAT_MAJOR:
-        fail(f"clang-format {CLANG_FORMAT_MAJOR} is required")
-    if not os.path.isfile(CLANG_FORMAT_STYLE):
-        fail("cpp/.clang-format is missing")
-
-
 def run_buf(names: list[str], out: str, version: str) -> None:
     plugins = []
     for name in names:
@@ -128,8 +117,8 @@ def install(binding: Binding, staging: str) -> list[str]:
 
 
 def format_files(name: str, files: list[str]) -> None:
-    # The Node files stay exactly as the plugin wrote them, and node/.prettierignore keeps them out of formatting.
-    if name == "node":
+    # Node and C++ templates own their formatting, and generated files are excluded from routine formatters.
+    if name in ("node", "cpp"):
         return
     if name == "kotlin":
         gradlew = os.path.join(ROOT, "kotlin", "gradlew.bat" if os.name == "nt" else "gradlew")
@@ -144,8 +133,6 @@ def format_files(name: str, files: list[str]) -> None:
         )
     elif name == "go":
         command("gofmt", "-w", *files)
-    else:
-        command("clang-format", "-i", f"--style=file:{CLANG_FORMAT_STYLE}", *files)
 
 
 def check_committed(names: list[str]) -> None:
@@ -199,8 +186,6 @@ def main() -> None:
         print(f"generate-proto-binding: wrote raw output for {', '.join(names)} to {out}")
         return
 
-    if "cpp" in names:
-        check_clang_format()
     temporary = os.path.join(ROOT, ".claude", "temp")
     os.makedirs(temporary, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=temporary) as staging:

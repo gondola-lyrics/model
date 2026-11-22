@@ -17,7 +17,6 @@
 #include <gondola/lyrics/model/common/language.hpp>
 
 namespace gondola::lyrics::model::utils {
-
 	inline constexpr auto kMaxTime = static_cast<std::uint32_t>(std::numeric_limits<std::int32_t>::max());
 
 	inline std::uint32_t requireUint32(std::int64_t value) {
@@ -108,5 +107,4 @@ namespace gondola::lyrics::model::utils {
 		}
 		eraseDefaults(values);
 	}
-
 } // namespace gondola::lyrics::model::utils

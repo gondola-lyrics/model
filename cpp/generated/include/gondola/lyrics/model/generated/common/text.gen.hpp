@@ -8,7 +8,6 @@
 #include <gondola/lyrics/model/generated/common/time.gen.hpp>
 
 namespace gondola::lyrics::model::common {
-
 	// Language matches follow subtag boundaries when either tag extends the other; the longest shared prefix wins, and untagged entries are the fallback.
 	struct Text {
 		// The BCP 47 tag is case-insensitive with lowercase canonical spelling; unset or empty means unspecified or default.
@@ -43,5 +42,4 @@ namespace gondola::lyrics::model::common {
 	inline bool operator!=(const TextToken& a, const TextToken& b) {
 		return !(a == b);
 	}
-
 } // namespace gondola::lyrics::model::common

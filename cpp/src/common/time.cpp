@@ -3,7 +3,6 @@
 #include "utils/common.hpp"
 
 namespace gondola::lyrics::model::common {
-
 	TimeRange makeTimeRange(std::int64_t start, std::optional<std::int64_t> end) {
 		return {utils::requireUint32(start), end ? std::optional{utils::requireUint32(*end)} : std::nullopt};
 	}
@@ -48,5 +47,4 @@ namespace gondola::lyrics::model::common {
 	bool isTimeInTimeRange(const std::optional<TimeRange>& range, double time) noexcept {
 		return range && range->start <= time && (!range->end || time < *range->end);
 	}
-
 } // namespace gondola::lyrics::model::common

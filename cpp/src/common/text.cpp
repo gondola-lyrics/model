@@ -6,7 +6,6 @@
 #include "utils/common.hpp"
 
 namespace gondola::lyrics::model::common {
-
 	Text makeText(std::optional<std::string> language, std::string text) {
 		return {std::move(language), std::move(text)};
 	}
@@ -43,5 +42,4 @@ namespace gondola::lyrics::model::common {
 	TextToken canonicalizeTextToken(TextToken token) {
 		return token;
 	}
-
 } // namespace gondola::lyrics::model::common

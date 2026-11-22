@@ -13,7 +13,6 @@
 
 namespace gondola::lyrics::model::document {
 	namespace {
-
 		using common::Diagnostic;
 		using common::DiagnosticCode;
 		using common::Part;
@@ -97,7 +96,6 @@ namespace gondola::lyrics::model::document {
 				}
 			}
 		}
-
 	} // namespace
 
 	Lyric makeLyric(std::string                format,
@@ -199,5 +197,4 @@ namespace gondola::lyrics::model::document {
 		utils::sortByStart(lyric.lines);
 		return lyric;
 	}
-
 } // namespace gondola::lyrics::model::document

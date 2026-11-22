@@ -10,7 +10,6 @@
 
 namespace gondola::lyrics::model::common {
 	namespace {
-
 		bool isResolved(CreditRole role) noexcept {
 			switch (role) {
 			case CreditRole::kOther:
@@ -63,7 +62,6 @@ namespace gondola::lyrics::model::common {
 			}
 			return time + delta;
 		}
-
 	} // namespace
 
 	Meta makeMeta(std::vector<UnknownEntry> unknowns,
@@ -201,5 +199,4 @@ namespace gondola::lyrics::model::common {
 	std::int64_t removeTimeOffset(std::int64_t time, std::int32_t offset) {
 		return shiftTime(time, -static_cast<std::int64_t>(offset));
 	}
-
 } // namespace gondola::lyrics::model::common

@@ -17,7 +17,6 @@
 #include "utils/common.hpp"
 
 namespace gondola::lyrics::model::utils {
-
 	inline void appendDiagnostics(std::vector<common::Diagnostic>& diagnostics, std::vector<common::Diagnostic> entries) {
 		diagnostics.insert(diagnostics.end(), std::make_move_iterator(entries.begin()), std::make_move_iterator(entries.end()));
 	}
@@ -130,5 +129,4 @@ namespace gondola::lyrics::model::utils {
 			return isTimeOrdered(a.time) && (!isTimeOrdered(b.time) || a.time->start < b.time->start);
 		});
 	}
-
 } // namespace gondola::lyrics::model::utils

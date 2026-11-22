@@ -21,7 +21,6 @@
 #include "utils/wire.hpp"
 
 namespace gondola::lyrics::model::utils::generated {
-
 	static bool encodeCommonTimeRange(Writer& w, const common::TimeRange& value) {
 		if (value.start != 0 && !w.uint32(8, value.start)) {
 			return false;
@@ -2047,5 +2046,4 @@ namespace gondola::lyrics::model::utils::generated {
 		}
 		return true;
 	}
-
 } // namespace gondola::lyrics::model::utils::generated

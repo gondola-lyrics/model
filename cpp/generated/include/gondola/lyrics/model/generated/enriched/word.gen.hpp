@@ -10,7 +10,6 @@
 #include <gondola/lyrics/model/generated/common/time.gen.hpp>
 
 namespace gondola::lyrics::model::enriched {
-
 	// Word kinds distinguish sung text from whitespace separators.
 	enum class WordType : std::int32_t {
 		// The word kind is unresolved; unrecognized values have the same meaning.
@@ -137,5 +136,4 @@ namespace gondola::lyrics::model::enriched {
 	inline bool operator!=(const Word& a, const Word& b) {
 		return !(a == b);
 	}
-
 } // namespace gondola::lyrics::model::enriched

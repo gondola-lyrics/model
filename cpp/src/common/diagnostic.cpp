@@ -1,7 +1,6 @@
 #include <gondola/lyrics/model/common/diagnostic.hpp>
 
 namespace gondola::lyrics::model::common {
-
 	std::string_view toString(DiagnosticCode code) noexcept {
 		switch (code) {
 		case DiagnosticCode::kAgentIdEmpty:
@@ -171,5 +170,4 @@ namespace gondola::lyrics::model::common {
 		}
 		return {};
 	}
-
 } // namespace gondola::lyrics::model::common

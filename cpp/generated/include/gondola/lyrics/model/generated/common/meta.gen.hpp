@@ -10,7 +10,6 @@
 #include <gondola/lyrics/model/generated/common/unknown.gen.hpp>
 
 namespace gondola::lyrics::model::common {
-
 	// A credit role identifies a contribution to the song or recording.
 	enum class CreditRole : std::int32_t {
 		// The role is unresolved; unrecognized values have the same meaning.
@@ -106,5 +105,4 @@ namespace gondola::lyrics::model::common {
 	inline bool operator!=(const Meta& a, const Meta& b) {
 		return !(a == b);
 	}
-
 } // namespace gondola::lyrics::model::common

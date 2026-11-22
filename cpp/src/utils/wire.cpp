@@ -5,7 +5,6 @@
 
 namespace gondola::lyrics::model::utils {
 	namespace {
-
 		constexpr std::uint32_t kVarint      = 0;
 		constexpr std::uint32_t kFixed64     = 1;
 		constexpr std::uint32_t kDelimited   = 2;
@@ -66,7 +65,6 @@ namespace gondola::lyrics::model::utils {
 			}
 			return true;
 		}
-
 	} // namespace
 
 	bool Writer::append(std::string_view bytes) {
@@ -322,5 +320,4 @@ namespace gondola::lyrics::model::utils {
 			return false;
 		}
 	}
-
 } // namespace gondola::lyrics::model::utils

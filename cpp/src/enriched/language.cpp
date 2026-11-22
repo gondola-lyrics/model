@@ -12,7 +12,6 @@
 
 namespace gondola::lyrics::model::enriched {
 	namespace {
-
 		using Counts = std::unordered_map<std::string, std::uint32_t>;
 
 		void addCount(std::uint32_t& total, std::uint32_t count) noexcept {
@@ -54,7 +53,6 @@ namespace gondola::lyrics::model::enriched {
 			}
 			return finishCounts(counts);
 		}
-
 	} // namespace
 
 	LanguageUsage makeLanguageUsage(std::string tag, std::int64_t lineCount) {
@@ -95,5 +93,4 @@ namespace gondola::lyrics::model::enriched {
 		}
 		return finishCounts(counts);
 	}
-
 } // namespace gondola::lyrics::model::enriched

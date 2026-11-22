@@ -11,7 +11,6 @@
 
 namespace gondola::lyrics::model::enriched {
 	namespace {
-
 		using common::Diagnostic;
 		using common::DiagnosticCode;
 		using common::TimeRange;
@@ -70,7 +69,6 @@ namespace gondola::lyrics::model::enriched {
 			utils::canonicalizeEntries(item.tokens, common::canonicalizeTextToken);
 			return item;
 		}
-
 	} // namespace
 
 	WordAnnotationRuby makeWordAnnotationRuby(std::optional<TimeRange> time,
@@ -274,5 +272,4 @@ namespace gondola::lyrics::model::enriched {
 	std::optional<TimeRange> resolveWordAnnotationTokenTime(const common::TextToken& token, const WordAnnotationRoman& item, const Word& word) noexcept {
 		return token.time ? token.time : resolveWordAnnotationItemTime(item, word);
 	}
-
 } // namespace gondola::lyrics::model::enriched

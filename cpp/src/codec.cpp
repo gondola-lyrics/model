@@ -8,7 +8,6 @@
 
 namespace gondola::lyrics::model {
 	namespace {
-
 		template <typename T>
 		std::optional<std::string> encodeLyric(const T& lyric, bool (*encodeFields)(utils::Writer&, const T&)) {
 			utils::Writer writer;
@@ -30,11 +29,9 @@ namespace gondola::lyrics::model {
 			}
 			return lyric;
 		}
-
 	} // namespace
 
 	namespace document {
-
 		std::optional<std::string> encode(const Lyric& lyric) {
 			return encodeLyric(lyric, utils::generated::encodeDocumentLyric);
 		}
@@ -42,11 +39,9 @@ namespace gondola::lyrics::model {
 		std::optional<Lyric> decode(std::string_view bytes) {
 			return decodeLyric(bytes, utils::generated::decodeDocumentLyric);
 		}
-
 	} // namespace document
 
 	namespace enriched {
-
 		std::optional<std::string> encode(const Lyric& lyric) {
 			return encodeLyric(lyric, utils::generated::encodeEnrichedLyric);
 		}
@@ -54,7 +49,5 @@ namespace gondola::lyrics::model {
 		std::optional<Lyric> decode(std::string_view bytes) {
 			return decodeLyric(bytes, utils::generated::decodeEnrichedLyric);
 		}
-
 	} // namespace enriched
-
 } // namespace gondola::lyrics::model

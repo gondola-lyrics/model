@@ -10,7 +10,6 @@
 #include <string_view>
 
 namespace gondola::lyrics::model::utils {
-
 	inline constexpr std::size_t kMaxMessageSize = std::numeric_limits<std::int32_t>::max();
 
 	class Writer {
@@ -90,5 +89,4 @@ namespace gondola::lyrics::model::utils {
 
 		std::string_view bytes_;
 	};
-
 } // namespace gondola::lyrics::model::utils

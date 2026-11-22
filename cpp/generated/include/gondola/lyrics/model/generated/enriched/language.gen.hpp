@@ -5,7 +5,6 @@
 #include <string>
 
 namespace gondola::lyrics::model::enriched {
-
 	// Languages are counted independently, so line counts may sum to more than the number of normal lines.
 	struct LanguageUsage {
 		// The BCP 47 tag is non-empty and unique within the list under case-insensitive comparison.
@@ -22,5 +21,4 @@ namespace gondola::lyrics::model::enriched {
 	inline bool operator!=(const LanguageUsage& a, const LanguageUsage& b) {
 		return !(a == b);
 	}
-
 } // namespace gondola::lyrics::model::enriched

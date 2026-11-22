@@ -12,7 +12,6 @@
 #include <gondola/lyrics/model/generated/document/line.gen.hpp>
 
 namespace gondola::lyrics::model::document {
-
 	// All-default submessages are equivalent to unset, except TimeRange; repeated fields exclude all-default entries.
 	// Lists preserve source order unless a field declares another order.
 	// Non-empty BCP 47 tags are well formed and case-insensitive, with lowercase canonical spelling.
@@ -47,5 +46,4 @@ namespace gondola::lyrics::model::document {
 	inline bool operator!=(const Lyric& a, const Lyric& b) {
 		return !(a == b);
 	}
-
 } // namespace gondola::lyrics::model::document

@@ -10,18 +10,14 @@ namespace gondola::lyrics::model::enriched {
 } // namespace gondola::lyrics::model::enriched
 
 namespace gondola::lyrics::model::utils {
-
 	class Reader;
 	class Writer;
-
 } // namespace gondola::lyrics::model::utils
 
 namespace gondola::lyrics::model::utils::generated {
-
 	bool encodeDocumentLyric(Writer& w, const document::Lyric& value);
 	bool decodeDocumentLyric(Reader& r, document::Lyric& value);
 
 	bool encodeEnrichedLyric(Writer& w, const enriched::Lyric& value);
 	bool decodeEnrichedLyric(Reader& r, enriched::Lyric& value);
-
 } // namespace gondola::lyrics::model::utils::generated

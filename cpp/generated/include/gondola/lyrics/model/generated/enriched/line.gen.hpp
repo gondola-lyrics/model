@@ -12,7 +12,6 @@
 #include <gondola/lyrics/model/generated/enriched/word.gen.hpp>
 
 namespace gondola::lyrics::model::enriched {
-
 	// Line kinds distinguish sung content from instrumental intervals.
 	enum class LineType : std::int32_t {
 		// The line kind is unresolved; unrecognized values have the same meaning.
@@ -170,5 +169,4 @@ namespace gondola::lyrics::model::enriched {
 	inline bool operator!=(const Line& a, const Line& b) {
 		return !(a == b);
 	}
-
 } // namespace gondola::lyrics::model::enriched

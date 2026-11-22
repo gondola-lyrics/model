@@ -10,7 +10,6 @@
 #include <gondola/lyrics/model/generated/enriched/lyric.gen.hpp>
 
 namespace gondola::lyrics::model::enriched {
-
 	// Uses the current schema version and throws std::invalid_argument for a status other than valid or invalid.
 	[[nodiscard]] Lyric makeLyric(LyricStatus  status,
 		std::string                        format         = {},
@@ -36,5 +35,4 @@ namespace gondola::lyrics::model::enriched {
 
 	// Returns no value for malformed wire data; semantic validation is separate.
 	[[nodiscard]] std::optional<Lyric> decode(std::string_view bytes);
-
 } // namespace gondola::lyrics::model::enriched

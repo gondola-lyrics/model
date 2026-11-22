@@ -6,7 +6,6 @@
 #include <string>
 
 namespace gondola::lyrics::model::common {
-
 	// Song sections are classified by their structural role.
 	enum class PartType : std::int32_t {
 		// The section type is unresolved; unrecognized values have the same meaning.
@@ -54,5 +53,4 @@ namespace gondola::lyrics::model::common {
 	inline bool operator!=(const Part& a, const Part& b) {
 		return !(a == b);
 	}
-
 } // namespace gondola::lyrics::model::common

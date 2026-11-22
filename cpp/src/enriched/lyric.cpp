@@ -15,7 +15,6 @@
 
 namespace gondola::lyrics::model::enriched {
 	namespace {
-
 		using common::Diagnostic;
 		using common::DiagnosticCode;
 		using common::Part;
@@ -103,7 +102,6 @@ namespace gondola::lyrics::model::enriched {
 				}
 			}
 		}
-
 	} // namespace
 
 	Lyric makeLyric(LyricStatus                status,
@@ -241,5 +239,4 @@ namespace gondola::lyrics::model::enriched {
 		lyric.language_usages = canonicalizeLanguageUsages(std::move(lyric.language_usages));
 		return lyric;
 	}
-
 } // namespace gondola::lyrics::model::enriched

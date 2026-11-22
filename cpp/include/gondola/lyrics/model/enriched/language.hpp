@@ -13,7 +13,6 @@ namespace gondola::lyrics::model::document {
 } // namespace gondola::lyrics::model::document
 
 namespace gondola::lyrics::model::enriched {
-
 	struct Line;
 
 	// A count outside uint32 throws std::out_of_range.
@@ -29,5 +28,4 @@ namespace gondola::lyrics::model::enriched {
 
 	// Merges normalized tags and caps counts at the uint32 limit.
 	[[nodiscard]] std::vector<LanguageUsage> canonicalizeLanguageUsages(std::vector<LanguageUsage> usages);
-
 } // namespace gondola::lyrics::model::enriched

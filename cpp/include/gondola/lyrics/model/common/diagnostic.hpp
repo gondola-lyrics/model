@@ -4,7 +4,6 @@
 #include <string_view>
 
 namespace gondola::lyrics::model::common {
-
 	enum class DiagnosticCode {
 		kAgentIdEmpty,
 		kAgentNamesLanguageDuplicate,
@@ -91,16 +90,15 @@ namespace gondola::lyrics::model::common {
 	};
 
 	/**
- * Identifies a model violation relative to the input or the caller's path prefix.
- */
+	 * Identifies a model violation relative to the input or the caller's path prefix.
+	 */
 	struct Diagnostic {
 		std::string    path;
 		DiagnosticCode code;
 	};
 
 	/**
- * Returns the diagnostic identifier shared by the bindings.
- */
+	 * Returns the diagnostic identifier shared by the bindings.
+	 */
 	[[nodiscard]] std::string_view toString(DiagnosticCode code) noexcept;
-
 } // namespace gondola::lyrics::model::common

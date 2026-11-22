@@ -4,7 +4,6 @@
 #include <string_view>
 
 namespace gondola::lyrics::model::utils {
-
 	// Match Unicode White_Space on UTF-8 bytes independently of the process locale.
 	inline std::size_t separatorWidth(std::string_view text) noexcept {
 		if (text.empty()) {
@@ -53,5 +52,4 @@ namespace gondola::lyrics::model::utils {
 		}
 		return true;
 	}
-
 } // namespace gondola::lyrics::model::utils

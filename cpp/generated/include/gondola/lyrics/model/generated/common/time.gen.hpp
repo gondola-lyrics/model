@@ -5,7 +5,6 @@
 #include <optional>
 
 namespace gondola::lyrics::model::common {
-
 	// The level describes timing of the original text independently of annotation timing.
 	enum class TimingLevel : std::int32_t {
 		// The timing level is unresolved; unrecognized values have the same meaning.
@@ -37,5 +36,4 @@ namespace gondola::lyrics::model::common {
 	inline bool operator!=(const TimeRange& a, const TimeRange& b) {
 		return !(a == b);
 	}
-
 } // namespace gondola::lyrics::model::common
