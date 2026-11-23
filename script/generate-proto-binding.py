@@ -186,9 +186,7 @@ def main() -> None:
         print(f"generate-proto-binding: wrote raw output for {', '.join(names)} to {out}")
         return
 
-    temporary = os.path.join(ROOT, ".claude", "temp")
-    os.makedirs(temporary, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=temporary) as staging:
+    with tempfile.TemporaryDirectory() as staging:
         run_buf(names, staging, version)
         for name in names:
             files = install(BINDINGS[name], staging)
