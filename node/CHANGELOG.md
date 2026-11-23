@@ -69,7 +69,7 @@
 
 ## v1.0.0 (2026-10-13)
 
-> Proto Version: 1.0.0
+> Proto Version: [1.0.0](https://github.com/gondola-lyrics/model/blob/proto/v1.0.0/proto/CHANGELOG.md)
 
 ### Feature
 
@@ -78,14 +78,11 @@
 - check declared timing against line content in validators ([644613a](https://github.com/gondola-lyrics/model/commit/644613a446ed8ce0c8babb108c083e6036005555))
 - check instrumental line end in validators ([a2ffdb0](https://github.com/gondola-lyrics/model/commit/a2ffdb0e4215a22cd4f99d77d94762aec9ea1a54))
 - make time range end optional ([8b4bdd1](https://github.com/gondola-lyrics/model/commit/8b4bdd1b38600f4626c50a2308ca799c22afc62a))
-- make time range end optional ([07a2186](https://github.com/gondola-lyrics/model/commit/07a2186cabf7d715e5ee22d972d6d722366359a2))
 - add diagnostic path resolver ([f9826ac](https://github.com/gondola-lyrics/model/commit/f9826ac65eed61c113a22d9ff3424721998f7c66))
 - check untimed lyrics carry plain text in validators ([09d6357](https://github.com/gondola-lyrics/model/commit/09d63574d5762f33015db551c75c60a32b63c9b1))
 - check duplicate line languages in validators ([02098c4](https://github.com/gondola-lyrics/model/commit/02098c4e03cab3eddc981f3f60d78b9962f3b8ca))
 - support language fields in canonicalize and validators ([436123d](https://github.com/gondola-lyrics/model/commit/436123dd319e98c7064045a5a8228e745f2bf962))
 - support language fields in constructors ([a95d53a](https://github.com/gondola-lyrics/model/commit/a95d53a954ecdc0b78e6395e79375b4c1775d1db))
-- add storage line language fields ([68ead33](https://github.com/gondola-lyrics/model/commit/68ead3312513498dbdb3cb194a7b49a8ddff1a3f))
-- add meta language field ([1e3617c](https://github.com/gondola-lyrics/model/commit/1e3617cd631956bd7a231d94437dbedb13c83982))
 - add language usage derivation helper ([568dc56](https://github.com/gondola-lyrics/model/commit/568dc56e8e844057ccab5cd58e11b1109454e64b))
 - check duplicate list entries in validators ([98b2245](https://github.com/gondola-lyrics/model/commit/98b2245feb9aadc9bee68c8fc10a9fca396c8ecd))
 - check background time against parent in validators ([0bedaf2](https://github.com/gondola-lyrics/model/commit/0bedaf2d4c39a172d72489a948b9089a1b6519b3))
@@ -97,17 +94,12 @@
 - add syllable line check helper ([68e006a](https://github.com/gondola-lyrics/model/commit/68e006ae7cc669faeaf6391e1582686851ded7b1))
 - split line content constructor ([49ec3cf](https://github.com/gondola-lyrics/model/commit/49ec3cfb65ff9fbf54d87c1419c5bb50f90224ba))
 - split word per layer and rename fields ([4938b5c](https://github.com/gondola-lyrics/model/commit/4938b5cf84203e607572c7997d15399de2fad544))
-- split word per layer and rename fields ([2f284f0](https://github.com/gondola-lyrics/model/commit/2f284f046e3a8e6bff7b7c2e0d816505a611d595))
 - split line content into words or text ([4e8c92e](https://github.com/gondola-lyrics/model/commit/4e8c92e09ae40806029de57162a024f46946c42a))
-- split line content into words or text ([d2b97a0](https://github.com/gondola-lyrics/model/commit/d2b97a0af0342c85642c11b323cd8be97764f256))
 - handle duplicate language usages ([f872e8c](https://github.com/gondola-lyrics/model/commit/f872e8cd9f793a7a44f704adc0bf6d668651a795))
 - add background line validators ([4ba764f](https://github.com/gondola-lyrics/model/commit/4ba764f02be9cfd5aedaa6d084b147a4c307beb0))
-- add java options ([d2aac22](https://github.com/gondola-lyrics/model/commit/d2aac225e02cdda244e1ae9bef49b14b278633c6))
 - validate word times within lines ([7583175](https://github.com/gondola-lyrics/model/commit/7583175727890abc60ab4d3f38797494b813e540))
 - support line id field ([d7a51e1](https://github.com/gondola-lyrics/model/commit/d7a51e1c413b810421853697d36f0790c56e2b81))
-- add line id field ([59ad823](https://github.com/gondola-lyrics/model/commit/59ad823f0e165006dce9483f6abe61fbbd753323))
 - handle empty agent ids ([4308004](https://github.com/gondola-lyrics/model/commit/43080044f43952e534cfc273034ed59d94c04b37))
-- require non-empty agent ids ([bd57a53](https://github.com/gondola-lyrics/model/commit/bd57a5336519f39f03821950a10646d17177e31d))
 - add lyric encoding helpers ([fff5f96](https://github.com/gondola-lyrics/model/commit/fff5f961f9677609f0f09399b5bb02ec67fe2a69))
 - add line roman derivation helper ([d33043f](https://github.com/gondola-lyrics/model/commit/d33043fb48137475d7ec0281c4a5fdea8d0fe28f))
 - add active time check helper ([be07168](https://github.com/gondola-lyrics/model/commit/be071689a8bf273659f582e6296dcae9debb6d22))
@@ -120,8 +112,6 @@
 - add lyric validators ([fe3a063](https://github.com/gondola-lyrics/model/commit/fe3a063af925602f5c9fda7f276dc2f020827698))
 - add message constructors ([151a10b](https://github.com/gondola-lyrics/model/commit/151a10b8c42bf2d277210b0cf28863f9ad0ce104))
 - init package ([6376fef](https://github.com/gondola-lyrics/model/commit/6376feffce2de330d8fce1f4e47cb18975f21287))
-- add version file ([5308d69](https://github.com/gondola-lyrics/model/commit/5308d6955ce2670b80154c9c5259e57729bc84db))
-- init base proto ([ebea8ad](https://github.com/gondola-lyrics/model/commit/ebea8ad187d39472cd421b0b685cdb599d7da528))
 
 ### Fix
 
@@ -147,19 +137,15 @@
 - restrict constructor fields ([656094a](https://github.com/gondola-lyrics/model/commit/656094a65804d964a8eabbceca35fc42d4398005))
 - deduplicate line languages in canonicalize ([87a2e7f](https://github.com/gondola-lyrics/model/commit/87a2e7f200dddbd168d01c275c3c0e0bc883bcab))
 - drop empty entries in canonicalize ([e946d3e](https://github.com/gondola-lyrics/model/commit/e946d3e333253346148ee5178ff7425c76102c3a))
-- make time end required ([5d73b7c](https://github.com/gondola-lyrics/model/commit/5d73b7cfbd936d7a2dceb4564538c2850a048882))
 
 ### Refactor
 
 - drop the single language usage helper ([12b5b0c](https://github.com/gondola-lyrics/model/commit/12b5b0c1ef3bcb1c97b3eed9ce01fe874645c3bd))
 - rename word level line check helper ([07151f5](https://github.com/gondola-lyrics/model/commit/07151f5fc9d80469131618d22c8e0b2f53bad213))
 - share line language helper ([caa61de](https://github.com/gondola-lyrics/model/commit/caa61de359fe29ef3d2a65aba7ca5157754f3aaa))
-- reorder fields for consistent layout ([98657f4](https://github.com/gondola-lyrics/model/commit/98657f48d1ef4952d507e881f810ab2bf9e62f17))
 - rename time range diagnostic codes ([071c7d3](https://github.com/gondola-lyrics/model/commit/071c7d308f26e9f71bb58b4b43eeb068fff6f762))
 - rename unknown entry helper ([e770c27](https://github.com/gondola-lyrics/model/commit/e770c271a2ca81b09db95ee8a2cede51a4b54578))
-- rename unknown message to unknown entry ([6c1ac35](https://github.com/gondola-lyrics/model/commit/6c1ac355c93d21b6abcadff6ec146259018ebefa))
 - rename time helpers ([a16fe2a](https://github.com/gondola-lyrics/model/commit/a16fe2aced30a3f6fad997dc9c8d228e6540b866))
-- rename time message to time range ([c676d03](https://github.com/gondola-lyrics/model/commit/c676d03b6723a49d556dbdffd4430c1d6d5d5f21))
 - expose runtime and storage as subpath entries ([55c0a79](https://github.com/gondola-lyrics/model/commit/55c0a791a0b4c5679b7e847785985041fe7ecb9c))
 - flatten layer exports into a single entry ([fda9345](https://github.com/gondola-lyrics/model/commit/fda9345143c48036ddf280c00c5eb0dd6ef95b71))
 - move generated bindings out of src ([b8d2d7e](https://github.com/gondola-lyrics/model/commit/b8d2d7e5436591807dc17497ad018ef53f7ae13d))
@@ -167,11 +153,4 @@
 ### Document
 
 - update readme ([4256e78](https://github.com/gondola-lyrics/model/commit/4256e780a77675f9cd86e5d3f6f4090c5c54fba7))
-- define a part by its type and raw ([3b5f2f6](https://github.com/gondola-lyrics/model/commit/3b5f2f68415c11b46a60bcdc388d1dcb37c1b447))
 - optimize comments ([82a3119](https://github.com/gondola-lyrics/model/commit/82a3119e742ed61d43363eb97061602250f52803))
-- align the timing level comments ([1b2294e](https://github.com/gondola-lyrics/model/commit/1b2294ef981968f5801dccc0e455cce61a17114a))
-- state the instrumental line end rule ([be27587](https://github.com/gondola-lyrics/model/commit/be275878dd5c94a380d66174d9facd932311c297))
-- optimize line language comments ([16cef11](https://github.com/gondola-lyrics/model/commit/16cef114dc011678f6e330d69053c3e9abdebd51))
-- drop unnecessary comments ([1df337e](https://github.com/gondola-lyrics/model/commit/1df337e6f459463c4c2cf4b01e3c9b9055809a0b))
-- optimize comments ([e1393bb](https://github.com/gondola-lyrics/model/commit/e1393bb96a6d1b9cae1703a9c6580ae61f3a8ff3))
-- optimize comments ([e5914ca](https://github.com/gondola-lyrics/model/commit/e5914cab6d89f7cc4c4fe1d2edd2db93b5b60709))
