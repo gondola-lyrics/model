@@ -11,6 +11,7 @@ project(gondola_lyrics_model
 )
 
 option(GONDOLA_LYRICS_MODEL_INSTALL "Install model package" ${PROJECT_IS_TOP_LEVEL})
+option(GONDOLA_LYRICS_MODEL_BUILD_TESTS "Build model tests" OFF)
 
 add_library(gondola_lyrics_model STATIC
   src/codec.cpp
@@ -47,6 +48,26 @@ set_target_properties(gondola_lyrics_model PROPERTIES
   EXPORT_NAME model
   POSITION_INDEPENDENT_CODE ON
 )
+
+if(GONDOLA_LYRICS_MODEL_BUILD_TESTS)
+  enable_testing()
+  add_executable(gondola_lyrics_model_tests
+    test/main.cpp
+    test/codec.cpp
+    test/common.cpp
+    test/helpers.cpp
+    test/validate.cpp
+    test/canonicalize.cpp
+    test/order.cpp
+    test/roman.cpp
+    test/text_token.cpp
+  )
+  target_link_libraries(gondola_lyrics_model_tests PRIVATE gondola::lyrics::model)
+  set_target_properties(gondola_lyrics_model_tests PROPERTIES CXX_EXTENSIONS OFF)
+  foreach(suite codec common helpers validate canonicalize order roman text_token)
+    add_test(NAME gondola_lyrics_model.${suite} COMMAND gondola_lyrics_model_tests ${suite})
+  endforeach()
+endif()
 
 if(GONDOLA_LYRICS_MODEL_INSTALL)
   include(GNUInstallDirs)
