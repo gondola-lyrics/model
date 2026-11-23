@@ -116,15 +116,23 @@ def install(binding: Binding, staging: str) -> list[str]:
     return sorted(installed)
 
 
-def format_files(name: str, files: list[str]) -> None:
+def format_files(name: str, files: list[str], root: str) -> None:
     # Node and C++ templates own their formatting, and generated files are excluded from routine formatters.
     if name in ("node", "cpp"):
         return
     if name == "kotlin":
+        # Spotless requires its targets to stay within the Gradle project directory.
+        project = os.path.join(root, "kotlin")
+        for path in ("build.gradle.kts", "settings.gradle.kts", "gradle.properties", ".editorconfig", "gradle/libs.versions.toml"):
+            target = os.path.join(project, path)
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            shutil.copyfile(os.path.join(ROOT, "kotlin", path), target)
         gradlew = os.path.join(ROOT, "kotlin", "gradlew.bat" if os.name == "nt" else "gradlew")
         gradle_command = [gradlew] if os.name == "nt" else ["bash", gradlew]
         command(
             *gradle_command,
+            "--project-dir",
+            project,
             "--no-daemon",
             "--console=plain",
             "--stacktrace",
@@ -139,6 +147,7 @@ def check_committed(names: list[str]) -> None:
     pathspecs = [f":(glob){posixpath.join(*BINDINGS[name].out, *BINDINGS[name].pattern)}" for name in names]
     status = command(
         "git",
+        "--no-optional-locks",
         "status",
         "--porcelain=v1",
         "-z",
@@ -149,7 +158,24 @@ def check_committed(names: list[str]) -> None:
     )
     changed = [entry[3:] for entry in status.split("\0") if entry]
     if changed:
-        fail("regenerated files differ from the committed ones; commit them first:\n  " + "\n  ".join(changed))
+        fail("generated files have uncommitted changes; commit them before checking:\n  " + "\n  ".join(changed))
+
+
+def check_generated(names: list[str], staging: str) -> None:
+    expected = {os.path.relpath(path, staging).replace(os.sep, "/"): path for name in names for path in generated_files(staging, BINDINGS[name])}
+    current = {os.path.relpath(path, ROOT).replace(os.sep, "/"): path for name in names for path in generated_files(ROOT, BINDINGS[name])}
+    differences = []
+    for path in sorted(expected.keys() | current.keys()):
+        if path not in current:
+            differences.append(f"missing: {path}")
+        elif path not in expected:
+            differences.append(f"extra: {path}")
+        else:
+            with open(expected[path], "rb") as generated, open(current[path], "rb") as existing:
+                if generated.read() != existing.read():
+                    differences.append(f"changed: {path}")
+    if differences:
+        fail("generated files are out of date; regenerate and commit them:\n  " + "\n  ".join(differences))
 
 
 def main() -> None:
@@ -163,7 +189,7 @@ def main() -> None:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="fail when the regenerated files are not committed",
+        help="verify committed generated files without modifying them",
     )
     parser.add_argument("--out", help="write the raw plugin output into this empty directory instead")
     args = parser.parse_args()
@@ -173,7 +199,10 @@ def main() -> None:
     if unknown:
         fail(f"unknown binding {', '.join(unknown)}; expected {', '.join(BINDINGS)}")
     if args.check and args.out:
-        fail("--check compares the bindings in place and cannot be combined with --out")
+        fail("--check cannot be combined with --out")
+
+    if args.check:
+        check_committed(names)
 
     check_buf()
     version = read_version()
@@ -189,12 +218,17 @@ def main() -> None:
     with tempfile.TemporaryDirectory() as staging:
         run_buf(names, staging, version)
         for name in names:
-            files = install(BINDINGS[name], staging)
-            format_files(name, files)
-            print(f"generate-proto-binding: {name} -> {posixpath.join(*BINDINGS[name].out)} ({len(files)} files)")
+            format_files(name, generated_files(staging, BINDINGS[name]), staging)
 
-    if args.check:
-        check_committed(names)
+        if args.check:
+            check_generated(names, staging)
+            check_committed(names)
+            print(f"generate-proto-binding: verified committed output for {', '.join(names)}")
+            return
+
+        for name in names:
+            files = install(BINDINGS[name], staging)
+            print(f"generate-proto-binding: {name} -> {posixpath.join(*BINDINGS[name].out)} ({len(files)} files)")
 
 
 if __name__ == "__main__":
