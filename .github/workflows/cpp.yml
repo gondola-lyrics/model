@@ -1,0 +1,65 @@
+name: Release C++
+
+on:
+  push:
+    tags:
+      - 'cpp/v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-cpp-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Check version
+        run: |
+          version="${GITHUB_REF_NAME#cpp/v}"
+          declared="$(sed -n 's/^set(GONDOLA_LYRICS_MODEL_VERSION "\([^"]*\)")$/\1/p' cpp/CMakeLists.txt)"
+          if [ "$declared" != "$version" ]; then
+            echo "tag $GITHUB_REF_NAME does not match the package version $declared" >&2
+            exit 1
+          fi
+          if [ "$version" = '0.0.0' ]; then
+            echo '0.0.0 is the placeholder, not a release version' >&2
+            exit 1
+          fi
+
+      - name: Prepare release
+        id: release
+        run: |
+          version="${GITHUB_REF_NAME#cpp/v}"
+          python3 script/generate-change-log.py cpp "$version" --extract > "$RUNNER_TEMP/notes.md"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Setup buf
+        uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+          version: '1.72.0'
+
+      - name: Verify generated bindings
+        run: python3 script/generate-proto-binding.py cpp --check
+
+      - name: Build
+        run: |
+          cmake -S cpp -B "$RUNNER_TEMP/cpp-build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=17 -DGONDOLA_LYRICS_MODEL_BUILD_TESTS=ON
+          cmake --build "$RUNNER_TEMP/cpp-build" --config Release --parallel 2
+
+      - name: Test
+        run: ctest --test-dir "$RUNNER_TEMP/cpp-build" -C Release --output-on-failure --no-tests=error
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: C++ ${{ steps.release.outputs.version }}
+          body_path: ${{ runner.temp }}/notes.md
+          make_latest: false
