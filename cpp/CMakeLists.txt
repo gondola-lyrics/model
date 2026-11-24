@@ -1,12 +1,9 @@
 cmake_minimum_required(VERSION 3.21)
 
 set(GONDOLA_LYRICS_MODEL_VERSION "1.0.0")
-string(REGEX REPLACE "[-+].*$" ""
-  GONDOLA_LYRICS_MODEL_VERSION_CORE "${GONDOLA_LYRICS_MODEL_VERSION}"
-)
 
 project(gondola_lyrics_model
-  VERSION "${GONDOLA_LYRICS_MODEL_VERSION_CORE}"
+  VERSION "${GONDOLA_LYRICS_MODEL_VERSION}"
   LANGUAGES CXX
 )
 
@@ -71,102 +68,22 @@ endif()
 
 if(GONDOLA_LYRICS_MODEL_INSTALL)
   include(GNUInstallDirs)
-  include(CMakePackageConfigHelpers)
 
   target_include_directories(gondola_lyrics_model INTERFACE
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
   )
 
   set(GONDOLA_LYRICS_MODEL_INSTALL_CMAKEDIR
-    "${CMAKE_INSTALL_LIBDIR}/cmake/gondola_lyrics_model"
+    "${CMAKE_INSTALL_LIBDIR}/cmake/gondola-lyrics-model"
   )
 
-  string(CONFIGURE [=[
-set(gondola_lyrics_model_VERSION "@GONDOLA_LYRICS_MODEL_VERSION@")
-
-if(gondola_lyrics_model_VERSION MATCHES "^[^+]*-" AND NOT gondola_lyrics_model_ALLOW_PRERELEASE)
-  set(gondola_lyrics_model_FOUND FALSE)
-  set(gondola_lyrics_model_NOT_FOUND_MESSAGE
-    "Model package ${gondola_lyrics_model_VERSION} is a prerelease; set gondola_lyrics_model_ALLOW_PRERELEASE to ON to use it"
-  )
-  return()
-endif()
-
-foreach(component IN LISTS gondola_lyrics_model_FIND_COMPONENTS)
-  if(gondola_lyrics_model_FIND_REQUIRED_${component})
-    set(gondola_lyrics_model_FOUND FALSE)
-    set(gondola_lyrics_model_NOT_FOUND_MESSAGE "Model package does not provide components")
-    return()
-  endif()
-endforeach()
-
-include("${CMAKE_CURRENT_LIST_DIR}/gondola_lyrics_modelTargets.cmake")
-
-get_property(_gondola_lyrics_model_imported TARGET gondola::lyrics::model PROPERTY IMPORTED)
-if(_gondola_lyrics_model_imported)
-  # CMake otherwise falls back to any installed configuration, which can mix incompatible CRTs.
-  foreach(_gondola_lyrics_model_config IN ITEMS
-    NOCONFIG Debug Release RelWithDebInfo MinSizeRel ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE}
-  )
-    string(TOUPPER "${_gondola_lyrics_model_config}" _gondola_lyrics_model_config)
-    get_property(_gondola_lyrics_model_mapping_set TARGET gondola::lyrics::model
-      PROPERTY "MAP_IMPORTED_CONFIG_${_gondola_lyrics_model_config}" SET
-    )
-    if(_gondola_lyrics_model_mapping_set)
-      continue()
-    endif()
-
-    if(DEFINED CMAKE_MAP_IMPORTED_CONFIG_${_gondola_lyrics_model_config})
-      set(_gondola_lyrics_model_mapping "${CMAKE_MAP_IMPORTED_CONFIG_${_gondola_lyrics_model_config}}")
-    elseif(_gondola_lyrics_model_config STREQUAL "RELWITHDEBINFO" OR _gondola_lyrics_model_config STREQUAL "MINSIZEREL")
-      set(_gondola_lyrics_model_mapping "${_gondola_lyrics_model_config};RELEASE")
-    else()
-      set(_gondola_lyrics_model_mapping "${_gondola_lyrics_model_config}")
-    endif()
-
-    set_property(TARGET gondola::lyrics::model
-      PROPERTY "MAP_IMPORTED_CONFIG_${_gondola_lyrics_model_config}" "${_gondola_lyrics_model_mapping}"
-    )
-  endforeach()
-endif()
-unset(_gondola_lyrics_model_imported)
-unset(_gondola_lyrics_model_config)
-unset(_gondola_lyrics_model_mapping_set)
-unset(_gondola_lyrics_model_mapping)
-]=] GONDOLA_LYRICS_MODEL_CONFIG @ONLY)
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/gondola_lyrics_modelConfig.cmake"
-    "${GONDOLA_LYRICS_MODEL_CONFIG}"
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/package-config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/gondola-lyrics-model-config.cmake"
+    @ONLY
   )
 
-  # CMake compares the numeric core; preserve SemVer and require opt-in for prereleases.
-  write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/gondola_lyrics_modelConfigVersion.cmake"
-    VERSION "${GONDOLA_LYRICS_MODEL_VERSION_CORE}"
-    COMPATIBILITY SameMajorVersion
-  )
-  file(READ
-    "${CMAKE_CURRENT_BINARY_DIR}/gondola_lyrics_modelConfigVersion.cmake"
-    GONDOLA_LYRICS_MODEL_VERSION_CHECK
-  )
-  string(CONFIGURE [=[
-set(PACKAGE_VERSION "@GONDOLA_LYRICS_MODEL_VERSION@")
-
-if(PACKAGE_VERSION MATCHES "^[^+]*-" AND NOT gondola_lyrics_model_ALLOW_PRERELEASE)
-  set(PACKAGE_VERSION_COMPATIBLE FALSE)
-  set(PACKAGE_VERSION_EXACT FALSE)
-  set(PACKAGE_VERSION_UNSUITABLE TRUE)
-  return()
-endif()
-
-@GONDOLA_LYRICS_MODEL_VERSION_CHECK@
-
-if(NOT PACKAGE_VERSION_UNSUITABLE)
-  set(PACKAGE_VERSION "@GONDOLA_LYRICS_MODEL_VERSION@")
-endif()
-]=] GONDOLA_LYRICS_MODEL_VERSION_CHECK @ONLY)
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/gondola_lyrics_modelConfigVersion.cmake"
-    "${GONDOLA_LYRICS_MODEL_VERSION_CHECK}"
-  )
+  include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/package-version.cmake")
 
   install(TARGETS gondola_lyrics_model
     EXPORT gondola_lyrics_modelTargets
@@ -177,13 +94,13 @@ endif()
     FILES_MATCHING PATTERN "*.hpp"
   )
   install(EXPORT gondola_lyrics_modelTargets
-    FILE gondola_lyrics_modelTargets.cmake
+    FILE gondola-lyrics-model-targets.cmake
     NAMESPACE gondola::lyrics::
     DESTINATION "${GONDOLA_LYRICS_MODEL_INSTALL_CMAKEDIR}"
   )
   install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/gondola_lyrics_modelConfig.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/gondola_lyrics_modelConfigVersion.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/gondola-lyrics-model-config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/gondola-lyrics-model-config-version.cmake"
     DESTINATION "${GONDOLA_LYRICS_MODEL_INSTALL_CMAKEDIR}"
   )
 
