@@ -1,3 +1,11 @@
+## v2.0.1 (2026-11-25)
+
+> Proto Version: [2.0.0](https://github.com/gondola-lyrics/model/blob/proto/v2.0.0/proto/CHANGELOG.md)
+
+### Fix
+
+- unify ascii-only case-insensitive matching ([0e4d215](https://github.com/gondola-lyrics/model/commit/0e4d2155a0115c8c79154383968a682f3c260097))
+
 ## v2.0.0 (2026-11-14)
 
 > Proto Version: [2.0.0](https://github.com/gondola-lyrics/model/blob/proto/v2.0.0/proto/CHANGELOG.md)
