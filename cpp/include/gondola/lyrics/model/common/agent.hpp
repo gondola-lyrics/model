@@ -25,10 +25,15 @@ namespace gondola::lyrics::model::common {
 	[[nodiscard]] Agent canonicalizeAgent(Agent agent);
 
 	/**
-	 * Resolves ids in their given order using the first matching non-empty agent id.
+	 * Resolves case-sensitive ids in reference order using the first matching non-empty agent id.
 	 *
-	 * The returned pointers borrow elements from agents.
+	 * Unknown and empty references are omitted, and repeated references retain repeated pointers.
+	 * The returned pointers borrow elements from agents and remain valid only while those elements are alive and their pointers have not been invalidated.
 	 */
 	[[nodiscard]] std::vector<const Agent*> resolveLineAgents(const std::vector<std::string>& agentIds, const std::vector<Agent>& agents);
-	std::vector<const Agent*>               resolveLineAgents(const std::vector<std::string>&, const std::vector<Agent>&&) = delete;
+
+	/**
+	 * Prevents borrowed agent pointers from referring to a temporary vector.
+	 */
+	std::vector<const Agent*> resolveLineAgents(const std::vector<std::string>&, const std::vector<Agent>&&) = delete;
 } // namespace gondola::lyrics::model::common

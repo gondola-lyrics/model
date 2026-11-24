@@ -77,10 +77,10 @@ namespace gondola::lyrics::model::common {
 	} // namespace internal
 
 	/**
-	 * Selects by one language, matching without case on subtag boundaries.
+	 * Matches a full language tag or a prefix in either direction ending at a subtag boundary.
 	 *
-	 * Uses the first untagged entry when there is no match and the first entry only if fallback is enabled.
-	 * The result points into items and is subject to vector element invalidation.
+	 * Exact matches win; other matches rank by shared prefix length, with source order breaking ties.
+	 * After a miss or an empty preference, uses the first untagged entry, then the first entry if fallback is enabled, otherwise returns nullptr.
 	 */
 	template <typename T>
 	[[nodiscard]] const T* pickItemByLanguage(const std::vector<T>& items, std::string_view wanted = {}, bool fallback = false) {
@@ -89,10 +89,9 @@ namespace gondola::lyrics::model::common {
 	}
 
 	/**
-	 * Tries languages in preference order, taking the closest match and preserving source order on ties.
+	 * Tries non-empty languages in preference order using the single-language matching rules.
 	 *
-	 * Empty preferences are skipped, and fallback is applied only after all preferences fail.
-	 * The result points into items and is subject to vector element invalidation.
+	 * After all preferences fail, uses the first untagged entry, then the first entry if fallback is enabled, otherwise returns nullptr.
 	 */
 	template <typename T>
 	[[nodiscard]] const T* pickItemByLanguage(const std::vector<T>& items, const std::vector<std::string>& wanted, bool fallback = false) {
@@ -100,9 +99,9 @@ namespace gondola::lyrics::model::common {
 	}
 
 	/**
-	 * Accepts a braced list of ordered language preferences.
+	 * Tries a braced list of non-empty language preferences in order using the single-language matching rules.
 	 *
-	 * The result points into items and is subject to vector element invalidation.
+	 * After all preferences fail, uses the first untagged entry, then the first entry if fallback is enabled, otherwise returns nullptr.
 	 */
 	template <typename T>
 	[[nodiscard]] const T* pickItemByLanguage(const std::vector<T>& items, std::initializer_list<std::string_view> wanted, bool fallback = false) {
@@ -112,8 +111,8 @@ namespace gondola::lyrics::model::common {
 	/**
 	 * Selects by exact scheme, ignoring ASCII case, then applies the ordered language preferences.
 	 *
-	 * Untagged and first item fallback remain within the eligible schemes.
-	 * The result points into items and is subject to vector element invalidation.
+	 * An unset scheme permits all items; an empty scheme selects items with an unset or empty scheme.
+	 * Uses the language match and fallback rules only within eligible items, returning nullptr when none can be selected.
 	 */
 	template <typename T>
 	[[nodiscard]] const T* pickItemByScheme(const std::vector<T>& items, const SchemePreference& preference = {}) {
@@ -122,16 +121,27 @@ namespace gondola::lyrics::model::common {
 		});
 	}
 
-	// A pointer to the selected item would dangle when the temporary vector is destroyed.
+	/**
+	 * Prevents the selected pointer from referring to a temporary vector.
+	 */
 	template <typename T>
 	const T* pickItemByLanguage(const std::vector<T>&&, std::string_view = {}, bool = false) = delete;
 
+	/**
+	 * Prevents the selected pointer from referring to a temporary vector.
+	 */
 	template <typename T>
 	const T* pickItemByLanguage(const std::vector<T>&&, const std::vector<std::string>&, bool = false) = delete;
 
+	/**
+	 * Prevents the selected pointer from referring to a temporary vector.
+	 */
 	template <typename T>
 	const T* pickItemByLanguage(const std::vector<T>&&, std::initializer_list<std::string_view>, bool = false) = delete;
 
+	/**
+	 * Prevents the selected pointer from referring to a temporary vector.
+	 */
 	template <typename T>
 	const T* pickItemByScheme(const std::vector<T>&&, const SchemePreference& = {}) = delete;
 } // namespace gondola::lyrics::model::common

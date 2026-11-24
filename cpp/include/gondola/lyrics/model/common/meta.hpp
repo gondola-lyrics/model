@@ -11,9 +11,10 @@
 
 namespace gondola::lyrics::model::common {
 	/**
-	 * Creates metadata with the supplied source values.
+	 * Creates metadata with the supplied source values; offset and duration are in milliseconds.
 	 *
 	 * Offsets outside sint32 and durations outside uint32 throw std::out_of_range.
+	 * The schema duration limit of 2^31-1 is checked separately by validateMeta().
 	 */
 	[[nodiscard]] Meta makeMeta(std::vector<UnknownEntry> unknowns   = {},
 		std::int64_t                                  offset     = 0,
@@ -48,7 +49,7 @@ namespace gondola::lyrics::model::common {
 	[[nodiscard]] std::vector<Diagnostic> validateMetaCredit(const MetaCredit& credit, std::string_view path = {});
 
 	/**
-	 * Requires the platform and at least one non-empty identifier.
+	 * Requires a non-empty platform, a non-empty identifier list, and every identifier to be non-empty.
 	 */
 	[[nodiscard]] std::vector<Diagnostic> validateMetaReference(const MetaReference& reference, std::string_view path = {});
 
@@ -68,16 +69,16 @@ namespace gondola::lyrics::model::common {
 	[[nodiscard]] MetaReference canonicalizeMetaReference(MetaReference reference);
 
 	/**
-	 * Adds the offset to the playback clock before comparing against stored times.
+	 * Returns clock + offset in milliseconds for comparison against stored times.
 	 *
-	 * An unrepresentable signed result throws std::overflow_error.
+	 * Uses signed int64 arithmetic without clamping; an unrepresentable result throws std::overflow_error.
 	 */
 	[[nodiscard]] std::int64_t applyTimeOffset(std::int64_t clock, std::int32_t offset);
 
 	/**
-	 * Recovers the playback clock for a stored time, which may be before playback starts.
+	 * Returns time - offset in milliseconds, recovering a playback clock that may be negative.
 	 *
-	 * An unrepresentable signed result throws std::overflow_error.
+	 * Uses signed int64 arithmetic without clamping; an unrepresentable result throws std::overflow_error.
 	 */
 	[[nodiscard]] std::int64_t removeTimeOffset(std::int64_t time, std::int32_t offset);
 } // namespace gondola::lyrics::model::common

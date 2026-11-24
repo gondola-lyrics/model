@@ -54,6 +54,7 @@ namespace gondola::lyrics::model::document {
 	/**
 	 * Checks variant uniqueness, language tags, and containment within the supplied word range.
 	 *
+	 * Tokens use the annotation's declared range for containment, or the supplied word range when the annotation range is unset.
 	 * Diagnostic paths are relative to the annotation unless a prefix is supplied.
 	 */
 	[[nodiscard]] std::vector<common::Diagnostic> validateWordAnnotation(const WordAnnotation& annotation,
@@ -69,7 +70,7 @@ namespace gondola::lyrics::model::document {
 	[[nodiscard]] std::vector<common::Diagnostic> validateWord(const Word& word, std::string_view path = {}, common::TimingLevel timing = common::TimingLevel::kUnspecified);
 
 	/**
-	 * Checks each word and compares explicit timing with the supplied enclosing range.
+	 * Checks each word and, outside NONE and LINE timing, compares explicit word timing with the supplied enclosing range.
 	 *
 	 * Diagnostic paths append the word index to the supplied array path.
 	 */
@@ -119,27 +120,35 @@ namespace gondola::lyrics::model::document {
 	[[nodiscard]] std::string getWordAnnotationItemText(const WordAnnotationRoman& item);
 
 	/**
-	 * Returns distinct lowercase language tags from normal words in first appearance order.
+	 * Returns distinct non-empty, ASCII-lowercased language tags from normal words in first appearance order.
 	 */
 	[[nodiscard]] std::vector<std::string> collectWordLanguages(const std::vector<Word>& words);
 
 	/**
 	 * Uses the whole ruby range, falling back to the word only when the range is unset.
+	 *
+	 * Preserves an unknown end and returns nullopt when both ranges are unset; the selected range is not validated.
 	 */
 	[[nodiscard]] std::optional<common::TimeRange> resolveWordAnnotationItemTime(const WordAnnotationRuby& item, const Word& word) noexcept;
 
 	/**
 	 * Uses the whole romanization range, falling back to the word only when the range is unset.
+	 *
+	 * Preserves an unknown end and returns nullopt when both ranges are unset; the selected range is not validated.
 	 */
 	[[nodiscard]] std::optional<common::TimeRange> resolveWordAnnotationItemTime(const WordAnnotationRoman& item, const Word& word) noexcept;
 
 	/**
-	 * Uses the whole token range, then the ruby range, then the word range.
+	 * Uses the first present whole range in token, ruby, then word order.
+	 *
+	 * Preserves an unknown end and returns nullopt when all ranges are unset; the selected range is not validated.
 	 */
 	[[nodiscard]] std::optional<common::TimeRange> resolveWordAnnotationTokenTime(const common::TextToken& token, const WordAnnotationRuby& item, const Word& word) noexcept;
 
 	/**
-	 * Uses the whole token range, then the romanization range, then the word range.
+	 * Uses the first present whole range in token, romanization, then word order.
+	 *
+	 * Preserves an unknown end and returns nullopt when all ranges are unset; the selected range is not validated.
 	 */
 	[[nodiscard]] std::optional<common::TimeRange> resolveWordAnnotationTokenTime(const common::TextToken& token, const WordAnnotationRoman& item, const Word& word) noexcept;
 } // namespace gondola::lyrics::model::document

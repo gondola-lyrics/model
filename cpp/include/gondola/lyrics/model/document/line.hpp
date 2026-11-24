@@ -87,36 +87,38 @@ namespace gondola::lyrics::model::document {
 	[[nodiscard]] std::string getLineContentText(const std::optional<LineContent>& content);
 
 	/**
-	 * Checks for source words without inferring the lyric timing level.
+	 * Checks for a non-empty word list without inferring the lyric timing level or checking for conflicting whole-line text.
 	 */
 	[[nodiscard]] bool hasLineWords(const Line& line) noexcept;
 
 	/**
-	 * Checks for background source words without inferring the lyric timing level.
+	 * Checks for a non-empty background word list without inferring the lyric timing level or checking for conflicting whole-line text.
 	 */
 	[[nodiscard]] bool hasLineWords(const LineBackground& line) noexcept;
 
 	/**
-	 * Returns distinct lowercase line languages, using normal-word tags only when the declared list is empty.
+	 * Returns distinct non-empty, ASCII-lowercased line languages in source order, using normal-word tags only when the declared list is empty.
 	 */
 	[[nodiscard]] std::vector<std::string> resolveLineLanguages(const Line& line);
 
 	/**
-	 * Returns distinct lowercase background languages, using normal-word tags only when the declared list is empty.
+	 * Returns distinct non-empty, ASCII-lowercased background languages in source order, using normal-word tags only when the declared list is empty.
 	 */
 	[[nodiscard]] std::vector<std::string> resolveLineLanguages(const LineBackground& line);
 
 	/**
-	 * Resolves agent references to original vector elements in reference order, omitting unknown identifiers.
+	 * Resolves case-sensitive agent references in order using the first agent with the matching non-empty id.
 	 *
-	 * Returned pointers remain valid only while the supplied elements remain alive and unmoved.
+	 * Omits unknown and empty references and preserves repeated references as repeated pointers.
+	 * Returned pointers borrow vector elements and remain valid only while those elements are alive and their pointers have not been invalidated.
 	 */
 	[[nodiscard]] std::vector<const common::Agent*> resolveLineAgents(const Line& line, const std::vector<common::Agent>& agents);
 
 	/**
-	 * Resolves background agent references to original vector elements, omitting unknown identifiers.
+	 * Resolves case-sensitive background agent references in order using the first agent with the matching non-empty id.
 	 *
-	 * Returned pointers remain valid only while the supplied elements remain alive and unmoved.
+	 * Omits unknown and empty references and preserves repeated references as repeated pointers.
+	 * Returned pointers borrow vector elements and remain valid only while those elements are alive and their pointers have not been invalidated.
 	 */
 	[[nodiscard]] std::vector<const common::Agent*> resolveLineAgents(const LineBackground& line, const std::vector<common::Agent>& agents);
 
@@ -131,29 +133,37 @@ namespace gondola::lyrics::model::document {
 	std::vector<const common::Agent*> resolveLineAgents(const LineBackground&, const std::vector<common::Agent>&&) = delete;
 
 	/**
-	 * Uses explicit romanization text even when empty, otherwise joins source fragments without separators.
+	 * Uses explicit romanization text even when empty, otherwise joins source fragments without separators; unset content returns empty text.
 	 */
 	[[nodiscard]] std::string getLineAnnotationRomanText(const LineAnnotationRoman& roman);
 
 	/**
 	 * Uses the whole romanization range, falling back to the line only when the range is unset.
+	 *
+	 * Preserves an unknown end and returns nullopt when both ranges are unset; the selected range is not validated.
 	 */
 	[[nodiscard]] std::optional<common::TimeRange> resolveLineAnnotationRomanTime(const LineAnnotationRoman& roman, const Line& line) noexcept;
 
 	/**
 	 * Uses the whole romanization range, falling back to the background only when the range is unset.
+	 *
+	 * Preserves an unknown end and returns nullopt when both ranges are unset; the selected range is not validated.
 	 */
 	[[nodiscard]] std::optional<common::TimeRange> resolveLineAnnotationRomanTime(const LineAnnotationRoman& roman, const LineBackground& line) noexcept;
 
 	/**
-	 * Uses the whole token range, then the romanization range, then the owning line range.
+	 * Uses the first present whole range in token, romanization, then owning line order.
+	 *
+	 * Preserves an unknown end and returns nullopt when all ranges are unset; the selected range is not validated.
 	 */
 	[[nodiscard]] std::optional<common::TimeRange> resolveLineAnnotationRomanTokenTime(const common::TextToken& token,
 		const LineAnnotationRoman&                                                                          roman,
 		const Line&                                                                                         line) noexcept;
 
 	/**
-	 * Uses the whole token range, then the romanization range, then the background range.
+	 * Uses the first present whole range in token, romanization, then background order.
+	 *
+	 * Preserves an unknown end and returns nullopt when all ranges are unset; the selected range is not validated.
 	 */
 	[[nodiscard]] std::optional<common::TimeRange> resolveLineAnnotationRomanTokenTime(const common::TextToken& token,
 		const LineAnnotationRoman&                                                                          roman,
@@ -162,7 +172,8 @@ namespace gondola::lyrics::model::document {
 	/**
 	 * Aggregates display text by language and scheme in first appearance order, collapsing separator words to one space between contributions.
 	 *
-	 * Source timing and fragment boundaries remain on the original annotations.
+	 * Variant keys ignore ASCII case and treat empty identifiers as unset; views with empty text are omitted.
+	 * Results own their strings, while timing and fragment boundaries remain on the original annotations.
 	 */
 	[[nodiscard]] std::vector<common::LineRomanView> deriveLineRomanViews(const LineContent& content);
 
@@ -191,9 +202,10 @@ namespace gondola::lyrics::model::document {
 	[[nodiscard]] std::vector<common::Diagnostic> validateLineAnnotation(const LineAnnotation& annotation, std::string_view path = {});
 
 	/**
-	 * Checks exclusive source content and validates supplied words against the enclosing range.
+	 * Checks exclusive source content and applies the supplied timing rules to words.
 	 *
-	 * NONE and LINE require whole-line text; unresolved line kinds may omit content when required is false.
+	 * NONE and LINE reject word lists; missing content is reported only when required is true.
+	 * Word timing is compared with the enclosing range outside NONE and LINE timing.
 	 */
 	[[nodiscard]] std::vector<common::Diagnostic> validateLineContent(const std::optional<LineContent>& content,
 		const std::optional<common::TimeRange>&                                                     time     = std::nullopt,

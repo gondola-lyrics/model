@@ -21,7 +21,7 @@ namespace gondola::lyrics::model::common {
 	[[nodiscard]] std::vector<Diagnostic> validateText(const Text& text, std::string_view path = {});
 
 	/**
-	 * Lowercases the language tag and unsets an empty one.
+	 * Lowercases ASCII letters in the language tag and unsets an empty one, preserving the source text.
 	 */
 	[[nodiscard]] Text canonicalizeText(Text text);
 

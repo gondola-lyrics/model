@@ -4,6 +4,9 @@
 #include <string_view>
 
 namespace gondola::lyrics::model::common {
+	/**
+	 * Identifies a semantic violation through the shared string returned by toString().
+	 */
 	enum class DiagnosticCode {
 		kAgentIdEmpty,
 		kAgentNamesLanguageDuplicate,
@@ -91,6 +94,9 @@ namespace gondola::lyrics::model::common {
 
 	/**
 	 * Identifies a model violation relative to the input or the caller's path prefix.
+	 *
+	 * Paths use dot-separated fields and zero-based bracket indices; an empty path identifies the input itself.
+	 * Field names follow the shared camelCase convention, such as agentIds and languageUsages, rather than C++ member spelling.
 	 */
 	struct Diagnostic {
 		std::string    path;
@@ -99,6 +105,8 @@ namespace gondola::lyrics::model::common {
 
 	/**
 	 * Returns the diagnostic identifier shared by the bindings.
+	 *
+	 * The view refers to static storage; an unrecognized enum value returns an empty view.
 	 */
 	[[nodiscard]] std::string_view toString(DiagnosticCode code) noexcept;
 } // namespace gondola::lyrics::model::common
