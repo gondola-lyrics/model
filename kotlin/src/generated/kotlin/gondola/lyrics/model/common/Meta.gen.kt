@@ -112,7 +112,8 @@ public data class MetaCredit(
  */
 public data class MetaReference(
     /**
-     * The platform key is non-empty and case-insensitive; its canonical spelling is lowercase.
+     * The platform key is non-empty and ignores ASCII case; canonical spelling lowercases ASCII letters only.
+     * Non-ASCII characters are preserved and compared exactly.
      */
     val platform: String = "",
     /**

@@ -21,6 +21,7 @@ import gondola.lyrics.model.utils.canonicalizeList
 import gondola.lyrics.model.utils.childPath
 import gondola.lyrics.model.utils.findUnorderedStartTimeIndices
 import gondola.lyrics.model.utils.isUnresolved
+import gondola.lyrics.model.utils.lowercaseAscii
 import gondola.lyrics.model.utils.read
 import gondola.lyrics.model.utils.write
 import gondola.lyrics.model.utils.decodeDocumentLyric as decodeDocumentLyricMessage
@@ -177,8 +178,8 @@ public fun orderDocumentLyric(lyric: Lyric): Lyric {
  */
 public fun canonicalizeDocumentLyric(lyric: Lyric): Lyric {
     return lyric.copy(
-        format = lyric.format.lowercase(),
-        profile = lyric.profile.lowercase(),
+        format = lowercaseAscii(lyric.format),
+        profile = lowercaseAscii(lyric.profile),
         meta = canonicalizeField(lyric.meta, ::canonicalizeMeta),
         agents = canonicalizeList(lyric.agents, ::canonicalizeAgent),
         lines = canonicalizeList(lyric.lines, ::canonicalizeDocumentLine).sortedWith(byStartTime { line -> line.time }),

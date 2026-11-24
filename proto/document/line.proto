@@ -39,7 +39,8 @@ message LineAnnotationRoman {
   // The BCP 47 tag identifies this romanization variant; unset or empty means unspecified.
   optional string language = 1;
 
-  // The transliteration scheme is case-insensitive; unset or empty means unspecified.
+  // The transliteration scheme ignores ASCII case; unset or empty means unspecified.
+  // Canonical spelling lowercases ASCII letters only; other characters are preserved and compared exactly.
   optional string scheme = 2;
 
   // Unset time falls back to the line for whole-line text and untimed fragments; explicit fragment ranges remain independent of the line.
@@ -60,7 +61,7 @@ message LineAnnotationTranslation {
 }
 
 // Only source annotations attached to the whole line belong here; word aggregates are excluded.
-// Variant keys compare language and scheme case-insensitively, treating empty values as unset.
+// Variant keys compare language and scheme ignoring ASCII case, treating empty values as unset.
 message LineAnnotation {
   // Each language and scheme pair identifies at most one romanization variant.
   repeated LineAnnotationRoman romans = 1;

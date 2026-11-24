@@ -17,7 +17,7 @@ data class SchemePreference(val scheme: String? = null, val languages: List<Stri
 }
 
 /**
- * Filters schemes case-insensitively, then selects by ordered language preferences.
+ * Filters schemes ignoring ASCII case, then selects by ordered language preferences.
  *
  * An empty scheme matches null or empty candidate schemes.
  * Language fallback stays within the filtered candidates, and the selected item is returned unchanged.

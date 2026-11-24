@@ -61,6 +61,25 @@ import kotlin.test.assertSame
 
 class HelpersTest {
     @Test
+    fun schemeSelectionIgnoresAsciiCaseAndKeepsOtherCharactersDistinct() {
+        val mappings = listOf(
+            Triple("\u00c4-TEST", "\u00c4-test", "\u00e4-test"),
+            Triple("\u0130-TEST", "\u0130-test", "i\u0307-test"),
+            Triple("\ud801\udc00-TEST", "\ud801\udc00-test", "\ud801\udc28-test"),
+        )
+        for ((source, lower, different) in mappings) {
+            val item = makeDocumentWordAnnotationRoman(language = "ja-Latn", scheme = source)
+            assertSame(item, pickItemByScheme(listOf(item), SchemePreference(scheme = lower, languages = "JA-latn"), { it.language }, { it.scheme }))
+            assertNull(
+                pickItemByScheme(listOf(item), SchemePreference(scheme = different, languages = "JA-latn", fallback = true), {
+                    it.language
+                }, { it.scheme }),
+            )
+            assertEquals(source, item.scheme)
+        }
+    }
+
+    @Test
     fun selectsCaseInsensitiveSchemesAndKeepsOriginalRomanOrRubyItemsInBothLayers() {
         val time = makeTimeRange(start = 1000, end = 2000)
         val tokens = listOf(makeTextToken(text = "shi", time = time, extra = mapOf("source" to "kept")))

@@ -76,7 +76,8 @@ export type MetaCredit = {
  */
 export type MetaReference = {
   /**
-   * The platform key is non-empty and case-insensitive; its canonical spelling is lowercase.
+   * The platform key is non-empty and ignores ASCII case; canonical spelling lowercases ASCII letters only.
+   * Non-ASCII characters are preserved and compared exactly.
    */
   platform: string
   /**

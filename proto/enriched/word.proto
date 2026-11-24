@@ -38,7 +38,8 @@ message WordAnnotationRoman {
   // The BCP 47 tag identifies this romanization variant; unset or empty means unspecified.
   optional string language = 2;
 
-  // The transliteration scheme is case-insensitive; unset or empty means unspecified.
+  // The transliteration scheme ignores ASCII case; unset or empty means unspecified.
+  // Canonical spelling lowercases ASCII letters only; other characters are preserved and compared exactly.
   optional string scheme = 3;
 
   // Source fragments concatenate in list order without added separators; empty text is allowed.
@@ -54,7 +55,8 @@ message WordAnnotationRuby {
   // The BCP 47 tag identifies this ruby variant; unset or empty means unspecified.
   optional string language = 2;
 
-  // The transliteration scheme is case-insensitive; unset or empty means unspecified.
+  // The transliteration scheme ignores ASCII case; unset or empty means unspecified.
+  // Canonical spelling lowercases ASCII letters only; other characters are preserved and compared exactly.
   optional string scheme = 3;
 
   // Source fragments concatenate in list order without added separators; empty text is allowed.
@@ -62,7 +64,7 @@ message WordAnnotationRuby {
   repeated lyric.common.TextToken tokens = 4;
 }
 
-// Variant keys compare language and scheme case-insensitively, treating empty values as unset.
+// Variant keys compare language and scheme ignoring ASCII case, treating empty values as unset.
 message WordAnnotation {
   // Each language and scheme pair identifies at most one ruby variant.
   repeated WordAnnotationRuby rubies = 1;

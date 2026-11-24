@@ -151,14 +151,23 @@ export const childPath = (parent: string, child: string): string => {
 }
 
 /**
- * Lowercases a language tag or scheme identifier, treating an empty or unset value as unset.
+ * Lowercases ASCII letters without changing non-ASCII characters or depending on the runtime's locale.
  */
-export const lowerNonEmptyTag = (tag: string | undefined): string | undefined => {
-  return tag ? tag.toLowerCase() : undefined
+export const lowercaseAscii = (value: string): string => {
+  return value.replace(/[A-Z]/g, (character) => {
+    return String.fromCharCode(character.charCodeAt(0) + 0x20)
+  })
 }
 
 /**
- * Keys an annotation by its language and scheme without case, treating empty and unset values alike.
+ * Lowercases ASCII letters in a language tag or scheme identifier, treating an empty or unset value as unset.
+ */
+export const lowerNonEmptyTag = (tag: string | undefined): string | undefined => {
+  return tag ? lowercaseAscii(tag) : undefined
+}
+
+/**
+ * Keys an annotation by its language and scheme ignoring ASCII case, treating empty and unset values alike.
  * Tuple encoding avoids requiring a reserved separator in scheme identifiers.
  */
 export const getAnnotationVariantKey = (item: { language?: string | undefined; scheme?: string | undefined }): string => {
@@ -169,8 +178,8 @@ export const getAnnotationVariantKey = (item: { language?: string | undefined; s
  * Compares two language tags the way the schema reads them, which is without case, so an order by tag never turns on how one was spelled.
  */
 export const compareTags = (a: string, b: string): number => {
-  const x = a.toLowerCase()
-  const y = b.toLowerCase()
+  const x = lowercaseAscii(a)
+  const y = lowercaseAscii(b)
   return x < y ? -1 : x > y ? 1 : 0
 }
 

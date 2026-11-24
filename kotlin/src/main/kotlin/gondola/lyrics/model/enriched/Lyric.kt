@@ -21,6 +21,7 @@ import gondola.lyrics.model.utils.canonicalizeList
 import gondola.lyrics.model.utils.childPath
 import gondola.lyrics.model.utils.findUnorderedStartTimeIndices
 import gondola.lyrics.model.utils.isUnresolved
+import gondola.lyrics.model.utils.lowercaseAscii
 import gondola.lyrics.model.utils.read
 import gondola.lyrics.model.utils.write
 import gondola.lyrics.model.utils.decodeEnrichedLyric as decodeEnrichedLyricMessage
@@ -89,7 +90,7 @@ public fun validateEnrichedLyric(lyric: Lyric): List<Diagnostic> {
     val languageTags = mutableSetOf<String>()
     lyric.languageUsages.forEachIndexed { index, usage ->
         val path = "languageUsages[$index]"
-        if (!languageTags.add(usage.tag.lowercase())) {
+        if (!languageTags.add(lowercaseAscii(usage.tag))) {
             diagnostics += Diagnostic(path, DiagnosticCode.LyricLanguageUsagesTagDuplicate)
         }
         diagnostics += validateEnrichedLanguageUsage(usage, path)
@@ -97,7 +98,7 @@ public fun validateEnrichedLyric(lyric: Lyric): List<Diagnostic> {
     // Derived usages define counts and order; tag spelling compares without case.
     val derived = deriveEnrichedLanguageUsages(lyric.lines)
     val sameLanguageUsages = lyric.languageUsages.size == derived.size && lyric.languageUsages.zip(derived).all { (usage, expected) ->
-        usage.tag.lowercase() == expected.tag && usage.lineCount == expected.lineCount
+        lowercaseAscii(usage.tag) == expected.tag && usage.lineCount == expected.lineCount
     }
     if (!sameLanguageUsages) {
         diagnostics += Diagnostic("languageUsages", DiagnosticCode.LyricLanguageUsagesMismatch)
@@ -203,8 +204,8 @@ public fun orderEnrichedLyric(lyric: Lyric): Lyric {
  */
 public fun canonicalizeEnrichedLyric(lyric: Lyric): Lyric {
     return lyric.copy(
-        format = lyric.format.lowercase(),
-        profile = lyric.profile.lowercase(),
+        format = lowercaseAscii(lyric.format),
+        profile = lowercaseAscii(lyric.profile),
         meta = canonicalizeField(lyric.meta, ::canonicalizeMeta),
         agents = canonicalizeList(lyric.agents, ::canonicalizeAgent),
         lines = canonicalizeList(lyric.lines, ::canonicalizeEnrichedLine).sortedWith(byStartTime { line -> line.time }),

@@ -16,6 +16,7 @@ import {
   canonicalizeEnrichedLyric,
   canonicalizeEnrichedWord,
   canonicalizeEnrichedWordAnnotation,
+  canonicalizeMetaReference,
   deriveEnrichedLanguageUsages,
   makeDocumentLineAnnotation,
   makeDocumentLineAnnotationRoman,
@@ -23,6 +24,7 @@ import {
   makeDocumentLineContentText,
   makeDocumentLineNormal,
   makeDocumentLyric,
+  makeMetaReference,
   makeDocumentWordAnnotation,
   makeDocumentWordAnnotationRoman,
   makeDocumentWordAnnotationRuby,
@@ -46,6 +48,20 @@ import {
   validateDocumentWord,
   validateEnrichedLyric,
 } from '@root/index'
+
+describe('identifier normalization', () => {
+  it('lowercases ASCII in both lyric layers and platforms while preserving non-ASCII characters', () => {
+    const document = canonicalizeDocumentLyric(makeDocumentLyric({ format: '\u00c4-FORMAT', profile: '\u0130-PROFILE' }))
+    const enriched = canonicalizeEnrichedLyric(
+      makeEnrichedLyric({ status: EnrichedLyricStatus.VALID, format: '\u00c4-FORMAT', profile: '\u0130-PROFILE' }),
+    )
+    deepStrictEqual([document.format, document.profile], ['\u00c4-format', '\u0130-profile'])
+    deepStrictEqual([enriched.format, enriched.profile], [document.format, document.profile])
+    const platform = makeMetaReference({ platform: '\u00c4-CATALOG', ids: ['\u00c4-ID'] })
+    const canonical = canonicalizeMetaReference(platform)
+    deepStrictEqual(canonical, makeMetaReference({ platform: '\u00c4-catalog', ids: platform.ids }))
+  })
+})
 
 const collectNodes = (node: unknown, seen = new Set<object>()): Set<object> => {
   if (node === null || typeof node !== 'object' || seen.has(node)) {

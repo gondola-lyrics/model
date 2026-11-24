@@ -48,7 +48,8 @@ export type LineAnnotationRoman = {
    */
   language?: string | undefined
   /**
-   * The transliteration scheme is case-insensitive; unset or empty means unspecified.
+   * The transliteration scheme ignores ASCII case; unset or empty means unspecified.
+   * Canonical spelling lowercases ASCII letters only; other characters are preserved and compared exactly.
    */
   scheme?: string | undefined
   /**
@@ -78,7 +79,7 @@ export type LineAnnotationTranslation = {
 
 /**
  * Only source annotations attached to the whole line belong here; word aggregates are excluded.
- * Variant keys compare language and scheme case-insensitively, treating empty values as unset.
+ * Variant keys compare language and scheme ignoring ASCII case, treating empty values as unset.
  */
 export type LineAnnotation = {
   /**

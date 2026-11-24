@@ -21,6 +21,7 @@ import {
   findDuplicateIndices,
   isUnresolved,
   lowerNonEmptyTag,
+  lowercaseAscii,
   assignDefinedFields,
 } from '@root/utils'
 
@@ -157,7 +158,7 @@ export const validateMeta = (meta: Meta, path = ''): Diagnostic[] => {
     }
   })
   meta.credits.forEach((credit, i) => diagnostics.push(...validateMetaCredit(credit, childPath(path, `credits[${i}]`))))
-  checkDuplicates(meta.references, (reference) => reference.platform.toLowerCase(), 'references', DiagnosticCode.MetaReferencesPlatformDuplicate)
+  checkDuplicates(meta.references, (reference) => lowercaseAscii(reference.platform), 'references', DiagnosticCode.MetaReferencesPlatformDuplicate)
   meta.references.forEach((reference, i) => diagnostics.push(...validateMetaReference(reference, childPath(path, `references[${i}]`))))
   findDefaultEntries(
     fieldsCommonMeta,
@@ -181,7 +182,7 @@ export const canonicalizeMetaCredit = (credit: MetaCredit): MetaCredit => {
  * Returns a copy of the reference with its platform lowercased and empty ids dropped.
  */
 export const canonicalizeMetaReference = (reference: MetaReference): MetaReference => {
-  return { ...reference, platform: reference.platform.toLowerCase(), ids: reference.ids.filter((id) => id !== '') }
+  return { ...reference, platform: lowercaseAscii(reference.platform), ids: reference.ids.filter((id) => id !== '') }
 }
 
 /**

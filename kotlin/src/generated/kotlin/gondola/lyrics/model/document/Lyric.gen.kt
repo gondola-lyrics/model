@@ -19,12 +19,14 @@ public data class Lyric(
     val version: String = "",
     /**
      * The parser identifies the source format.
-     * Comparison is case-insensitive, canonical spelling is lowercase, and empty means unknown.
+     * Comparison ignores ASCII case, canonical spelling lowercases ASCII letters only, and empty means unknown.
+     * Non-ASCII characters are preserved and compared exactly.
      */
     val format: String = "",
     /**
      * The parser identifies a dialect scoped by format.
-     * Comparison is case-insensitive, canonical spelling is lowercase, and empty means unspecified.
+     * Comparison ignores ASCII case, canonical spelling lowercases ASCII letters only, and empty means unspecified.
+     * Non-ASCII characters are preserved and compared exactly.
      */
     val profile: String = "",
     /**

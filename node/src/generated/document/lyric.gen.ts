@@ -18,12 +18,14 @@ export type Lyric = {
   version: string
   /**
    * The parser identifies the source format.
-   * Comparison is case-insensitive, canonical spelling is lowercase, and empty means unknown.
+   * Comparison ignores ASCII case, canonical spelling lowercases ASCII letters only, and empty means unknown.
+   * Non-ASCII characters are preserved and compared exactly.
    */
   format: string
   /**
    * The parser identifies a dialect scoped by format.
-   * Comparison is case-insensitive, canonical spelling is lowercase, and empty means unspecified.
+   * Comparison ignores ASCII case, canonical spelling lowercases ASCII letters only, and empty means unspecified.
+   * Non-ASCII characters are preserved and compared exactly.
    */
   profile: string
   /**

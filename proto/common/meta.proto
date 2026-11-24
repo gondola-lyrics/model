@@ -59,7 +59,8 @@ message MetaCredit {
 
 // External song identifiers are grouped by platform.
 message MetaReference {
-  // The platform key is non-empty and case-insensitive; its canonical spelling is lowercase.
+  // The platform key is non-empty and ignores ASCII case; canonical spelling lowercases ASCII letters only.
+  // Non-ASCII characters are preserved and compared exactly.
   string platform = 1;
 
   // At least one identifier is required; every identifier is non-empty and preserves the platform's spelling.

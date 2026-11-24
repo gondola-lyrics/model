@@ -44,7 +44,8 @@ namespace gondola::lyrics::model::document {
 	struct LineAnnotationRoman {
 		// The BCP 47 tag identifies this romanization variant; unset or empty means unspecified.
 		std::optional<std::string> language;
-		// The transliteration scheme is case-insensitive; unset or empty means unspecified.
+		// The transliteration scheme ignores ASCII case; unset or empty means unspecified.
+		// Canonical spelling lowercases ASCII letters only; other characters are preserved and compared exactly.
 		std::optional<std::string> scheme;
 		// Unset time falls back to the line for whole-line text and untimed fragments; explicit fragment ranges remain independent of the line.
 		// An explicit annotation range may differ from the line and must contain every explicitly timed fragment.
@@ -78,7 +79,7 @@ namespace gondola::lyrics::model::document {
 	}
 
 	// Only source annotations attached to the whole line belong here; word aggregates are excluded.
-	// Variant keys compare language and scheme case-insensitively, treating empty values as unset.
+	// Variant keys compare language and scheme ignoring ASCII case, treating empty values as unset.
 	struct LineAnnotation {
 		// Each language and scheme pair identifies at most one romanization variant.
 		std::vector<LineAnnotationRoman> romans;

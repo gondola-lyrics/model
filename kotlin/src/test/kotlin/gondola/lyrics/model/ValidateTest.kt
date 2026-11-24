@@ -153,6 +153,34 @@ private fun validateTimedPartsInBothLayers(parts: List<Part?>, sungLineIndices: 
 
 class ValidateTest {
     @Test
+    fun keepsNonAsciiPlatformAndSchemeKeysDistinctWhileDetectingAsciiDuplicates() {
+        val meta = makeMeta(
+            references = listOf(
+                makeMetaReference(platform = "\u00c4-CATALOG", ids = listOf("first")),
+                makeMetaReference(platform = "\u00e4-catalog", ids = listOf("second")),
+                makeMetaReference(platform = "\u00c4-catalog", ids = listOf("third")),
+            ),
+        )
+        assertEquals(
+            listOf("references[2]" to "meta.references.platform.duplicate"),
+            validateMeta(meta).asPairs(),
+        )
+        val document = makeDocumentLineAnnotation(
+            romans = listOf("\u00c4-TEST", "\u00e4-test", "\u00c4-test").map { scheme ->
+                makeDocumentLineAnnotationRoman(language = "ja-Latn", scheme = scheme, content = makeDocumentLineAnnotationRomanContentText("roman"))
+            },
+        )
+        val enriched = makeEnrichedLineAnnotation(
+            romans = listOf("\u00c4-TEST", "\u00e4-test", "\u00c4-test").map { scheme ->
+                makeEnrichedLineAnnotationRoman(language = "ja-Latn", scheme = scheme, content = makeEnrichedLineAnnotationRomanContentText("roman"))
+            },
+        )
+        for (diagnostics in listOf(validateDocumentLineAnnotation(document), validateEnrichedLineAnnotation(enriched))) {
+            assertEquals(listOf("romans[2]" to "line.annotation.romans.duplicate"), diagnostics.asPairs())
+        }
+    }
+
+    @Test
     fun validatesLocalMetadataRulesWithTheSameDiagnosticsInsideLyrics() {
         val text = makeText(language = "en_US", text = "Song")
         val reference = makeMetaReference(platform = "catalog", ids = listOf(""))

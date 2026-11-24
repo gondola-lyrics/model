@@ -21,7 +21,7 @@ export type SchemePreference = {
 }
 
 /**
- * Filters schemes case-insensitively, then selects by ordered language preferences.
+ * Filters schemes ignoring ASCII case, then selects by ordered language preferences.
  *
  * Unset scheme imposes no filter; an empty scheme selects unset or empty schemes.
  * Language fallback stays within the filtered candidates, and the selected item is returned unchanged.

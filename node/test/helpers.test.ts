@@ -75,6 +75,20 @@ describe('pick by scheme', () => {
     strictEqual(pickItemByScheme(items), defaultItem)
   })
 
+  it('ignores ASCII case while keeping non-ASCII scheme identifiers distinct', () => {
+    const mappings = [
+      ['\u00c4-TEST', '\u00c4-test', '\u00e4-test'],
+      ['\u0130-TEST', '\u0130-test', 'i\u0307-test'],
+      ['\u{10400}-TEST', '\u{10400}-test', '\u{10428}-test'],
+    ] as const
+    for (const [source, lower, different] of mappings) {
+      const item = makeDocumentWordAnnotationRoman({ language: 'ja-Latn', scheme: source })
+      strictEqual(pickItemByScheme([item], { scheme: lower, languages: 'JA-latn' }), item)
+      strictEqual(pickItemByScheme([item], { scheme: different, languages: 'JA-latn', fallback: true }), undefined)
+      strictEqual(item.scheme, source)
+    }
+  })
+
   it('keeps default and first-item fallback inside the exact scheme filter', () => {
     const other = makeDocumentWordAnnotationRoman({ language: 'fr', scheme: 'kunrei' })
     const selected = makeDocumentWordAnnotationRoman({ language: 'en', scheme: 'hepburn' })

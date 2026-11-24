@@ -55,6 +55,12 @@ namespace gondola::lyrics::model::test {
 			schemePreferenceFor<enriched::WordAnnotationRuby>();
 		}
 
+		void nonAsciiSchemePreference() {
+			const std::vector<document::WordAnnotationRoman> items = {{std::nullopt, "ja-Latn", u8"\u00c4-TEST", {}}};
+			expect(common::pickItemByScheme(items, {u8"\u00c4-test", {"JA-latn"}, false}) == &items[0], "ASCII case matches within a non-ASCII scheme");
+			expect(common::pickItemByScheme(items, {u8"\u00e4-test", {"JA-latn"}, true}) == nullptr, "Non-ASCII scheme characters remain distinct even with fallback");
+		}
+
 		template <typename Line>
 		void resolveLanguagesFor() {
 			Line line;
@@ -96,6 +102,7 @@ namespace gondola::lyrics::model::test {
 		return runCases({
 			{"language selection respects preference order and boundaries", languagePreferenceOrder},
 			{"scheme selection limits both matching and fallback", schemePreference},
+			{"scheme selection preserves non-ASCII characters", nonAsciiSchemePreference},
 			{"language and agent resolution preserve source identity", resolveLanguagesAndAgents},
 		});
 	}

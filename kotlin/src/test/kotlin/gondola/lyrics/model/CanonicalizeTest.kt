@@ -3,6 +3,8 @@ package gondola.lyrics.model
 import gondola.lyrics.model.common.Meta
 import gondola.lyrics.model.common.PartType
 import gondola.lyrics.model.common.TimingLevel
+import gondola.lyrics.model.common.canonicalizeMetaReference
+import gondola.lyrics.model.common.makeMetaReference
 import gondola.lyrics.model.common.makePart
 import gondola.lyrics.model.common.makeText
 import gondola.lyrics.model.common.makeTextToken
@@ -50,6 +52,19 @@ import gondola.lyrics.model.document.Lyric as DocumentLyric
 import gondola.lyrics.model.document.Word as DocumentWord
 
 class CanonicalizeTest {
+    @Test
+    fun normalizesAsciiIdentifiersWithoutChangingOtherCharactersOrExternalIds() {
+        val document = canonicalizeDocumentLyric(makeDocumentLyric(format = "\u00c4-FORMAT", profile = "\u0130-PROFILE"))
+        val enriched = canonicalizeEnrichedLyric(
+            makeEnrichedLyric(status = LyricStatus.LYRIC_STATUS_VALID, format = "\u00c4-FORMAT", profile = "\u0130-PROFILE"),
+        )
+        assertEquals(listOf("\u00c4-format", "\u0130-profile"), listOf(document.format, document.profile))
+        assertEquals(listOf(document.format, document.profile), listOf(enriched.format, enriched.profile))
+        val platform = makeMetaReference(platform = "\u00c4-CATALOG", ids = listOf("\u00c4-ID"))
+        val canonical = canonicalizeMetaReference(platform)
+        assertEquals(makeMetaReference(platform = "\u00c4-catalog", ids = platform.ids), canonical)
+    }
+
     private fun buildLyric(): Lyric {
         val lines = listOf(
             makeEnrichedLineNormal(

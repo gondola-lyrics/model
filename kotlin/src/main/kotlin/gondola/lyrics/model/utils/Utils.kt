@@ -40,14 +40,25 @@ internal fun childPath(parent: String, child: String): String {
 }
 
 /**
- * Lowercases a language tag or scheme identifier, treating an empty or unset value as unset.
+ * Lowercases ASCII letters without changing non-ASCII characters or depending on the JVM's locale.
  */
-internal fun lowerNonEmptyTag(tag: String?): String? {
-    return tag?.takeIf { it.isNotEmpty() }?.lowercase()
+internal fun lowercaseAscii(value: String): String {
+    return buildString(value.length) {
+        for (character in value) {
+            append(if (character in 'A'..'Z') character + ('a' - 'A') else character)
+        }
+    }
 }
 
 /**
- * Keys an annotation by its language and scheme without case, treating empty and unset values alike.
+ * Lowercases ASCII letters in a language tag or scheme identifier, treating an empty or unset value as unset.
+ */
+internal fun lowerNonEmptyTag(tag: String?): String? {
+    return tag?.takeIf { it.isNotEmpty() }?.let(::lowercaseAscii)
+}
+
+/**
+ * Keys an annotation by its language and scheme ignoring ASCII case, treating empty and unset values alike.
  */
 internal fun getAnnotationVariantKey(language: String?, scheme: String?): Pair<String?, String?> {
     return lowerNonEmptyTag(language) to lowerNonEmptyTag(scheme)
@@ -57,7 +68,7 @@ internal fun getAnnotationVariantKey(language: String?, scheme: String?): Pair<S
  * Compares two language tags the way the schema reads them, which is without case, so an order by tag never turns on how one was spelled.
  */
 internal fun compareTags(a: String, b: String): Int {
-    return a.lowercase().compareTo(b.lowercase())
+    return lowercaseAscii(a).compareTo(lowercaseAscii(b))
 }
 
 /**

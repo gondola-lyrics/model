@@ -141,6 +141,36 @@ const validateTimedPartsInBothLayers = (parts: (Part | undefined)[], sungLineInd
 }
 
 describe('validate', () => {
+  it('keeps non-ASCII platform and scheme keys distinct while detecting ASCII duplicates', () => {
+    const meta = makeMeta({
+      references: [
+        makeMetaReference({ platform: '\u00c4-CATALOG', ids: ['first'] }),
+        makeMetaReference({ platform: '\u00e4-catalog', ids: ['second'] }),
+        makeMetaReference({ platform: '\u00c4-catalog', ids: ['third'] }),
+      ],
+    })
+    deepStrictEqual(
+      validateMeta(meta).map(({ path, code }) => [path, code]),
+      [['references[2]', 'meta.references.platform.duplicate']],
+    )
+    const document = makeDocumentLineAnnotation({
+      romans: ['\u00c4-TEST', '\u00e4-test', '\u00c4-test'].map((scheme) =>
+        makeDocumentLineAnnotationRoman({ language: 'ja-Latn', scheme, content: makeDocumentLineAnnotationRomanContentText('roman') }),
+      ),
+    })
+    const enriched = makeEnrichedLineAnnotation({
+      romans: ['\u00c4-TEST', '\u00e4-test', '\u00c4-test'].map((scheme) =>
+        makeEnrichedLineAnnotationRoman({ language: 'ja-Latn', scheme, content: makeEnrichedLineAnnotationRomanContentText('roman') }),
+      ),
+    })
+    for (const diagnostics of [validateDocumentLineAnnotation(document), validateEnrichedLineAnnotation(enriched)]) {
+      deepStrictEqual(
+        diagnostics.map(({ path, code }) => [path, code]),
+        [['romans[2]', 'line.annotation.romans.duplicate']],
+      )
+    }
+  })
+
   it('reports text languages and empty reference ids locally and once under either lyric', () => {
     const text = makeText({ text: 'Song', language: 'en_US' })
     const reference = makeMetaReference({ platform: 'catalog', ids: [''] })

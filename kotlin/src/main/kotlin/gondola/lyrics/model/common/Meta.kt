@@ -9,6 +9,7 @@ import gondola.lyrics.model.utils.findDefaultEntries
 import gondola.lyrics.model.utils.findDuplicateIndices
 import gondola.lyrics.model.utils.isUnresolved
 import gondola.lyrics.model.utils.lowerNonEmptyTag
+import gondola.lyrics.model.utils.lowercaseAscii
 import gondola.lyrics.model.utils.requireUInt32
 
 /**
@@ -135,7 +136,7 @@ fun validateMeta(meta: Meta, path: String = ""): List<Diagnostic> {
         }
     }
     meta.credits.forEachIndexed { index, credit -> diagnostics.addAll(validateMetaCredit(credit, childPath(path, "credits[$index]"))) }
-    findDuplicateIndices(meta.references) { it.platform.lowercase() }.forEach { index ->
+    findDuplicateIndices(meta.references) { lowercaseAscii(it.platform) }.forEach { index ->
         diagnostics.add(Diagnostic(childPath(path, "references[$index]"), DiagnosticCode.MetaReferencesPlatformDuplicate))
     }
     meta.references.forEachIndexed { index, reference ->
@@ -158,7 +159,7 @@ fun canonicalizeMetaCredit(credit: MetaCredit): MetaCredit {
  * Returns a copy of the reference with its platform lowercased and empty ids dropped.
  */
 fun canonicalizeMetaReference(reference: MetaReference): MetaReference {
-    return reference.copy(platform = reference.platform.lowercase(), ids = reference.ids.filter { it.isNotEmpty() })
+    return reference.copy(platform = lowercaseAscii(reference.platform), ids = reference.ids.filter { it.isNotEmpty() })
 }
 
 /**

@@ -16,6 +16,7 @@ import {
   childPath,
   findUnorderedStartTimeIndices,
   isUnresolved,
+  lowercaseAscii,
   assignDefinedFields,
 } from '@root/utils'
 import { read, write } from '@root/utils/wire'
@@ -164,8 +165,8 @@ export const orderDocumentLyric = (lyric: Lyric): Lyric => {
 export const canonicalizeDocumentLyric = (lyric: Lyric): Lyric => {
   return {
     ...lyric,
-    format: lyric.format.toLowerCase(),
-    profile: lyric.profile.toLowerCase(),
+    format: lowercaseAscii(lyric.format),
+    profile: lowercaseAscii(lyric.profile),
     meta: canonicalizeField(fieldsCommonMeta, lyric.meta, canonicalizeMeta),
     agents: canonicalizeList(fieldsCommonAgent, lyric.agents, canonicalizeAgent),
     lines: canonicalizeList(fieldsDocumentLine, lyric.lines, canonicalizeDocumentLine).sort(byStartTime((line) => line.time)),

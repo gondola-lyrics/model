@@ -76,6 +76,25 @@ namespace gondola::lyrics::model::test {
 			lyricNormalizationFor<enriched::Lyric>();
 		}
 
+		void nonAsciiIdentifierNormalization() {
+			auto document                = lyricWithTiming<document::Lyric>(common::TimingLevel::kNone);
+			document.format              = u8"\u00c4-FORMAT";
+			document.profile             = u8"\u0130-PROFILE";
+			auto enriched                = lyricWithTiming<enriched::Lyric>(common::TimingLevel::kNone);
+			enriched.format              = document.format;
+			enriched.profile             = document.profile;
+			const auto canonicalDocument = document::canonicalizeLyric(document);
+			const auto canonicalEnriched = enriched::canonicalizeLyric(enriched);
+			expectEqual(canonicalDocument.format, std::string(u8"\u00c4-format"), "Only ASCII letters normalize in format identifiers");
+			expectEqual(canonicalDocument.profile, std::string(u8"\u0130-profile"), "Only ASCII letters normalize in profile identifiers");
+			expectEqual(canonicalEnriched.format, canonicalDocument.format, "Both layers use the same identifier rules");
+			expectEqual(canonicalEnriched.profile, canonicalDocument.profile, "Both layers preserve non-ASCII profile spelling");
+			const auto reference          = common::makeMetaReference(u8"\u00c4-CATALOG", {u8"\u00c4-ID"});
+			const auto canonicalReference = common::canonicalizeMetaReference(reference);
+			expectEqual(canonicalReference.platform, std::string(u8"\u00c4-catalog"), "Platform normalization preserves non-ASCII characters");
+			expectEqual(canonicalReference.ids, reference.ids, "External identifiers retain their spelling");
+		}
+
 		void emphasisPresence() {
 			const std::vector<enriched::WordEmphasis> values = {
 				{},
@@ -116,6 +135,7 @@ namespace gondola::lyrics::model::test {
 	int canonicalizeTests() {
 		return runCases({
 			{"normalization retains source data and explicit presence", lyricNormalization},
+			{"normalization preserves non-ASCII identifiers", nonAsciiIdentifierNormalization},
 			{"normalization preserves emphasis decisions and origin", emphasisPresence},
 			{"normalization merges language counts without wrapping", languageCountsSaturate},
 		});

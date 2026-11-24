@@ -26,6 +26,16 @@ namespace gondola::lyrics::model::test {
 			metadataDiagnosticsFor<enriched::Lyric>();
 		}
 
+		void nonAsciiPlatformDuplicates() {
+			common::Meta meta;
+			meta.references = {
+				common::makeMetaReference(u8"\u00c4-CATALOG", {"first"}),
+				common::makeMetaReference(u8"\u00e4-catalog", {"second"}),
+				common::makeMetaReference(u8"\u00c4-catalog", {"third"}),
+			};
+			expectDiagnostics(common::validateMeta(meta), {{"references[2]", "meta.references.platform.duplicate"}});
+		}
+
 		template <typename Lyric>
 		void lineTimingFor() {
 			using Line  = typename decltype(Lyric{}.lines)::value_type;
@@ -279,6 +289,7 @@ namespace gondola::lyrics::model::test {
 	int validateTests() {
 		return runCases({
 			{"metadata diagnostics preserve nested paths and order", metadataDiagnostics},
+			{"platform duplicates ignore only ASCII case", nonAsciiPlatformDuplicates},
 			{"timing diagnostics allow only the last line to remain open", lineTiming},
 			{"forbidden fields stop local checks but retain global identity checks", forbiddenFields},
 			{"agent and background timing diagnostics locate their fields", referencePaths},

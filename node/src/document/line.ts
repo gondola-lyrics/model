@@ -51,6 +51,7 @@ import {
   isTimeRangeUncovered,
   isUnresolved,
   lowerNonEmptyTag,
+  lowercaseAscii,
   assignDefinedFields,
 } from '@root/utils'
 
@@ -564,7 +565,7 @@ export const canonicalizeDocumentLineBackground = (background: LineBackground): 
     ...background,
     time: copyScalarMessage(background.time),
     agentIds: background.agentIds.filter((id) => id !== ''),
-    languages: [...new Set(background.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
+    languages: [...new Set(background.languages.map((tag) => lowercaseAscii(tag)).filter((tag) => tag !== ''))],
     content: canonicalizeField(fieldsDocumentLineContent, background.content, canonicalizeDocumentLineContent),
     annotation: canonicalizeField(fieldsDocumentLineAnnotation, background.annotation, canonicalizeDocumentLineAnnotation),
   }
@@ -579,7 +580,7 @@ export const canonicalizeDocumentLine = (line: Line): Line => {
     time: copyScalarMessage(line.time),
     part: unsetIfDefault(fieldsCommonPart, copyScalarMessage(line.part)),
     agentIds: line.agentIds.filter((id) => id !== ''),
-    languages: [...new Set(line.languages.map((tag) => tag.toLowerCase()).filter((tag) => tag !== ''))],
+    languages: [...new Set(line.languages.map((tag) => lowercaseAscii(tag)).filter((tag) => tag !== ''))],
     backgrounds: canonicalizeList(fieldsDocumentLineBackground, line.backgrounds, canonicalizeDocumentLineBackground).sort(
       byStartTime((background) => background.time),
     ),

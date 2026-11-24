@@ -42,7 +42,8 @@ namespace gondola::lyrics::model::document {
 		std::optional<common::TimeRange> time;
 		// The BCP 47 tag identifies this romanization variant; unset or empty means unspecified.
 		std::optional<std::string> language;
-		// The transliteration scheme is case-insensitive; unset or empty means unspecified.
+		// The transliteration scheme ignores ASCII case; unset or empty means unspecified.
+		// Canonical spelling lowercases ASCII letters only; other characters are preserved and compared exactly.
 		std::optional<std::string> scheme;
 		// Source fragments concatenate in list order without added separators; empty text is allowed.
 		// Untimed fragments use this item's effective range; explicit fragment ranges must fit within it.
@@ -63,7 +64,8 @@ namespace gondola::lyrics::model::document {
 		std::optional<common::TimeRange> time;
 		// The BCP 47 tag identifies this ruby variant; unset or empty means unspecified.
 		std::optional<std::string> language;
-		// The transliteration scheme is case-insensitive; unset or empty means unspecified.
+		// The transliteration scheme ignores ASCII case; unset or empty means unspecified.
+		// Canonical spelling lowercases ASCII letters only; other characters are preserved and compared exactly.
 		std::optional<std::string> scheme;
 		// Source fragments concatenate in list order without added separators; empty text is allowed.
 		// Untimed fragments use this item's effective range; explicit fragment ranges must fit within it.
@@ -78,7 +80,7 @@ namespace gondola::lyrics::model::document {
 		return !(a == b);
 	}
 
-	// Variant keys compare language and scheme case-insensitively, treating empty values as unset.
+	// Variant keys compare language and scheme ignoring ASCII case, treating empty values as unset.
 	struct WordAnnotation {
 		// Each language and scheme pair identifies at most one ruby variant.
 		std::vector<WordAnnotationRuby> rubies;

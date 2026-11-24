@@ -56,7 +56,8 @@ namespace gondola::lyrics::model::common {
 
 	// External song identifiers are grouped by platform.
 	struct MetaReference {
-		// The platform key is non-empty and case-insensitive; its canonical spelling is lowercase.
+		// The platform key is non-empty and ignores ASCII case; canonical spelling lowercases ASCII letters only.
+		// Non-ASCII characters are preserved and compared exactly.
 		std::string platform;
 		// At least one identifier is required; every identifier is non-empty and preserves the platform's spelling.
 		std::vector<std::string> ids;

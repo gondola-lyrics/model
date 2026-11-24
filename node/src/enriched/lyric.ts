@@ -16,6 +16,7 @@ import {
   childPath,
   findUnorderedStartTimeIndices,
   isUnresolved,
+  lowercaseAscii,
   assignDefinedFields,
 } from '@root/utils'
 import { read, write } from '@root/utils/wire'
@@ -89,7 +90,7 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
   const languageTags = new Set<string>()
   lyric.languageUsages.forEach((usage, i) => {
     const path = `languageUsages[${i}]`
-    const tag = usage.tag.toLowerCase()
+    const tag = lowercaseAscii(usage.tag)
     if (languageTags.has(tag)) {
       diagnostics.push({ path, code: DiagnosticCode.LyricLanguageUsagesTagDuplicate })
     }
@@ -103,7 +104,7 @@ export const validateEnrichedLyric = (lyric: Lyric): Diagnostic[] => {
     lyric.languageUsages.length === derived.length &&
     lyric.languageUsages.every((usage, i) => {
       const expected = derived[i]
-      return usage.tag.toLowerCase() === expected?.tag && usage.lineCount === expected?.lineCount
+      return lowercaseAscii(usage.tag) === expected?.tag && usage.lineCount === expected?.lineCount
     })
   if (!sameLanguageUsages) {
     diagnostics.push({ path: 'languageUsages', code: DiagnosticCode.LyricLanguageUsagesMismatch })
@@ -204,8 +205,8 @@ export const orderEnrichedLyric = (lyric: Lyric): Lyric => {
 export const canonicalizeEnrichedLyric = (lyric: Lyric): Lyric => {
   return {
     ...lyric,
-    format: lyric.format.toLowerCase(),
-    profile: lyric.profile.toLowerCase(),
+    format: lowercaseAscii(lyric.format),
+    profile: lowercaseAscii(lyric.profile),
     meta: canonicalizeField(fieldsCommonMeta, lyric.meta, canonicalizeMeta),
     agents: canonicalizeList(fieldsCommonAgent, lyric.agents, canonicalizeAgent),
     lines: canonicalizeList(fieldsEnrichedLine, lyric.lines, canonicalizeEnrichedLine).sort(byStartTime((line) => line.time)),

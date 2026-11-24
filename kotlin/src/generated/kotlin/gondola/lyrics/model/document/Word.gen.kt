@@ -71,7 +71,8 @@ public data class WordAnnotationRoman(
      */
     val language: String? = null,
     /**
-     * The transliteration scheme is case-insensitive; unset or empty means unspecified.
+     * The transliteration scheme ignores ASCII case; unset or empty means unspecified.
+     * Canonical spelling lowercases ASCII letters only; other characters are preserved and compared exactly.
      */
     val scheme: String? = null,
     /**
@@ -94,7 +95,8 @@ public data class WordAnnotationRuby(
      */
     val language: String? = null,
     /**
-     * The transliteration scheme is case-insensitive; unset or empty means unspecified.
+     * The transliteration scheme ignores ASCII case; unset or empty means unspecified.
+     * Canonical spelling lowercases ASCII letters only; other characters are preserved and compared exactly.
      */
     val scheme: String? = null,
     /**
@@ -105,7 +107,7 @@ public data class WordAnnotationRuby(
 )
 
 /**
- * Variant keys compare language and scheme case-insensitively, treating empty values as unset.
+ * Variant keys compare language and scheme ignoring ASCII case, treating empty values as unset.
  */
 public data class WordAnnotation(
     /**
